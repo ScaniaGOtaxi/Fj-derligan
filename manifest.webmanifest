@@ -1,7 +1,7 @@
 {
-  "name": "Badminton App ver. 1.1.2",
+  "name": "Badminton App ver. 1.2",
   "short_name": "Badminton",
-  "description": "Badminton rotation app skapad av Piotr Zdeb +=RYB@=+",
+  "description": "Badminton rotation och statistik – skapad av Piotr Zdeb +=RYB@=+",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

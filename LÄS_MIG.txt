@@ -1,26 +1,31 @@
-BADMINTON APP v1.1.2 – GITHUB PAGES / PWA
+BADMINTON APP VER. 1.2 – GITHUB PAGES / PWA
 
-SLUTVERSION MED ALLA SENASTE ÄNDRINGAR
+NYTT I VER. 1.2
+- Grafisk statistik
+- Statistik Totalt / Idag
+- Statistik per spelare: matcher, singel, dubbel och vila
+- Balanskontroll för matcher och vila
+- Uppdatera statistik-knapp
+- Exportera statistik till CSV
+- Förbättrad PDF-export via separat rapportsida
+- Dela statistik
+- Nollställ statistik med bekräftelse
+- Uppdaterad Hjälp-meny
 
-- 3–12 spelare och 1–3 banor
-- 10 rundor är standard vid start
-- 6, 7, 8, 10 eller 12 rundor kan väljas
+BEHÅLLER TIDIGARE FUNKTIONER
+- 3–12 spelare
+- 1–3 banor
+- 10 rundor som standard
+- 6, 7, 8, 10 eller 12 rundor
 - Balanserad randomisering
 - Normal / Mer singel / Endast singel
-- Info-knapp vid spelarens val
-- Hjälp / Så fungerar appen
-- Visa/Dölj sparade spelare
-- Visar antal sparade spelare och dagens spelare
-- Markera alla / Avmarkera alla visas inne i spelarlistan
-- Automatisk migrering av gamla lokalt sparade namn
-- Gemensamt spelarregister för hela appen
-- Enstaka spelare kan raderas
-- Röd papperskorg för radering
-- Bekräftelse innan en spelare raderas
-- Zoom upp till 250 % och zoom behålls mellan rundor
-- Timer, spelade rundor och framåt/bakåt
-- PWA/offline-stöd och appikon
+- Sparad lokal spelarlista
+- Röd papperskorg med bekräftelse
+- Timer med 3 pip
+- Framåt / bakåt / återgå till spelet
+- Zoom upp till 250 %
+- PWA/offline
 
-GITHUB:
-Packa upp ZIP-filen och ersätt filerna i roten av ditt befintliga GitHub-repository.
-Välj Commit changes. Din befintliga GitHub Pages-adress fortsätter fungera.
+UPPDATERA GITHUB
+Packa upp ZIP-filen och ersätt filerna i roten av ditt befintliga repository.
+Commit changes. Din befintliga GitHub Pages-adress fortsätter att fungera.

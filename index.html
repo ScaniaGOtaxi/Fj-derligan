@@ -349,6 +349,47 @@ select{min-width:130px}
   background:#7a1710 !important;
 }
 
+
+.statsCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.statsCard{background:#111820;border:1px solid #394754;border-radius:10px;padding:10px;text-align:center}
+.statsCard b{display:block;font-size:24px;margin-top:3px}
+.statsTableWrap{overflow-x:auto;margin-top:10px}
+.statsTable{width:100%;border-collapse:collapse;font-size:14px}
+.statsTable th,.statsTable td{padding:8px 6px;border-bottom:1px solid #394754;text-align:center;white-space:nowrap}
+.statsTable th:first-child,.statsTable td:first-child{text-align:left;font-weight:700}
+@media(max-width:600px){
+ .statsTable{font-size:11px}
+ .statsTable th,.statsTable td{padding:6px 4px}
+}
+
+
+.statsChart{margin:14px 0 18px}
+.statsChart h3{margin:10px 0}
+.barRow{display:grid;grid-template-columns:minmax(70px,110px) 1fr 32px;gap:8px;align-items:center;margin:8px 0}
+.barName{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barTrack{height:18px;background:#202a34;border-radius:9px;overflow:hidden;border:1px solid #3b4854}
+.barFill{height:100%;min-width:0;border-radius:9px;background:linear-gradient(90deg,#18a0fb,#4cc9f0)}
+.barValue{text-align:right;font-weight:700}
+.mixRow{margin:12px 0}
+.mixHead{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-weight:700}
+.mixTrack{display:flex;height:22px;background:#202a34;border-radius:11px;overflow:hidden;border:1px solid #3b4854}
+.mixSingle{background:#f5b942}
+.mixDouble{background:#2ea8e6}
+.mixRest{background:#7b8794}
+.statsLegend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;margin:8px 0 12px}
+.legendDot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.legendSingle{background:#f5b942}.legendDouble{background:#2ea8e6}.legendRest{background:#7b8794}
+
+
+.statsExport{margin-top:18px;padding-top:12px;border-top:1px solid #394754}
+@media print{
+ body *{visibility:hidden!important}
+ #statsPanel,#statsPanel *{visibility:visible!important}
+ #statsPanel{position:absolute!important;left:0;top:0;width:100%!important;background:white!important;color:black!important;border:0!important;box-shadow:none!important}
+ #statsPanel button,.statsExport{display:none!important}
+ .statsCard,.barTrack,.mixTrack{border:1px solid #777!important}
+}
+
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -362,7 +403,7 @@ select{min-width:130px}
 </head>
 <body>
 <div class="wrap" id="setupView">
-  <h1>🏸 Badmintonrotation <span class="v11badge">v1.1.2</span></h1>
+  <h1>🏸 Badmintonrotation <span class="v11badge">v1.2</span></h1>
   <p class="sub">1–3 banor • rotation för 3–12 spelare • namnen sparas automatiskt</p>
 <div class="topTools">
  <button onclick="toggleMenu()">☰ Meny</button>
@@ -374,11 +415,39 @@ select{min-width:130px}
 <div id="menuPanel" class="card menuPanel">
  <button onclick="showPlayers()">👥 Spelarlista</button>
  <button onclick="toggleHelp()">❓ Hjälp</button>
+ <button onclick="toggleStats()">📊 Statistik</button>
  <button onclick="generate()">🎲 Skapa ny rotation</button>
+</div>
+
+<div id="statsPanel" class="card helpPanel">
+ <h2>📊 Statistik</h2>
+ <div class="topTools" style="margin-bottom:10px">
+  <button type="button" id="statsTotalBtn" onclick="setStatsView('total')">📊 Totalt</button>
+  <button type="button" id="statsTodayBtn" onclick="setStatsView('today')">📅 Idag</button>
+  <button type="button" onclick="refreshStatistics()">🔄 Uppdatera statistik</button>
+ </div>
+ <div id="statsViewLabel" class="selectedCount"></div>
+ <div id="statsSummary"></div>
+ <div id="statsBalance"></div>
+ <div id="statsPlayers"></div>
+ <div class="statsExport">
+  <h3>📤 Exportera statistik</h3>
+  <div class="topTools">
+   <button type="button" onclick="exportStatisticsPDF()">📄 Exportera PDF</button>
+   <button type="button" onclick="exportStatisticsCSV()">📊 Exportera CSV</button>
+   <button type="button" onclick="shareStatistics()">📤 Dela rapport</button>
+  </div>
+ </div>
+ <div class="topTools" style="margin-top:12px">
+  <button type="button" onclick="toggleStats()">Stäng statistik</button>
+  <button type="button" class="deletePlayerBtn" onclick="resetStatistics()">🗑️ Nollställ statistik</button>
+ </div>
 </div>
 
 <div id="helpPanel" class="card helpPanel">
  <h2>❓ Hjälp – så fungerar appen</h2>
+ <div class="helpMode"><b>🆕 Nytt i ver. 1.2</b><br>Ny statistik med Totalt/Idag, grafiska diagram, balanskontroll, uppdateringsknapp samt export till PDF och CSV och möjlighet att dela rapporten.</div>
+
  <p>Markera vilka som spelar idag, välj antal banor och rundor och tryck <b>🎲 Skapa ny rotation</b>. Appen skapar ett blandat och balanserat schema. När schemat är skapat ändras det inte när du går framåt eller bakåt mellan rundorna.</p>
 
  <h3>👥 Spelarlista</h3>
@@ -405,6 +474,9 @@ select{min-width:130px}
 
  <h3>🔍 Zoom</h3>
  <p><b>A−</b> och <b>A+</b> ändrar storleken på spelinformationen upp till 250 %. Menyer, timer och navigeringsknappar behåller sin storlek. Zoomnivån sparas på enheten. <b>↺ Standard</b> återställer zoomningen.</p>
+
+ <h3>📊 Statistik – ver. 1.2</h3>
+ <p>Statistik registreras när en runda markeras <b>✅ Klar</b> och samma runda räknas bara en gång. Under <b>📊 Totalt</b> visas all sparad statistik och under <b>📅 Idag</b> visas dagens registrerade rundor. Du ser spelade rundor, matcher totalt samt matcher, singel, dubbel och vila för varje spelare. Diagrammen visar både <b>Matcher per spelare</b> och <b>Spelfördelning</b>. Under <b>⚖️ Balans</b> visas skillnaden mellan flest och minst matcher och vilor för att kontrollera hur jämn rotationen varit. Tryck <b>🔄 Uppdatera statistik</b> för att läsa in de senaste siffrorna och uppdatera diagrammen. Statistik kan exporteras som <b>PDF</b> eller <b>CSV</b>, eller delas via enhetens delningsfunktion. <b>🗑️ Nollställ statistik</b> raderar statistiken först efter bekräftelse. Statistiken sparas lokalt på den enhet där appen används.</p>
 
  <h3>📱 Sparning och installation</h3>
  <p>Spelarnamn, spelarval och zoom sparas lokalt på den mobil, surfplatta eller dator där appen används. Uppgifterna synkas inte automatiskt mellan olika enheter.</p>
@@ -522,6 +594,8 @@ function toggleTimer(){
 }
 function markRoundDone(){
   if(!schedule.length)return;
+  const alreadyDone=completedRounds.has(currentRoundIndex);
+  if(!alreadyDone)recordRoundStatistics(schedule[currentRoundIndex]);
   completedRounds.add(currentRoundIndex);
   localStorage.setItem('badmintonCompleted',JSON.stringify([...completedRounds]));
   renderBigRound();
@@ -529,6 +603,322 @@ function markRoundDone(){
 function loadCompleted(){
   try{completedRounds=new Set(JSON.parse(localStorage.getItem('badmintonCompleted')||'[]'));}catch(e){}
 }
+const STATS_KEY='badmintonStatisticsV1';
+const STATS_DAILY_KEY='badmintonStatisticsDailyV1';
+
+let statsView='total';
+function localDateKey(){
+ const d=new Date(), y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+ return `${y}-${m}-${day}`;
+}
+function emptyStats(){return {rounds:0,matches:0,players:{}}}
+function getDailyStatistics(){
+ try{
+  const all=JSON.parse(localStorage.getItem(STATS_DAILY_KEY)||'{}');
+  return all && typeof all==='object'?all:{};
+ }catch(e){return {}}
+}
+function saveDailyStatistics(all){localStorage.setItem(STATS_DAILY_KEY,JSON.stringify(all))}
+function getStatisticsForView(){
+ if(statsView==='today'){
+   const all=getDailyStatistics();
+   return all[localDateKey()]||emptyStats();
+ }
+ return getStatistics();
+}
+function refreshStatistics(){
+ renderStatistics();
+ const btn=document.activeElement;
+ if(btn && btn.textContent && btn.textContent.includes('Uppdatera statistik')){
+   const old=btn.textContent;
+   btn.textContent='✅ Uppdaterad';
+   setTimeout(()=>{btn.textContent=old},900);
+ }
+}
+function setStatsView(view){
+ statsView=view;
+ renderStatistics();
+}
+function updateStatsViewButtons(){
+ const t=document.getElementById('statsTotalBtn'), d=document.getElementById('statsTodayBtn');
+ if(t)t.classList.toggle('active',statsView==='total');
+ if(d)d.classList.toggle('active',statsView==='today');
+ const l=document.getElementById('statsViewLabel');
+ if(l)l.textContent=statsView==='today'?'Visar statistik för idag':'Visar all sparad statistik';
+}
+function getStatistics(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STATS_KEY)||'{}');
+    if(!d.players)d.players={};
+    if(!Number.isFinite(d.rounds))d.rounds=0;
+    if(!Number.isFinite(d.matches))d.matches=0;
+    return d;
+  }catch(e){return {rounds:0,matches:0,players:{}}}
+}
+function saveStatistics(d){
+  localStorage.setItem(STATS_KEY,JSON.stringify(d));
+}
+function statPlayer(d,name){
+  if(!d.players[name])d.players[name]={matches:0,singles:0,doubles:0,rests:0};
+  return d.players[name];
+}
+function addRoundToStats(d,item){
+ d.rounds=(d.rounds||0)+1;
+ if(!d.players)d.players={};
+ (item.courts||[]).forEach(c=>{
+   const players=(c.players||[]).filter(Boolean);
+   if(players.length)d.matches=(d.matches||0)+1;
+   players.forEach(name=>{
+     const p=statPlayer(d,name);
+     p.matches++; if(c.type==='Singel')p.singles++; else if(c.type==='Dubbel')p.doubles++;
+   });
+ });
+ (item.rest||[]).filter(Boolean).forEach(name=>statPlayer(d,name).rests++);
+}
+function recordRoundStatistics(item){
+ if(!item)return;
+ const total=getStatistics();
+ addRoundToStats(total,item);
+ saveStatistics(total);
+
+ const all=getDailyStatistics(), key=localDateKey();
+ if(!all[key])all[key]=emptyStats();
+ addRoundToStats(all[key],item);
+ saveDailyStatistics(all);
+}
+
+function renderStatistics(){
+  const d=getStatisticsForView();
+  updateStatsViewButtons();
+  const summary=document.getElementById('statsSummary');
+  const players=document.getElementById('statsPlayers');
+  const balance=document.getElementById('statsBalance');
+  if(!summary||!players||!balance)return;
+  const names=Object.keys(d.players).sort((a,b)=>{
+    const diff=(d.players[b].matches||0)-(d.players[a].matches||0);
+    return diff||a.localeCompare(b,'sv');
+  });
+  summary.innerHTML=`<div class="statsCards">
+    <div class="statsCard">Spelade rundor<b>${d.rounds}</b></div>
+    <div class="statsCard">Matcher totalt<b>${d.matches}</b></div>
+  </div>`;
+  if(!names.length){
+    balance.innerHTML='';
+    players.innerHTML='<p class="small">Ingen statistik ännu. Statistik registreras när en runda markeras ✅ Klar.</p>';
+    return;
+  }
+
+  const matchVals=names.map(n=>d.players[n].matches||0);
+  const restVals=names.map(n=>d.players[n].rests||0);
+  const maxM=Math.max(...matchVals), minM=Math.min(...matchVals);
+  const maxR=Math.max(...restVals), minR=Math.min(...restVals);
+  const fairDiff=maxM-minM;
+  balance.innerHTML=`<div class="statsChart"><h3>⚖️ Balans</h3>
+   <div class="statsCards">
+    <div class="statsCard">Skillnad matcher<b>${fairDiff}</b><span class="small">mest − minst</span></div>
+    <div class="statsCard">Skillnad vila<b>${maxR-minR}</b><span class="small">mest − minst</span></div>
+   </div>
+   <p class="small">${fairDiff<=1?'✅ Mycket jämn matchfördelning':fairDiff<=2?'👍 Jämn matchfördelning':'ℹ️ Matchfördelningen skiljer sig mellan spelarna'}</p>
+  </div>`;
+
+  const maxMatches=Math.max(1,...names.map(n=>d.players[n].matches||0));
+  const matchBars=names.map(name=>{
+    const p=d.players[name], val=p.matches||0;
+    const width=(val/maxMatches*100).toFixed(1);
+    return `<div class="barRow">
+      <div class="barName" title="${esc(name)}">${esc(name)}</div>
+      <div class="barTrack"><div class="barFill" style="width:${width}%"></div></div>
+      <div class="barValue">${val}</div>
+    </div>`;
+  }).join('');
+
+  const mixBars=names.map(name=>{
+    const p=d.players[name];
+    const si=p.singles||0, du=p.doubles||0, re=p.rests||0;
+    const total=Math.max(1,si+du+re);
+    return `<div class="mixRow">
+      <div class="mixHead"><span>${esc(name)}</span><span>${si+du} matcher • ${re} vila</span></div>
+      <div class="mixTrack" title="Singel ${si} • Dubbel ${du} • Vila ${re}">
+        <div class="mixSingle" style="width:${si/total*100}%"></div>
+        <div class="mixDouble" style="width:${du/total*100}%"></div>
+        <div class="mixRest" style="width:${re/total*100}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  players.innerHTML=`
+   <div class="statsChart">
+    <h3>🏸 Matcher per spelare</h3>
+    ${matchBars}
+   </div>
+   <div class="statsChart">
+    <h3>🎯 Spelfördelning</h3>
+    <div class="statsLegend">
+      <span><i class="legendDot legendSingle"></i>Singel</span>
+      <span><i class="legendDot legendDouble"></i>Dubbel</span>
+      <span><i class="legendDot legendRest"></i>Vila</span>
+    </div>
+    ${mixBars}
+   </div>
+   <h3>📋 Exakta siffror</h3>
+   <div class="statsTableWrap"><table class="statsTable">
+    <thead><tr><th>Spelare</th><th>Matcher</th><th>Singel</th><th>Dubbel</th><th>Vila</th></tr></thead>
+    <tbody>${names.map(name=>{
+      const p=d.players[name];
+      return `<tr><td>${esc(name)}</td><td>${p.matches||0}</td><td>${p.singles||0}</td><td>${p.doubles||0}</td><td>${p.rests||0}</td></tr>`;
+    }).join('')}</tbody>
+   </table></div>`;
+}
+function toggleStats(){
+  const p=document.getElementById('statsPanel');
+  p.classList.toggle('open');
+  document.getElementById('helpPanel').classList.remove('open');
+  document.getElementById('menuPanel').classList.remove('open');
+  if(p.classList.contains('open'))renderStatistics();
+}
+function statsCSVText(){
+  const d=getStatisticsForView();
+  const rows=[['Spelare','Matcher','Singel','Dubbel','Vila']];
+  Object.keys(d.players).sort((a,b)=>a.localeCompare(b,'sv')).forEach(name=>{
+    const p=d.players[name];
+    rows.push([name,p.matches||0,p.singles||0,p.doubles||0,p.rests||0]);
+  });
+  rows.push([]);
+  rows.push(['Spelade rundor',d.rounds]);
+  rows.push(['Matcher totalt',d.matches]);
+  return rows.map(row=>row.map(v=>{
+    const x=String(v??'');
+    return /[;"\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;
+  }).join(';')).join('\n');
+}
+function exportStatisticsCSV(){
+  const csv='\uFEFF'+statsCSVText();
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const date=new Date().toISOString().slice(0,10);
+  a.href=url;
+  a.download='badminton-statistik-'+date+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportStatisticsPDF(){
+  const d=getStatisticsForView();
+  const names=Object.keys(d.players).sort((a,b)=>{
+    const diff=(d.players[b].matches||0)-(d.players[a].matches||0);
+    return diff||a.localeCompare(b,'sv');
+  });
+  const maxMatches=Math.max(1,...names.map(n=>d.players[n].matches||0));
+  const today=new Intl.DateTimeFormat('sv-SE',{year:'numeric',month:'long',day:'numeric'}).format(new Date());
+
+  const matchBars=names.map(name=>{
+    const p=d.players[name],v=p.matches||0,w=(v/maxMatches*100).toFixed(1);
+    return `<div class="bar"><div class="name">${esc(name)}</div><div class="track"><div class="fill" style="width:${w}%"></div></div><b>${v}</b></div>`;
+  }).join('');
+
+  const mixBars=names.map(name=>{
+    const p=d.players[name],si=p.singles||0,du=p.doubles||0,re=p.rests||0,total=Math.max(1,si+du+re);
+    return `<div class="mix">
+      <div class="mixhead"><b>${esc(name)}</b><span>${si} singel · ${du} dubbel · ${re} vila</span></div>
+      <div class="mixtrack">
+       <div class="single" style="width:${si/total*100}%"></div>
+       <div class="double" style="width:${du/total*100}%"></div>
+       <div class="rest" style="width:${re/total*100}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const rows=names.map(name=>{
+    const p=d.players[name];
+    return `<tr><td>${esc(name)}</td><td>${p.matches||0}</td><td>${p.singles||0}</td><td>${p.doubles||0}</td><td>${p.rests||0}</td></tr>`;
+  }).join('');
+
+  const report=`<!doctype html><html lang="sv"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Badminton App – Statistik</title>
+  <style>
+   *{box-sizing:border-box} body{font-family:Arial,sans-serif;margin:0;background:#eef2f5;color:#17212b}
+   .page{max-width:800px;margin:18px auto;background:white;padding:28px;border-radius:12px}
+   header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #147ea8;padding-bottom:10px}
+   h1{font-size:25px;margin:0} .date{font-size:12px;color:#566}
+   .summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+   .box{border:1px solid #aeb8bf;border-radius:10px;padding:12px;text-align:center}.box b{display:block;font-size:25px}
+   h2{font-size:17px;margin:20px 0 10px}
+   .bar{display:grid;grid-template-columns:105px 1fr 30px;gap:8px;align-items:center;margin:7px 0;font-size:12px}
+   .name{font-weight:bold;overflow:hidden;text-overflow:ellipsis}.track{height:14px;background:#e6ebee;border-radius:8px;overflow:hidden}
+   .fill{height:100%;background:#178fbd}.mix{margin:8px 0;break-inside:avoid}
+   .mixhead{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+   .mixtrack{display:flex;height:13px;background:#e6ebee;border-radius:8px;overflow:hidden}
+   .single{background:#e5aa20}.double{background:#239cc9}.rest{background:#7d8992}
+   .legend{font-size:11px;margin-bottom:8px}.legend span{margin-right:15px}
+   table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #b7c0c6;padding:7px;text-align:center}
+   th{background:#e9f0f3}th:first-child,td:first-child{text-align:left}
+   footer{text-align:center;color:#667;font-size:9px;margin-top:16px;border-top:1px solid #ccd3d7;padding-top:7px}
+   .actions{max-width:800px;margin:15px auto;text-align:center}
+   button{font-size:16px;font-weight:bold;padding:12px 18px;border:0;border-radius:10px;background:#147ea8;color:white}
+   @media print{
+    @page{size:A4 portrait;margin:10mm}
+    body{background:white}.actions{display:none}.page{max-width:none;margin:0;padding:0;border-radius:0}
+    .fill,.single,.double,.rest,th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+   }
+  </style></head><body>
+  <div class="actions"><button onclick="window.print()">📄 Skriv ut / Spara som PDF</button></div>
+  <main class="page">
+   <header><h1>🏸 Badminton App – Statistik</h1><div class="date">${today}</div></header>
+   <div class="summary"><div class="box">Spelade rundor<b>${d.rounds}</b></div><div class="box">Matcher totalt<b>${d.matches}</b></div></div>
+   <h2>Matcher per spelare</h2>${matchBars||'<p>Ingen statistik ännu.</p>'}
+   <h2>Spelfördelning</h2><div class="legend"><span>🟡 Singel</span><span>🔵 Dubbel</span><span>⚪ Vila</span></div>${mixBars}
+   <h2>Exakta siffror</h2>
+   <table><thead><tr><th>Spelare</th><th>Matcher</th><th>Singel</th><th>Dubbel</th><th>Vila</th></tr></thead><tbody>${rows}</tbody></table>
+   <footer>Badminton App ver. 1.2 · Skapad av Piotr Zdeb +=RYB@=+</footer>
+  </main></body></html>`;
+
+  const blob=new Blob([report],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const win=window.open(url,'_blank');
+  if(!win){
+    URL.revokeObjectURL(url);
+    alert('Rapportsidan kunde inte öppnas. Tillåt popup-fönster för appen och försök igen.');
+    return;
+  }
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function statsShareText(){
+  const d=getStatisticsForView();
+  const names=Object.keys(d.players).sort((a,b)=>(d.players[b].matches||0)-(d.players[a].matches||0));
+  const lines=[
+    '🏸 Badminton App – Statistik',
+    'Spelade rundor: '+d.rounds,
+    'Matcher totalt: '+d.matches,
+    ''
+  ];
+  names.forEach(name=>{
+    const p=d.players[name];
+    lines.push(name+': '+(p.matches||0)+' matcher • '+(p.singles||0)+' singel • '+(p.doubles||0)+' dubbel • '+(p.rests||0)+' vila');
+  });
+  return lines.join('\n');
+}
+async function shareStatistics(){
+  const text=statsShareText();
+  if(navigator.share){
+    try{await navigator.share({title:'Badminton App – Statistik',text:text});}catch(e){}
+  }else if(navigator.clipboard){
+    await navigator.clipboard.writeText(text);
+    alert('Rapporten har kopierats. Du kan nu klistra in den där du vill dela den.');
+  }else{
+    alert(text);
+  }
+}
+
+function resetStatistics(){
+  if(!confirm('Vill du nollställa all sparad statistik? Detta går inte att ångra.'))return;
+  localStorage.removeItem(STATS_KEY);
+  localStorage.removeItem(STATS_DAILY_KEY);
+  renderStatistics();
+}
+
 function getGroups(){
   try{return JSON.parse(localStorage.getItem('badmintonGroups')||'{}');}catch(e){return {}}
 }
@@ -953,7 +1343,7 @@ window.addEventListener('focus',updateSelectedCount);
 <button id="bigNextBtn" onclick="nextRound()">Nästa runda ➜</button>
 </div>
 </div>
-<div class="appCredit">Badminton App ver. 1.1.2 • Skapad av Piotr Zdeb +=RYB@=+</div>
+<div class="appCredit">Badminton App ver. 1.2 • Skapad av Piotr Zdeb +=RYB@=+</div>
 
 <script>
 if ('serviceWorker' in navigator) {
