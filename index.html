@@ -676,6 +676,7 @@ function renderBigRound(){
  const prevBig=document.getElementById('bigPrevBtn');
  prevBig.disabled=currentRoundIndex===0;
  prevBig.style.opacity=currentRoundIndex===0?'0.4':'1';
+ applyZoom();
 }
 function backToSetup(){
  document.getElementById('gameView').classList.remove('active');

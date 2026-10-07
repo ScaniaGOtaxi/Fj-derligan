@@ -17,3 +17,5 @@ Vid uppdatering på GitHub:
 
 
 NYTT: Appikonen är uppdaterad till den nya BADMINTON APP-designen.
+
+FIX v1.0.1: Vald zoom (upp till 250 %) behålls automatiskt när du går till nästa/föregående runda.
