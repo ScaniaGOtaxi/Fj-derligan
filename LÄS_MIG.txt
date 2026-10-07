@@ -1,22 +1,15 @@
-BADMINTON APP v1.1 – GITHUB PAGES / PWA
+BADMINTON APP v1.1.2 – GITHUB PAGES / PWA
 
-Baserad exakt på senaste versionen med ⓘ.
+Bygger på den fungerande spelarlista-testversionen.
 
-NYTT I v1.1:
-- Balanserad randomisering
-- ⚪ Normal
-- 🎯 Mer singel
-- 🔒 Endast singel
-- ⓘ direkt vid spelarens val
-- ❓ Hjälp / Så fungerar appen
-- Upp till 12 spelare
-- Zoom upp till 250 % med zoomfix mellan rundorna
-- Ny badminton-appikon
-- Lokal lagring av spelare och spelarval
+Innehåller:
+- Visa/Dölj sparade spelare
+- Antal sparade spelare och dagens spelare
+- Markera alla / Avmarkera alla inne i spelarlistan
+- Automatisk migrering från äldre sparade namn till det gemensamma spelarregistret
+- Balanserad rotation
+- Normal / Mer singel / Endast singel
+- Info-knapp och Hjälp
+- Zoom upp till 250 %, timer och rundnavigering
 
-UPPDATERA GITHUB:
-1. Öppna samma GitHub-repository som nu används för appen.
-2. Ersätt/ladda upp filerna i denna ZIP i repositoryts rot.
-3. Commit changes.
-4. Vänta en kort stund och öppna din befintliga GitHub Pages-adress.
-5. Om gammal version visas, stäng PWA/webbläsaren helt och öppna igen.
+Ladda upp filerna i roten av samma GitHub-repository och välj Commit changes.

@@ -333,6 +333,11 @@ select{min-width:130px}
 }
 .modeTip.open{display:block}
 
+
+#showPlayersBtn:disabled{opacity:.45;cursor:not-allowed}
+#playerSummary{margin-top:0}
+#playerListArea{margin-top:4px}
+
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -346,7 +351,7 @@ select{min-width:130px}
 </head>
 <body>
 <div class="wrap" id="setupView">
-  <h1>🏸 Badmintonrotation <span class="v11badge">v1.1</span></h1>
+  <h1>🏸 Badmintonrotation <span class="v11badge">v1.1.2</span></h1>
   <p class="sub">1–3 banor • rotation för 3–12 spelare • namnen sparas automatiskt</p>
 <div class="topTools">
  <button onclick="toggleMenu()">☰ Meny</button>
@@ -404,11 +409,17 @@ select{min-width:130px}
    <button type="button" onclick="addPlayer()">＋ Lägg till</button>
  </div>
  <div class="topTools">
-   <button type="button" class="secondary" onclick="selectAllPlayers(true)">✓ Markera alla</button>
-   <button type="button" class="secondary" onclick="selectAllPlayers(false)">Avmarkera alla</button>
+   <button id="showPlayersBtn" type="button" class="secondary" onclick="togglePlayerList()" disabled>👁 Inga sparade spelare</button>
+   <span id="playerSummary" class="selectedCount">Dagens spelare: 0 av 0</span>
  </div>
- <div id="selectedCount" class="selectedCount">0 spelare valda</div>
- <div id="playerPool" class="playerPool"></div>
+ <div id="playerListArea" style="display:none">
+   <div class="topTools">
+     <button type="button" class="secondary" onclick="selectAllPlayers(true)">✓ Markera alla</button>
+     <button type="button" class="secondary" onclick="selectAllPlayers(false)">Avmarkera alla</button>
+   </div>
+   <div id="playerPool" class="playerPool"></div>
+ </div>
+ <div id="selectedCount" class="selectedCount" style="display:none">0 spelare valda</div>
 </div>
 <div id="names" style="display:none"></div>
 
@@ -550,8 +561,25 @@ function zoomReset(){uiZoom=1;applyZoom()}
 
 function getPlayerPool(){
  try{
-  const p=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
-  return Array.isArray(p)?p:[];
+  let p=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
+  if(!Array.isArray(p))p=[];
+
+  // Migrera namn från äldre versioner av appen till det gemensamma spelarregistret.
+  let legacy=[];
+  try{legacy=JSON.parse(localStorage.getItem('badmintonNames')||'[]')}catch(e){}
+  if(Array.isArray(legacy)){
+    legacy=legacy.map(x=>String(x||'').trim())
+      .filter(x=>x && !/^Spelare\s+\d+$/i.test(x));
+    let changed=false;
+    legacy.forEach(name=>{
+      if(!p.some(x=>String(x.name||'').toLowerCase()===name.toLowerCase())){
+        p.push({name:name,selected:true,mode:'normal'});
+        changed=true;
+      }
+    });
+    if(changed)localStorage.setItem('badmintonPlayerPool',JSON.stringify(p));
+  }
+  return p;
  }catch(e){return []}
 }
 function savePlayerPool(p){localStorage.setItem('badmintonPlayerPool',JSON.stringify(p))}
@@ -601,16 +629,48 @@ function addPlayer(){
  if(!name)return;
  const p=getPlayerPool();
  if(p.some(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Spelaren finns redan i listan.');return}
- p.push({name:name,selected:true,mode:'normal'}); savePlayerPool(p); inp.value=''; renderPlayerPool();
+ p.push({name:name,selected:true,mode:'normal'}); savePlayerPool(p); inp.value=''; refreshPlayerListUI();
 }
 function removePlayer(i){const p=getPlayerPool();p.splice(i,1);savePlayerPool(p);renderPlayerPool()}
 function togglePlayer(i,v){const p=getPlayerPool();if(p[i])p[i].selected=v;savePlayerPool(p);updateSelectedCount()}
 function selectAllPlayers(v){const p=getPlayerPool();p.forEach(x=>x.selected=v);savePlayerPool(p);renderPlayerPool()}
 function selectedPlayers(){return getPlayerPool().filter(x=>x.selected).map(x=>({name:x.name,mode:x.mode||'normal'}))}
 function updateSelectedCount(){
- const n=selectedPlayers().length;
- const a=document.getElementById('selectedCount'); if(a)a.textContent=n+' spelare valda';
- const b=document.getElementById('selectedTop'); if(b)b.textContent=n;
+ const p=getPlayerPool();
+ const selected=p.filter(x=>x.selected).length;
+ const old=document.getElementById('selectedCount');
+ if(old)old.textContent=selected+' spelare valda';
+ const top=document.getElementById('selectedTop');
+ if(top)top.textContent=selected;
+ const summary=document.getElementById('playerSummary');
+ if(summary)summary.textContent='Sparade spelare: '+p.length+' • Dagens spelare: '+selected;
+ const btn=document.getElementById('showPlayersBtn');
+ if(btn){
+   btn.disabled=p.length===0;
+   if(p.length===0){
+     btn.textContent='👁 Inga sparade spelare';
+     const area=document.getElementById('playerListArea');
+     if(area)area.style.display='none';
+   }else{
+     const area=document.getElementById('playerListArea');
+     const open=area && area.style.display!=='none';
+     btn.textContent=(open?'🙈 Dölj spelare':'👁 Visa spelare')+' ('+p.length+')';
+   }
+ }
+}
+function refreshPlayerListUI(){
+ renderPlayerPool();
+ updateSelectedCount();
+}
+function togglePlayerList(){
+ const p=getPlayerPool();
+ updateSelectedCount();
+ if(!p.length)return;
+ const area=document.getElementById('playerListArea');
+ const opening=area.style.display==='none'||!area.style.display;
+ area.style.display=opening?'block':'none';
+ renderPlayerPool();
+ updateSelectedCount();
 }
 
 function getSavedNames(){
@@ -622,20 +682,11 @@ function saveNames(){
   localStorage.setItem('badmintonNames', JSON.stringify(vals));
 }
 function makeInputs(){
-  const n=+document.getElementById('count').value;
+  // Äldre dolda namnfält används inte längre. Alla namn hanteras via badmintonPlayerPool.
   const box=document.getElementById('names');
-  const current=[...box.querySelectorAll('input')].map(x=>x.value);
-  const saved=getSavedNames();
-  box.innerHTML='';
-  for(let i=0;i<n;i++){
-    let inp=document.createElement('input');
-    inp.placeholder='Spelare '+(i+1);
-    inp.value=current[i] || saved[i] || 'Spelare '+(i+1);
-    inp.addEventListener('input', saveNames);
-    box.appendChild(inp);
-  }
-  document.getElementById('out').innerHTML='';
-  saveNames();
+  if(box)box.innerHTML='';
+  const out=document.getElementById('out');
+  if(out)out.innerHTML='';
 }
 function clearSavedNames(){
   localStorage.removeItem('badmintonNames');
@@ -833,9 +884,13 @@ function toggleFullSchedule(){
   }
 }
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+getPlayerPool(); // kör eventuell migrering av äldre sparade namn
 makeInputs();
-renderPlayerPool();
+refreshPlayerListUI();
 applyZoom();
+window.addEventListener('DOMContentLoaded',refreshPlayerListUI);
+window.addEventListener('pageshow',refreshPlayerListUI);
+window.addEventListener('focus',updateSelectedCount);
 </script>
 <div id="gameView">
 <div class="gameTop">
@@ -861,7 +916,7 @@ applyZoom();
 <button id="bigNextBtn" onclick="nextRound()">Nästa runda ➜</button>
 </div>
 </div>
-<div class="appCredit">Badminton App ver. 1.1 • Skapad av Piotr Zdeb +=RYB@=+</div>
+<div class="appCredit">Badminton App ver. 1.1.2 • Skapad av Piotr Zdeb +=RYB@=+</div>
 
 <script>
 if ('serviceWorker' in navigator) {
