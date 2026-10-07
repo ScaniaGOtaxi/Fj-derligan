@@ -379,19 +379,37 @@ select{min-width:130px}
 
 <div id="helpPanel" class="card helpPanel">
  <h2>❓ Hjälp – så fungerar appen</h2>
- <p>Markera vilka som spelar idag, välj antal banor och rundor och tryck <b>🎲 Skapa ny rotation</b>. Ett nytt schema blandas och balanseras. Schemat ändras inte när du går mellan rundorna.</p>
+ <p>Markera vilka som spelar idag, välj antal banor och rundor och tryck <b>🎲 Skapa ny rotation</b>. Appen skapar ett blandat och balanserat schema. När schemat är skapat ändras det inte när du går framåt eller bakåt mellan rundorna.</p>
+
+ <h3>👥 Spelarlista</h3>
+ <p>Skriv ett namn och tryck <b>＋ Lägg till</b>. Spelarna sparas lokalt på enheten. Tryck <b>👁 Visa spelare</b> för att öppna listan och <b>🙈 Dölj spelare</b> för att stänga den. Appen visar både hur många spelare som är sparade och hur många som är valda för dagens spel.</p>
+ <p>Med <b>✓ Markera alla</b> och <b>Avmarkera alla</b> kan du snabbt välja dagens spelare. En enskild spelare tas bort med den <b>röda 🗑️ papperskorgen</b>. Du måste bekräfta innan spelaren raderas.</p>
+
  <h3>Val vid spelarens namn</h3>
  <div class="helpMode"><b>⚪ Normal</b><br>Spelaren kan spela både dubbel och singel. Appen försöker variera medspelare, motståndare och vila.</div>
  <div class="helpMode"><b>🎯 Mer singel</b><br>Spelaren prioriteras oftare till singel, men kan också spela dubbel när det ger ett bättre schema.</div>
  <div class="helpMode"><b>🔒 Endast singel</b><br>Spelaren placeras aldrig i dubbel. Om en lämplig singelmatch inte kan skapas i rundan får spelaren vila.</div>
+ <p>Tryck på <b>ⓘ</b> bredvid spelarens val för en kort förklaring av det valda läget.</p>
+
+ <h3>🏸 Banor och rundor</h3>
+ <p>Du kan välja <b>1–3 banor</b> och <b>6, 7, 8, 10 eller 12 rundor</b>. <b>10 rundor är standard</b> när appen startas. Appen kan användas med <b>3–12 spelare</b>.</p>
+
  <h3>🎲 Balanserad randomisering</h3>
- <p>När ett nytt schema skapas blandas spelarna. Appen försöker minska upprepningar av samma medspelare och motståndare och fördela vila så jämnt som möjligt.</p>
- <h3>⏱ Timer och rundor</h3>
- <p>Timern används för varje runda och ger ljudsignal när tiden är slut. Du kan markera rundan som spelad och gå framåt eller bakåt utan att schemat ändras.</p>
+ <p>Varje gång du väljer <b>Skapa ny rotation</b> blandas spelarna på nytt. Appen försöker minska upprepningar av samma medspelare och motståndare, samtidigt som vila och singelspel fördelas så bra som möjligt.</p>
+
+ <h3>⏱ Timer och spelade rundor</h3>
+ <p>Välj speltid och tryck <b>▶ Start</b>. Timern kan pausas och nollställas. När tiden är slut hörs <b>3 korta pip</b>. Tryck <b>✅ Klar</b> för att markera rundan som spelad.</p>
+
+ <h3>⬅️➡️ Navigering</h3>
+ <p>Med <b>Föregående</b> och <b>Nästa runda</b> kan du gå mellan rundorna utan att rotationen ändras. <b>Visa hela schemat</b> visar alla rundor. Du kan gå till <b>⌂ Start / Inställningar</b> och sedan välja <b>▶ Återgå till spelet</b> utan att förlora den skapade rotationen.</p>
+
  <h3>🔍 Zoom</h3>
- <p>A− och A+ ändrar speltexten upp till 250 %. Övre och nedre menyer behåller sin storlek. Zoomnivån sparas på enheten.</p>
- <h3>👥 Spelarlista</h3>
- <p>Spelarnamnen och deras val sparas lokalt på den enhet där du använder appen. De synkas inte automatiskt till andra mobiler eller surfplattor.</p>
+ <p><b>A−</b> och <b>A+</b> ändrar storleken på spelinformationen upp till 250 %. Menyer, timer och navigeringsknappar behåller sin storlek. Zoomnivån sparas på enheten. <b>↺ Standard</b> återställer zoomningen.</p>
+
+ <h3>📱 Sparning och installation</h3>
+ <p>Spelarnamn, spelarval och zoom sparas lokalt på den mobil, surfplatta eller dator där appen används. Uppgifterna synkas inte automatiskt mellan olika enheter.</p>
+ <p>På Android/Chrome kan appen installeras via webbläsarens meny med <b>Lägg till på startskärmen</b> eller <b>Installera app</b>. Den kan därefter öppnas som en vanlig app.</p>
+
  <button type="button" onclick="toggleHelp()">Stäng hjälp</button>
 </div>
 
