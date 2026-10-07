@@ -1,31 +1,20 @@
-BADMINTON APP VER. 1.2 – GITHUB PAGES / PWA
+BADMINTON APP VER. 1.2 – FINAL GITHUB/PWA
 
-NYTT I VER. 1.2
-- Grafisk statistik
+Denna version bygger på den godkända FIX2-versionen.
+
+Innehåller:
+- Animerad splash/startskärm
+- Splash visar Badminton App ver. 1.2
+- Startförlopp 0–100 % med statusmeddelanden
 - Statistik Totalt / Idag
-- Statistik per spelare: matcher, singel, dubbel och vila
-- Balanskontroll för matcher och vila
-- Uppdatera statistik-knapp
-- Exportera statistik till CSV
-- Förbättrad PDF-export via separat rapportsida
-- Dela statistik
-- Nollställ statistik med bekräftelse
-- Uppdaterad Hjälp-meny
+- Balanskontroll
+- Uppdatera statistik
+- Grafisk statistik
+- PDF-, CSV- och delningsfunktion
+- Uppdaterad Hjälp
+- Tidigare spelarlista, rotation, timer, zoom och PWA-funktioner
 
-BEHÅLLER TIDIGARE FUNKTIONER
-- 3–12 spelare
-- 1–3 banor
-- 10 rundor som standard
-- 6, 7, 8, 10 eller 12 rundor
-- Balanserad randomisering
-- Normal / Mer singel / Endast singel
-- Sparad lokal spelarlista
-- Röd papperskorg med bekräftelse
-- Timer med 3 pip
-- Framåt / bakåt / återgå till spelet
-- Zoom upp till 250 %
-- PWA/offline
-
-UPPDATERA GITHUB
-Packa upp ZIP-filen och ersätt filerna i roten av ditt befintliga repository.
-Commit changes. Din befintliga GitHub Pages-adress fortsätter att fungera.
+GITHUB:
+Packa upp ZIP-filen och ersätt filerna i roten på ditt befintliga repository.
+Gör sedan Commit changes.
+Service worker-cachen har fått ett nytt namn för att hjälpa installerade PWA-versioner att uppdateras.
