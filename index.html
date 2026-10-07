@@ -338,6 +338,17 @@ select{min-width:130px}
 #playerSummary{margin-top:0}
 #playerListArea{margin-top:4px}
 
+
+.deletePlayerBtn{
+  background:#b42318 !important;
+  color:#fff !important;
+  border:2px solid #ffb4ab !important;
+  border-radius:9px !important;
+}
+.deletePlayerBtn:active{
+  background:#7a1710 !important;
+}
+
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -397,7 +408,7 @@ select{min-width:130px}
       </label>
       <label>Rundor:
         <select id="rounds">
-          <option>6</option><option selected>7</option><option>8</option><option>10</option><option>12</option>
+          <option>6</option><option>7</option><option>8</option><option selected>10</option><option>12</option>
         </select>
       </label>
     </div>
@@ -612,7 +623,7 @@ function renderPlayerPool(){
   info.onclick=()=>{updateTip();tip.classList.toggle('open')};
   const oldModeChange=mode.onchange;
   mode.onchange=()=>{setPlayerMode(i,mode.value);updateTip()};
-  const del=document.createElement('button'); del.type='button'; del.textContent='✕';
+  const del=document.createElement('button'); del.type='button'; del.textContent='🗑️'; del.className='deletePlayerBtn'; del.title='Radera spelare'; del.setAttribute('aria-label','Radera '+x.name);
   del.onclick=()=>removePlayer(i);
   row.append(cb,name,mode,info,del,tip); box.appendChild(row);
  });
@@ -631,7 +642,15 @@ function addPlayer(){
  if(p.some(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Spelaren finns redan i listan.');return}
  p.push({name:name,selected:true,mode:'normal'}); savePlayerPool(p); inp.value=''; refreshPlayerListUI();
 }
-function removePlayer(i){const p=getPlayerPool();p.splice(i,1);savePlayerPool(p);renderPlayerPool()}
+function removePlayer(i){
+ const p=getPlayerPool();
+ if(!p[i])return;
+ const name=p[i].name;
+ if(!confirm('Vill du radera '+name+' från spelarlistan?'))return;
+ p.splice(i,1);
+ savePlayerPool(p);
+ refreshPlayerListUI();
+}
 function togglePlayer(i,v){const p=getPlayerPool();if(p[i])p[i].selected=v;savePlayerPool(p);updateSelectedCount()}
 function selectAllPlayers(v){const p=getPlayerPool();p.forEach(x=>x.selected=v);savePlayerPool(p);renderPlayerPool()}
 function selectedPlayers(){return getPlayerPool().filter(x=>x.selected).map(x=>({name:x.name,mode:x.mode||'normal'}))}
