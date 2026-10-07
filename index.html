@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Badmintonrotation</title>
+
+<meta name="theme-color" content="#101418">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Badminton">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color-scheme:dark}
+body{margin:0;background:#101418;color:#ffffff}
+.wrap{max-width:720px;margin:auto;padding:18px}
+h1{font-size:28px;margin:8px 0 4px}
+.sub{color:#e6edf3;margin:0 0 18px}
+.card{background:#182028;border:1px solid #2a3540;border-radius:16px;padding:16px;margin:12px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+button,select,input{font:inherit;border-radius:10px;border:1px solid #394754;background:#111820;color:#fff;padding:11px}
+button{background:#238636;border:2px solid #ffffff;font-weight:800;cursor:pointer;color:#ffffff}
+button.secondary{background:#30363d;color:#ffffff}
+button.next{width:100%;font-size:21px;padding:16px;margin-top:12px;background:#2f7d32}
+button.prev{font-size:16px;background:#34404b}
+select{min-width:130px}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.round h3{margin:0 0 10px}
+.courts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.court{background:#111820;border-radius:12px;padding:12px}
+.court b{display:block;margin-bottom:6px}
+.vs{color:#ffd54a;font-size:13px;margin:3px 0}
+.rest{margin-top:10px;color:#ffeb3b}
+.small{font-size:13px;color:#ffd54a}
+
+#setupView.hidden{display:none}
+#gameView{display:none;height:100vh;padding:10px;box-sizing:border-box;overflow:hidden}
+#gameView.active{display:flex;flex-direction:column}
+.gameTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.gameTitle{font-size:clamp(32px,7vw,58px);font-weight:900}
+.gameRound{font-size:clamp(24px,5vw,42px);font-weight:800;color:#ffffff}
+.bigCourts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;flex:1;min-height:0}
+.bigCourt{background:#182028;border:2px solid #394754;border-radius:20px;padding:12px;display:flex;flex-direction:column;justify-content:center;text-align:center;min-height:0;height:100%;box-sizing:border-box}
+.bigCourtTitle{font-size:clamp(48px,9vw,86px);font-weight:900;margin-bottom:10px;color:#7ee787}
+.bigPlayers{font-size:clamp(72px,15vw,150px);font-weight:900;line-height:1.02;word-break:break-word;color:#ffffff;text-shadow:0 2px 4px #000000}
+.bigVs{font-size:clamp(38px,7vw,64px);font-weight:900;color:#ffd54a;margin:8px 0}
+.bigRest{font-size:clamp(42px,9vw,80px);font-weight:900;text-align:center;color:#ffeb3b;padding:8px}
+.gameNav{display:grid;grid-template-columns:1fr 1.5fr 1.5fr;gap:10px;margin-top:8px}
+.gameNav button{font-size:clamp(18px,3vw,26px);padding:18px}
+.backBtn{background:#30363d;color:#ffffff}
+@media(max-width:520px){.names,.courts{grid-template-columns:1fr}.gameNav{grid-template-columns:1fr 1.5fr}}
+
+
+.timerBox{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:6px 0}
+.timerDisplay{font-size:clamp(30px,6vw,58px);font-weight:900;color:#ffeb3b;min-width:130px;text-align:center}
+.timerBtn{font-size:18px;padding:10px 14px}
+.doneBadge{font-size:clamp(20px,4vw,34px);font-weight:900;color:#7ee787;text-align:center;min-height:34px}
+.groupRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.groupRow input{flex:1;min-width:180px}
+.completedRound{border-color:#7ee787!important;box-shadow:0 0 0 2px #238636 inset}
+.installNote{font-size:13px;color:#e6edf3;margin-top:10px}
+
+/* Mobilanpassning för telefonens webbläsare */
+@media (max-width: 600px) {
+  #gameView{
+    min-height:100dvh;
+    height:auto;
+    overflow:auto;
+    padding:8px;
+  }
+  .gameTop{
+    margin-bottom:4px;
+    gap:6px;
+  }
+  .gameTitle{
+    font-size:22px;
+  }
+  .gameRound{
+    font-size:18px;
+    white-space:nowrap;
+  }
+  .timerBox{
+    gap:6px;
+    margin:4px 0;
+  }
+  .timerDisplay{
+    font-size:30px;
+    min-width:90px;
+  }
+  .timerBtn{
+    font-size:14px;
+    padding:8px 10px;
+  }
+  #timerMinutes{
+    min-width:auto;
+    padding:8px;
+  }
+  .doneBadge{
+    font-size:18px;
+    min-height:24px;
+  }
+  .bigCourts{
+    grid-template-columns:1fr;
+    gap:8px;
+    flex:none;
+  }
+  .bigCourt{
+    min-height:190px;
+    height:auto;
+    padding:10px 8px;
+  }
+  .bigCourtTitle{
+    font-size:25px;
+    margin-bottom:8px;
+  }
+  .bigPlayers{
+    font-size:clamp(32px,10vw,48px);
+    line-height:1.08;
+    overflow-wrap:anywhere;
+  }
+  .bigVs{
+    font-size:21px;
+    margin:5px 0;
+  }
+  .bigRest{
+    font-size:23px;
+    padding:6px;
+  }
+  .gameNav{
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:7px;
+  }
+  .gameNav button{
+    font-size:14px;
+    padding:12px 7px;
+  }
+  #bigNextBtn{
+    grid-column:1 / -1;
+    font-size:18px;
+    padding:14px;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .gameTitle{font-size:11px}
+  .gameRound{font-size:9px}
+  .timerDisplay{font-size:15px;min-width:55px}
+  .timerBtn{font-size:7px;padding:6px 7px}
+  #timerMinutes{font-size:8px;padding:6px}
+  .doneBadge{font-size:9px;min-height:14px}
+  .bigCourtTitle{font-size:13px}
+  .bigPlayers{font-size:clamp(16px,5vw,24px)}
+  .bigVs{font-size:11px}
+  .bigRest{font-size:12px}
+  .gameNav button{font-size:8px;padding:10px 5px}
+  #bigNextBtn{font-size:9px;padding:11px}
+}
+
+
+@media (max-width:600px){
+ .gameTitle{font-size:6px!important}
+ .gameRound{font-size:6px!important}
+ .timerDisplay{font-size:9px!important;min-width:38px!important}
+ .timerBtn{font-size:6px!important;padding:4px!important}
+ #timerMinutes{font-size:6px!important;padding:4px!important}
+ .doneBadge{font-size:6px!important;min-height:9px!important}
+ .bigCourtTitle{font-size:7px!important;margin-bottom:4px!important}
+ .bigPlayers{font-size:12px!important;line-height:1.05!important}
+ .bigVs{font-size:6px!important;margin:3px 0!important}
+ .bigRest{font-size:7px!important}
+ .gameNav button{font-size:6px!important;padding:7px 3px!important}
+ #bigNextBtn{font-size:7px!important;padding:8px!important}
+ .bigCourt{min-height:100px!important;padding:6px!important}
+}
+
+
+@media (max-width:600px){
+  /* Rotationsschema / inställningsrutan */
+  #setupView{font-size:8px!important}
+  #setupView h1{font-size:14px!important}
+  #setupView .sub{font-size:8px!important;margin-bottom:8px!important}
+  #setupView .card{padding:8px!important;margin:6px 0!important}
+  #setupView label{font-size:8px!important}
+  #setupView button,
+  #setupView select,
+  #setupView input{font-size:8px!important;padding:6px!important}
+  #setupView select{min-width:75px!important}
+  #setupView .names{gap:4px!important;margin-top:6px!important}
+  #setupView .groupRow{gap:4px!important;margin-top:6px!important}
+  #setupView .small,
+  #setupView .installNote{font-size:7px!important}
+  #setupView .round h3{font-size:10px!important}
+  #setupView .court{font-size:8px!important;padding:6px!important}
+  #setupView .vs{font-size:7px!important}
+  #setupView .rest{font-size:8px!important}
+}
+
+
+/* Horisontellt läge på mobil */
+@media (max-height: 600px) and (orientation: landscape) {
+  #gameView{
+    height:100dvh!important;
+    min-height:100dvh!important;
+    overflow:auto!important;
+    padding:5px!important;
+  }
+  .gameTop{margin-bottom:2px!important}
+  .gameTitle{font-size:9px!important}
+  .gameRound{font-size:8px!important}
+  .timerBox{gap:4px!important;margin:2px 0!important}
+  .timerDisplay{font-size:12px!important;min-width:50px!important}
+  .timerBtn,#timerMinutes{font-size:7px!important;padding:4px 6px!important}
+  .doneBadge{font-size:7px!important;min-height:10px!important}
+
+  .bigCourts{
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr))!important;
+    gap:5px!important;
+    flex:1!important;
+  }
+  .bigCourt{
+    min-height:90px!important;
+    height:auto!important;
+    padding:5px!important;
+  }
+  .bigCourtTitle{font-size:9px!important;margin-bottom:3px!important}
+  .bigPlayers{font-size:16px!important;line-height:1.02!important}
+  .bigVs{font-size:8px!important;margin:2px 0!important}
+  .bigRest{font-size:9px!important;padding:2px!important}
+
+  .gameNav{
+    grid-template-columns:1fr 1fr 1.3fr!important;
+    gap:5px!important;
+    margin-top:4px!important;
+  }
+  .gameNav button,#bigNextBtn{
+    grid-column:auto!important;
+    font-size:8px!important;
+    padding:7px 4px!important;
+  }
+
+  #setupView{max-width:none!important;padding:8px!important}
+  #setupView .card{padding:7px!important}
+  #setupView .names{grid-template-columns:repeat(4,1fr)!important}
+  #setupView .row{gap:5px!important}
+  #setupView input,#setupView select,#setupView button{
+    font-size:8px!important;padding:5px!important;
+  }
+}
+
+
+/* Samma textstorlek som i startmenyn på mobil */
+@media (max-width:600px), (max-height:600px) and (orientation:landscape) {
+  #gameView,
+  #gameView .gameTitle,
+  #gameView .gameRound,
+  #gameView .timerDisplay,
+  #gameView .timerBtn,
+  #gameView #timerMinutes,
+  #gameView .doneBadge,
+  #gameView .bigCourtTitle,
+  #gameView .bigPlayers,
+  #gameView .bigVs,
+  #gameView .bigRest,
+  #gameView .gameNav button,
+  #gameView #bigNextBtn {
+    font-size:8px !important;
+  }
+  #gameView .bigPlayers { line-height:1.15 !important; }
+  #gameView .timerDisplay { min-width:45px !important; }
+}
+
+</style>
+</head>
+<body>
+<div class="wrap" id="setupView">
+  <h1>🏸 Badmintonrotation</h1>
+  <p class="sub">1–3 banor • rotation för 3–8 spelare • namnen sparas automatiskt</p>
+
+  <div class="card">
+    <div class="row">
+      <label>Spelare:
+        <select id="count" onchange="makeInputs()">
+          <option value="3">3 spelare</option>
+          <option value="4">4 spelare</option>
+          <option value="5">5 spelare</option>
+          <option value="6" selected>6 spelare</option>
+          <option value="7">7 spelare</option>
+          <option value="8">8 spelare</option>
+        </select>
+      </label>
+      <label>Banor:
+        <select id="courts">
+          <option value="1">1 bana</option>
+          <option value="2" selected>2 banor</option>
+          <option value="3">3 banor</option>
+        </select>
+      </label>
+      <label>Rundor:
+        <select id="rounds">
+          <option>6</option><option selected>7</option><option>8</option><option>10</option><option>12</option>
+        </select>
+      </label>
+    </div>
+    <div id="names" class="names"></div>
+    <div class="groupRow">
+      <input id="groupName" placeholder="Gruppnamn, t.ex. Onsdag badminton">
+      <button onclick="saveGroup()">💾 Spara grupp</button>
+      <select id="savedGroups" onchange="loadSelectedGroup()"><option value="">Välj sparad grupp</option></select>
+      <button class="secondary" onclick="deleteGroup()">Radera grupp</button>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button id="resumeBtn" style="display:none;background:#2f7d32" onclick="resumeGame()">▶ Återgå till spelet</button>
+      <button onclick="generate()">Skapa nytt rotationsschema</button>
+
+      <button id="installBtn" style="display:none;background:#1f6feb" onclick="installPWA()">📲 Installera app</button>
+
+      <button class="secondary" onclick="clearSavedNames()">Radera sparade namn</button>
+    </div>
+  <div class="installNote">📱 På Android/Chrome: öppna webbläsarens meny och välj <b>Lägg till på startskärmen</b> eller <b>Installera app</b>.</div>
+  </div>
+
+  <div id="playMode" style="display:none">
+    <div id="currentRound"></div>
+    <button class="next" id="nextBtn" onclick="nextRound()">Nästa runda ➜</button>
+    <div class="row" style="margin-top:10px">
+      <button class="prev" onclick="prevRound()">← Föregående</button>
+      <button class="secondary" onclick="toggleFullSchedule()">Visa hela schemat</button>
+    </div>
+  </div>
+  <div id="out" style="display:none"></div>
+  <p class="small">Välj 3–8 spelare och 1–3 banor. Appen använder automatiskt dubbel och singel. Om en spelare blir över får den spelaren vila.</p>
+</div>
+
+<script>
+
+let timerSeconds=600, timerHandle=null, timerRunning=false;
+let completedRounds=new Set();
+
+function beep(){
+  try{
+    const A=window.AudioContext||window.webkitAudioContext;
+    const ctx=new A(), osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value=880; gain.gain.value=0.25; osc.start();
+    setTimeout(()=>{osc.stop();ctx.close()},900);
+  }catch(e){}
+}
+function updateTimerDisplay(){
+  const m=Math.floor(timerSeconds/60), sec=timerSeconds%60;
+  const el=document.getElementById('timerDisplay');
+  if(el) el.textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+function resetTimer(){
+  if(timerHandle) clearInterval(timerHandle);
+  timerHandle=null; timerRunning=false;
+  const mins=+(document.getElementById('timerMinutes')?.value||10);
+  timerSeconds=mins*60; updateTimerDisplay();
+  const b=document.getElementById('timerStartBtn'); if(b)b.textContent='▶ Start';
+}
+function toggleTimer(){
+  if(timerRunning){
+    clearInterval(timerHandle);timerHandle=null;timerRunning=false;
+    document.getElementById('timerStartBtn').textContent='▶ Start'; return;
+  }
+  timerRunning=true; document.getElementById('timerStartBtn').textContent='⏸ Paus';
+  timerHandle=setInterval(()=>{
+    timerSeconds--; updateTimerDisplay();
+    if(timerSeconds<=0){
+      clearInterval(timerHandle);timerHandle=null;timerRunning=false;
+      document.getElementById('timerStartBtn').textContent='▶ Start';
+      beep(); setTimeout(beep,1100); setTimeout(beep,2200);
+      markRoundDone();
+    }
+  },1000);
+}
+function markRoundDone(){
+  if(!schedule.length)return;
+  completedRounds.add(currentRoundIndex);
+  localStorage.setItem('badmintonCompleted',JSON.stringify([...completedRounds]));
+  renderBigRound();
+}
+function loadCompleted(){
+  try{completedRounds=new Set(JSON.parse(localStorage.getItem('badmintonCompleted')||'[]'));}catch(e){}
+}
+function getGroups(){
+  try{return JSON.parse(localStorage.getItem('badmintonGroups')||'{}');}catch(e){return {}}
+}
+function refreshGroups(){
+  const sel=document.getElementById('savedGroups'); if(!sel)return;
+  const groups=getGroups(), old=sel.value;
+  sel.innerHTML='<option value="">Välj sparad grupp</option>';
+  Object.keys(groups).sort().forEach(n=>{let o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o)});
+  if(groups[old])sel.value=old;
+}
+function saveGroup(){
+  const name=document.getElementById('groupName').value.trim();
+  if(!name){alert('Skriv ett namn på gruppen först.');return}
+  const players=[...document.querySelectorAll('#names input')].map(x=>x.value.trim()).filter(Boolean);
+  const groups=getGroups(); groups[name]={players};
+  localStorage.setItem('badmintonGroups',JSON.stringify(groups));refreshGroups();
+  document.getElementById('savedGroups').value=name;
+}
+function loadSelectedGroup(){
+  const name=document.getElementById('savedGroups').value;if(!name)return;
+  const g=getGroups()[name];if(!g)return;
+  document.getElementById('groupName').value=name;
+  document.getElementById('count').value=Math.max(3,Math.min(8,g.players.length));
+  makeInputs();
+refreshGroups(); loadCompleted(); setTimeout(resetTimer,0);
+  [...document.querySelectorAll('#names input')].forEach((x,i)=>x.value=g.players[i]||('Spelare '+(i+1)));
+  saveNames();
+}
+function deleteGroup(){
+  const name=document.getElementById('savedGroups').value;if(!name)return;
+  const groups=getGroups();delete groups[name];localStorage.setItem('badmintonGroups',JSON.stringify(groups));
+  document.getElementById('groupName').value='';refreshGroups();
+}
+
+function getSavedNames(){
+  try { return JSON.parse(localStorage.getItem('badmintonNames') || '[]'); }
+  catch(e){ return []; }
+}
+function saveNames(){
+  const vals=[...document.querySelectorAll('#names input')].map(x=>x.value);
+  localStorage.setItem('badmintonNames', JSON.stringify(vals));
+}
+function makeInputs(){
+  const n=+document.getElementById('count').value;
+  const box=document.getElementById('names');
+  const current=[...box.querySelectorAll('input')].map(x=>x.value);
+  const saved=getSavedNames();
+  box.innerHTML='';
+  for(let i=0;i<n;i++){
+    let inp=document.createElement('input');
+    inp.placeholder='Spelare '+(i+1);
+    inp.value=current[i] || saved[i] || 'Spelare '+(i+1);
+    inp.addEventListener('input', saveNames);
+    box.appendChild(inp);
+  }
+  document.getElementById('out').innerHTML='';
+  saveNames();
+}
+function clearSavedNames(){
+  localStorage.removeItem('badmintonNames');
+  const inputs=[...document.querySelectorAll('#names input')];
+  inputs.forEach((inp,i)=>inp.value='Spelare '+(i+1));
+  saveNames();
+  document.getElementById('out').innerHTML='';
+}
+function rotate(a,k){ k%=a.length; return a.slice(k).concat(a.slice(0,k)); }
+
+let schedule=[];
+let currentRoundIndex=0;
+
+function buildSchedule(){
+  saveNames();
+  const players=[...document.querySelectorAll('#names input')].map((x,i)=>x.value.trim()||('Spelare '+(i+1)));
+  const R=+document.getElementById('rounds').value;
+  const wantedCourts=+document.getElementById('courts').value;
+  schedule=[];
+
+  for(let r=0;r<R;r++){
+    // Rotate who gets first access to court positions each round.
+    let a=rotate(players,r%players.length);
+    if(Math.floor(r/players.length)%2===1 && a.length>=4){
+      const ev=a.filter((_,i)=>i%2===0), od=a.filter((_,i)=>i%2===1);
+      a=ev.concat(od);
+    }
+
+    let courts=[];
+    let idx=0;
+
+    // Prefer doubles while 4+ players remain, then singles with 2,
+    // and a 3-player rotating game on one court when exactly 3 remain.
+    for(let c=0;c<wantedCourts && idx<a.length;c++){
+      let remaining=a.length-idx;
+      if(remaining>=4){
+        courts.push({type:'Dubbel', players:a.slice(idx,idx+4)});
+        idx+=4;
+      } else if(remaining===3){
+        // Om tre spelare återstår: spela singel och låt en spelare vila.
+        courts.push({type:'Singel', players:a.slice(idx,idx+2)});
+        idx+=2;
+        break;
+      } else if(remaining===2){
+        courts.push({type:'Singel', players:a.slice(idx,idx+2)});
+        idx+=2;
+      } else {
+        break;
+      }
+    }
+    schedule.push({courts:courts, rest:a.slice(idx)});
+  }
+}
+
+function courtHTML(court,no){
+  if(court.type==='Dubbel'){
+    return `<div class="court"><b>🏸 Bana ${no} — Dubbel</b>
+      ${esc(court.players[0])} + ${esc(court.players[1])}<div class="vs">mot</div>
+      ${esc(court.players[2])} + ${esc(court.players[3])}</div>`;
+  }
+  if(court.type==='Singel'){
+    return `<div class="court"><b>🏸 Bana ${no} — Singel</b>
+      ${esc(court.players[0])}<div class="vs">mot</div>${esc(court.players[1])}</div>`;
+  }
+  return `<div class="court"><b>🏸 Bana ${no} — 3 spelare</b>
+    ${esc(court.players[0])}, ${esc(court.players[1])}, ${esc(court.players[2])}
+    <div class="vs">Rotera en spelare efter varje kort match</div></div>`;
+}
+
+function roundHTML(item,r){
+  let courts=item.courts.map((c,i)=>courtHTML(c,i+1)).join('');
+  return `<div class="card round"><h3>Runda ${r+1} av ${schedule.length}</h3>
+    <div class="courts">${courts || '<div class="court">Inte tillräckligt många spelare för vald bana.</div>'}</div>
+    ${item.rest.length?`<div class="rest">⏸ Vila: ${item.rest.map(esc).join(', ')}</div>`:''}
+  </div>`;
+}
+function generate(){
+  completedRounds=new Set(); localStorage.removeItem('badmintonCompleted');
+  buildSchedule();
+  currentRoundIndex=0;
+  document.getElementById('playMode').style.display='none';
+  document.getElementById('out').style.display='none';
+  document.getElementById('setupView').classList.add('hidden');
+  document.getElementById('gameView').classList.add('active');
+  showCurrentRound(); window.scrollTo(0,0);
+}
+function showCurrentRound(){
+  if(!schedule.length) return;
+  document.getElementById('currentRound').innerHTML=roundHTML(schedule[currentRoundIndex],currentRoundIndex);
+  const btn=document.getElementById('nextBtn');
+  btn.textContent=currentRoundIndex===schedule.length-1?'Börja om ↻':'Nästa runda ➜';
+  renderBigRound();
+}
+function renderBigRound(){
+ const item=schedule[currentRoundIndex];
+ document.getElementById('gameRoundLabel').textContent=`Runda ${currentRoundIndex+1} av ${schedule.length}`;
+ document.getElementById('bigCourts').innerHTML=item.courts.map((c,i)=>{
+  let b=c.type==='Dubbel'?`<div class="bigPlayers">${esc(c.players[0])} + ${esc(c.players[1])}</div><div class="bigVs">MOT</div><div class="bigPlayers">${esc(c.players[2])} + ${esc(c.players[3])}</div>`:
+  c.type==='Singel'?`<div class="bigPlayers">${esc(c.players[0])}</div><div class="bigVs">MOT</div><div class="bigPlayers">${esc(c.players[1])}</div>`:
+  `<div class="bigPlayers">${c.players.map(esc).join('<br>')}</div><div class="bigVs">Rotera efter kort match</div>`;
+  return `<div class="bigCourt"><div class="bigCourtTitle">🏸 Bana ${i+1} — ${c.type}</div>${b}</div>`;
+ }).join('');
+ document.getElementById('bigRest').innerHTML=item.rest.length?`⏸ Vilar: <b>${item.rest.map(esc).join(', ')}</b>`:'';
+ document.getElementById('doneBadge').textContent=completedRounds.has(currentRoundIndex)?'✅ RUNDAN ÄR SPELAD':'';
+ document.getElementById('bigCourts').classList.toggle('completedRound',completedRounds.has(currentRoundIndex));
+ const nextBig=document.getElementById('bigNextBtn');
+ nextBig.textContent=currentRoundIndex===schedule.length-1?'Sista rundan ✓':'Nästa runda ➜';
+ nextBig.disabled=currentRoundIndex===schedule.length-1;
+ const prevBig=document.getElementById('bigPrevBtn');
+ prevBig.disabled=currentRoundIndex===0;
+ prevBig.style.opacity=currentRoundIndex===0?'0.4':'1';
+}
+function backToSetup(){
+ document.getElementById('gameView').classList.remove('active');
+ document.getElementById('setupView').classList.remove('hidden');
+ document.getElementById('resumeBtn').style.display=schedule.length?'inline-block':'none';
+ window.scrollTo(0,0);
+}
+function resumeGame(){
+ if(!schedule.length) return;
+ document.getElementById('setupView').classList.add('hidden');
+ document.getElementById('gameView').classList.add('active');
+ showCurrentRound();
+ window.scrollTo(0,0);
+}
+function nextRound(){
+  if(!schedule.length) return;
+  if(currentRoundIndex < schedule.length-1) currentRoundIndex++;
+  resetTimer(); showCurrentRound();
+}
+function prevRound(){
+  if(!schedule.length) return;
+  if(currentRoundIndex > 0) currentRoundIndex--;
+  resetTimer(); showCurrentRound();
+}
+function toggleFullSchedule(){
+  const out=document.getElementById('out');
+  if(out.style.display==='none'){
+    out.innerHTML=schedule.map((x,i)=>roundHTML(x,i)).join('');
+    out.style.display='block';
+    event.target.textContent='Dölj hela schemat';
+  } else {
+    out.style.display='none';
+    event.target.textContent='Visa hela schemat';
+  }
+}
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+makeInputs();
+
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  const b=document.getElementById('installBtn'); if(b)b.style.display='inline-block';
+});
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    alert('Om installationsknappen inte visas av webbläsaren: öppna webbläsarens meny och välj Installera app eller Lägg till på startskärmen.');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt=null;
+  const b=document.getElementById('installBtn'); if(b)b.style.display='none';
+}
+window.addEventListener('appinstalled',()=>{
+  const b=document.getElementById('installBtn'); if(b)b.style.display='none';
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js'));
+}
+
+</script>
+<div id="gameView">
+<div class="gameTop"><div class="gameTitle">🏸 Badminton</div><div class="gameRound" id="gameRoundLabel"></div></div>
+<div class="timerBox">
+  <select id="timerMinutes" onchange="resetTimer()">
+    <option value="5">5 min</option><option value="10" selected>10 min</option>
+    <option value="15">15 min</option><option value="20">20 min</option>
+  </select>
+  <div class="timerDisplay" id="timerDisplay">10:00</div>
+  <button class="timerBtn" id="timerStartBtn" onclick="toggleTimer()">▶ Start</button>
+  <button class="timerBtn backBtn" onclick="resetTimer()">↻ Nollställ</button>
+  <button class="timerBtn" onclick="markRoundDone()">✅ Klar</button>
+</div>
+<div class="doneBadge" id="doneBadge"></div>
+<div class="bigCourts" id="bigCourts"></div><div class="bigRest" id="bigRest"></div>
+<div class="gameNav">
+<button class="backBtn" onclick="backToSetup()">⌂ Start / Inställningar</button>
+<button class="backBtn" id="bigPrevBtn" onclick="prevRound()">← Föregående runda</button>
+<button id="bigNextBtn" onclick="nextRound()">Nästa runda ➜</button>
+</div>
+</div>
+</body>
+</html>

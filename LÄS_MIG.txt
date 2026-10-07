@@ -1,0 +1,13 @@
+BADMINTONROTATION – PWA
+========================
+Ladda upp ALLA filer i denna mapp till samma GitHub-repository.
+Viktigt: index.html, manifest.webmanifest, service-worker.js, icon-192.png,
+icon-512.png och .nojekyll ska ligga i repositoryts rot.
+
+GitHub Pages:
+Settings > Pages > Source: Deploy from a branch
+Branch: main
+Folder: /(root)
+Save
+
+Öppna sedan GitHub Pages-adressen på telefonen och installera appen.
