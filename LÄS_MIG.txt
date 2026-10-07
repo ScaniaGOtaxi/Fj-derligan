@@ -1,13 +1,19 @@
-BADMINTONROTATION – PWA
-========================
-Ladda upp ALLA filer i denna mapp till samma GitHub-repository.
-Viktigt: index.html, manifest.webmanifest, service-worker.js, icon-192.png,
-icon-512.png och .nojekyll ska ligga i repositoryts rot.
+BADMINTON APP ver. 1.0 – PWA
 
-GitHub Pages:
-Settings > Pages > Source: Deploy from a branch
-Branch: main
-Folder: /(root)
-Save
+Filer som ska ligga i roten på ditt GitHub Pages-repository:
+- index.html
+- manifest.webmanifest
+- service-worker.js
+- icon-192.png
+- icon-512.png
+- .nojekyll
 
-Öppna sedan GitHub Pages-adressen på telefonen och installera appen.
+Vid uppdatering på GitHub:
+1. Öppna samma repository som du redan använder för Badminton-appen.
+2. Ladda upp/ersätt filerna ovan i repositoryts rot.
+3. Commit changes.
+4. Vänta normalt någon minut och öppna din befintliga GitHub Pages-adress igen.
+5. Om gammal version visas: stäng appen/webbläsaren helt och öppna igen. Service worker v1.0 rensar äldre cacheversioner.
+
+
+NYTT: Appikonen är uppdaterad till den nya BADMINTON APP-designen.

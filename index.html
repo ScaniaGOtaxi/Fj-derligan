@@ -4,16 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Badmintonrotation</title>
-
-<meta name="theme-color" content="#101418">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Badminton">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./icon-192.png">
-<link rel="apple-touch-icon" href="./icon-192.png">
-
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color-scheme:dark}
 body{margin:0;background:#101418;color:#ffffff}
@@ -275,25 +265,80 @@ select{min-width:130px}
   #gameView .timerDisplay { min-width:45px !important; }
 }
 
+
+/* NY TESTVERSION: meny, zoom och spelarregister */
+.topTools{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.menuPanel{display:none}
+.menuPanel.open{display:block}
+.playerPool{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.playerChoice{display:flex;align-items:center;gap:6px;background:#111820;border:1px solid #394754;border-radius:10px;padding:7px}
+.playerChoice span{flex:1;overflow-wrap:anywhere}
+.playerChoice input{width:18px;height:18px}
+.playerChoice button{padding:4px 7px!important}
+.addPlayer{display:flex;gap:6px;margin-top:8px}
+.addPlayer input{flex:1;min-width:100px}
+.selectedCount{font-weight:900;color:#7ee787;margin-top:7px}
+@media(max-width:600px){
+ .playerPool{grid-template-columns:1fr 1fr}
+ .playerChoice,.playerChoice button,.topTools button,.addPlayer input,.addPlayer button{font-size:8px!important}
+}
+
+
+/* Zoom gäller endast spelinnehållet. Övre och nedre menyer är fasta. */
+#gameView .gameTop,
+#gameView .timerBox,
+#gameView .doneBadge,
+#gameView .gameNav{
+  zoom:1 !important;
+  transform:none !important;
+}
+
+
+.appCredit{
+  position:fixed;
+  right:6px;
+  bottom:3px;
+  z-index:9999;
+  font-size:7px;
+  color:#8b949e;
+  opacity:.75;
+  pointer-events:none;
+  white-space:nowrap;
+  zoom:1!important;
+  transform:none!important;
+}
+
 </style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Badminton">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 </head>
 <body>
 <div class="wrap" id="setupView">
   <h1>🏸 Badmintonrotation</h1>
-  <p class="sub">1–3 banor • rotation för 3–8 spelare • namnen sparas automatiskt</p>
+  <p class="sub">1–3 banor • rotation för 3–12 spelare • namnen sparas automatiskt</p>
+<div class="topTools">
+ <button onclick="toggleMenu()">☰ Meny</button>
+ <button onclick="zoomChange(-0.1)">A−</button>
+ <span id="zoomValue">100%</span>
+ <button onclick="zoomChange(0.1)">A+</button>
+ <button class="secondary" onclick="zoomReset()">↺ Standard</button>
+</div>
+<div id="menuPanel" class="card menuPanel">
+ <button onclick="showPlayers()">👥 Spelarlista</button>
+ <button onclick="generate()">🏸 Nytt spel</button>
+</div>
+
 
   <div class="card">
     <div class="row">
-      <label>Spelare:
-        <select id="count" onchange="makeInputs()">
-          <option value="3">3 spelare</option>
-          <option value="4">4 spelare</option>
-          <option value="5">5 spelare</option>
-          <option value="6" selected>6 spelare</option>
-          <option value="7">7 spelare</option>
-          <option value="8">8 spelare</option>
-        </select>
-      </label>
+      <div><b>Dagens spelare:</b> <span id="selectedTop">0</span></div>
       <label>Banor:
         <select id="courts">
           <option value="1">1 bana</option>
@@ -307,8 +352,23 @@ select{min-width:130px}
         </select>
       </label>
     </div>
-    <div id="names" class="names"></div>
-    <div class="groupRow">
+    
+<div class="card" id="playerManager">
+ <b>👥 Spelarlista</b>
+ <div class="addPlayer">
+   <input id="newPlayer" placeholder="Skriv spelarens namn">
+   <button type="button" onclick="addPlayer()">＋ Lägg till</button>
+ </div>
+ <div class="topTools">
+   <button type="button" class="secondary" onclick="selectAllPlayers(true)">✓ Markera alla</button>
+   <button type="button" class="secondary" onclick="selectAllPlayers(false)">Avmarkera alla</button>
+ </div>
+ <div id="selectedCount" class="selectedCount">0 spelare valda</div>
+ <div id="playerPool" class="playerPool"></div>
+</div>
+<div id="names" style="display:none"></div>
+
+    <div class="groupRow" style="display:none">
       <input id="groupName" placeholder="Gruppnamn, t.ex. Onsdag badminton">
       <button onclick="saveGroup()">💾 Spara grupp</button>
       <select id="savedGroups" onchange="loadSelectedGroup()"><option value="">Välj sparad grupp</option></select>
@@ -317,9 +377,6 @@ select{min-width:130px}
     <div class="row" style="margin-top:14px">
       <button id="resumeBtn" style="display:none;background:#2f7d32" onclick="resumeGame()">▶ Återgå till spelet</button>
       <button onclick="generate()">Skapa nytt rotationsschema</button>
-
-      <button id="installBtn" style="display:none;background:#1f6feb" onclick="installPWA()">📲 Installera app</button>
-
       <button class="secondary" onclick="clearSavedNames()">Radera sparade namn</button>
     </div>
   <div class="installNote">📱 På Android/Chrome: öppna webbläsarens meny och välj <b>Lägg till på startskärmen</b> eller <b>Installera app</b>.</div>
@@ -334,7 +391,7 @@ select{min-width:130px}
     </div>
   </div>
   <div id="out" style="display:none"></div>
-  <p class="small">Välj 3–8 spelare och 1–3 banor. Appen använder automatiskt dubbel och singel. Om en spelare blir över får den spelaren vila.</p>
+  <p class="small">Lägg till spelarna i listan en gång och markera vilka som spelar idag. Välj 3–12 spelare och 1–3 banor.</p>
 </div>
 
 <script>
@@ -422,6 +479,64 @@ function deleteGroup(){
   document.getElementById('groupName').value='';refreshGroups();
 }
 
+
+let uiZoom=parseFloat(localStorage.getItem('badmintonZoom')||'1');
+
+function toggleMenu(){document.getElementById('menuPanel').classList.toggle('open')}
+function showPlayers(){
+ document.getElementById('menuPanel').classList.remove('open');
+ document.getElementById('playerManager').scrollIntoView({behavior:'smooth'});
+}
+function applyZoom(){
+ uiZoom=Math.max(0.5,Math.min(2.5,uiZoom));
+ localStorage.setItem('badmintonZoom',String(uiZoom));
+ const ids=['.bigPlayers','.bigCourtTitle','.bigVs','.bigRest'];
+ ids.forEach(sel=>document.querySelectorAll('#gameView '+sel).forEach(el=>el.style.zoom=uiZoom));
+ const z=document.getElementById('zoomValue'); if(z)z.textContent=Math.round(uiZoom*100)+'%';
+ const gz=document.getElementById('gameZoomValue'); if(gz)gz.textContent=Math.round(uiZoom*100)+'%';
+}
+function zoomChange(v){uiZoom+=v;applyZoom()}
+function zoomReset(){uiZoom=1;applyZoom()}
+
+function getPlayerPool(){
+ try{
+  const p=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
+  return Array.isArray(p)?p:[];
+ }catch(e){return []}
+}
+function savePlayerPool(p){localStorage.setItem('badmintonPlayerPool',JSON.stringify(p))}
+function renderPlayerPool(){
+ const p=getPlayerPool(), box=document.getElementById('playerPool');
+ if(!box)return;
+ box.innerHTML='';
+ p.forEach((x,i)=>{
+  const row=document.createElement('div'); row.className='playerChoice';
+  const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!x.selected;
+  cb.onchange=()=>togglePlayer(i,cb.checked);
+  const name=document.createElement('span'); name.textContent=x.name;
+  const del=document.createElement('button'); del.type='button'; del.textContent='✕';
+  del.onclick=()=>removePlayer(i);
+  row.append(cb,name,del); box.appendChild(row);
+ });
+ updateSelectedCount();
+}
+function addPlayer(){
+ const inp=document.getElementById('newPlayer'), name=inp.value.trim();
+ if(!name)return;
+ const p=getPlayerPool();
+ if(p.some(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Spelaren finns redan i listan.');return}
+ p.push({name:name,selected:true}); savePlayerPool(p); inp.value=''; renderPlayerPool();
+}
+function removePlayer(i){const p=getPlayerPool();p.splice(i,1);savePlayerPool(p);renderPlayerPool()}
+function togglePlayer(i,v){const p=getPlayerPool();if(p[i])p[i].selected=v;savePlayerPool(p);updateSelectedCount()}
+function selectAllPlayers(v){const p=getPlayerPool();p.forEach(x=>x.selected=v);savePlayerPool(p);renderPlayerPool()}
+function selectedPlayers(){return getPlayerPool().filter(x=>x.selected).map(x=>x.name)}
+function updateSelectedCount(){
+ const n=selectedPlayers().length;
+ const a=document.getElementById('selectedCount'); if(a)a.textContent=n+' spelare valda';
+ const b=document.getElementById('selectedTop'); if(b)b.textContent=n;
+}
+
 function getSavedNames(){
   try { return JSON.parse(localStorage.getItem('badmintonNames') || '[]'); }
   catch(e){ return []; }
@@ -460,7 +575,11 @@ let currentRoundIndex=0;
 
 function buildSchedule(){
   saveNames();
-  const players=[...document.querySelectorAll('#names input')].map((x,i)=>x.value.trim()||('Spelare '+(i+1)));
+  const players=selectedPlayers();
+  if(players.length<3 || players.length>12){
+    alert('Välj mellan 3 och 12 spelare för dagens spel.');
+    return false;
+  }
   const R=+document.getElementById('rounds').value;
   const wantedCourts=+document.getElementById('courts').value;
   schedule=[];
@@ -497,6 +616,7 @@ function buildSchedule(){
     }
     schedule.push({courts:courts, rest:a.slice(idx)});
   }
+  return true;
 }
 
 function courtHTML(court,no){
@@ -523,7 +643,7 @@ function roundHTML(item,r){
 }
 function generate(){
   completedRounds=new Set(); localStorage.removeItem('badmintonCompleted');
-  buildSchedule();
+  if(buildSchedule()===false)return;
   currentRoundIndex=0;
   document.getElementById('playMode').style.display='none';
   document.getElementById('out').style.display='none';
@@ -593,33 +713,15 @@ function toggleFullSchedule(){
 }
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 makeInputs();
-
-let deferredInstallPrompt=null;
-window.addEventListener('beforeinstallprompt',(e)=>{
-  e.preventDefault();
-  deferredInstallPrompt=e;
-  const b=document.getElementById('installBtn'); if(b)b.style.display='inline-block';
-});
-async function installPWA(){
-  if(!deferredInstallPrompt){
-    alert('Om installationsknappen inte visas av webbläsaren: öppna webbläsarens meny och välj Installera app eller Lägg till på startskärmen.');
-    return;
-  }
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt=null;
-  const b=document.getElementById('installBtn'); if(b)b.style.display='none';
-}
-window.addEventListener('appinstalled',()=>{
-  const b=document.getElementById('installBtn'); if(b)b.style.display='none';
-});
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js'));
-}
-
+renderPlayerPool();
+applyZoom();
 </script>
 <div id="gameView">
-<div class="gameTop"><div class="gameTitle">🏸 Badminton</div><div class="gameRound" id="gameRoundLabel"></div></div>
+<div class="gameTop">
+ <div class="gameTitle">🏸 Badminton</div>
+ <div class="gameRound" id="gameRoundLabel"></div>
+ <div><button onclick="zoomChange(-0.1)">A−</button><span id="gameZoomValue" style="padding:0 5px">100%</span><button onclick="zoomChange(0.1)">A+</button></div>
+</div>
 <div class="timerBox">
   <select id="timerMinutes" onchange="resetTimer()">
     <option value="5">5 min</option><option value="10" selected>10 min</option>
@@ -638,5 +740,15 @@ if('serviceWorker' in navigator){
 <button id="bigNextBtn" onclick="nextRound()">Nästa runda ➜</button>
 </div>
 </div>
+<div class="appCredit">Badminton App ver. 1.0 • Skapad av Piotr Zdeb +=RYB@=+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(console.error);
+  });
+}
+</script>
+
 </body>
 </html>
