@@ -1,21 +1,22 @@
-BADMINTON APP ver. 1.0 – PWA
+BADMINTON APP v1.1 – GITHUB PAGES / PWA
 
-Filer som ska ligga i roten på ditt GitHub Pages-repository:
-- index.html
-- manifest.webmanifest
-- service-worker.js
-- icon-192.png
-- icon-512.png
-- .nojekyll
+Baserad exakt på senaste testversionen med ⓘ.
 
-Vid uppdatering på GitHub:
-1. Öppna samma repository som du redan använder för Badminton-appen.
-2. Ladda upp/ersätt filerna ovan i repositoryts rot.
+NYTT I v1.1:
+- Balanserad randomisering
+- ⚪ Normal
+- 🎯 Mer singel
+- 🔒 Endast singel
+- ⓘ direkt vid spelarens val
+- ❓ Hjälp / Så fungerar appen
+- Upp till 12 spelare
+- Zoom upp till 250 % med zoomfix mellan rundorna
+- Ny badminton-appikon
+- Lokal lagring av spelare och spelarval
+
+UPPDATERA GITHUB:
+1. Öppna samma GitHub-repository som nu används för appen.
+2. Ersätt/ladda upp filerna i denna ZIP i repositoryts rot.
 3. Commit changes.
-4. Vänta normalt någon minut och öppna din befintliga GitHub Pages-adress igen.
-5. Om gammal version visas: stäng appen/webbläsaren helt och öppna igen. Service worker v1.0 rensar äldre cacheversioner.
-
-
-NYTT: Appikonen är uppdaterad till den nya BADMINTON APP-designen.
-
-FIX v1.0.1: Vald zoom (upp till 250 %) behålls automatiskt när du går till nästa/föregående runda.
+4. Vänta en kort stund och öppna din befintliga GitHub Pages-adress.
+5. Om gammal version visas, stäng PWA/webbläsaren helt och öppna igen.
