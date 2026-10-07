@@ -1,6 +1,6 @@
 BADMINTON APP v1.1 – GITHUB PAGES / PWA
 
-Baserad exakt på senaste testversionen med ⓘ.
+Baserad exakt på senaste versionen med ⓘ.
 
 NYTT I v1.1:
 - Balanserad randomisering
