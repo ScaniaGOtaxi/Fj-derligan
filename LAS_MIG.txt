@@ -1,0 +1,11 @@
+BADMINTON APP v1.4 – FIX 15 – GITHUB PAGES / PWA
+
+Innehåll: index.html (senaste FIX 15), manifest.webmanifest, service-worker.js, icon-192.png, icon-512.png och .nojekyll.
+
+PUBLICERA I BEFINTLIGT GITHUB-REPOSITORY:
+1. Packa upp ZIP-filen på datorn.
+2. Ladda upp alla filer i repositoryts rot (ersätt befintliga filer med samma namn).
+3. Välj Commit changes.
+4. Öppna din GitHub Pages-adress och uppdatera sidan. Om installerad PWA visar en gammal version: stäng och öppna igen, eller rensa webbplatsens cache.
+
+OBS: ZIP är avsedd för GitHub Pages och innehåller publikt läsbar HTML/JavaScript. Kontrollera att inga privata nycklar eller lösenord lagts in i koden. Supabase-inloggning kräver internet. Kontrollera Supabase Auth URL Configuration om inloggningen inte fungerar från GitHub Pages-domänen.

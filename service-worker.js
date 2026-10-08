@@ -1,4 +1,4 @@
-const CACHE='badminton-app-v1.2-animated-final';
+const CACHE='badminton-app-v1.4-fix15-20261009';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(
  caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())
