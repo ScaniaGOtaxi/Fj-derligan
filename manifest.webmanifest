@@ -1,13 +1,12 @@
 {
   "name": "Badminton App v1.4",
   "short_name": "Badminton",
-  "description": "Badmintonrotation, grupphantering, livevisning och statistik – Piotr Zdeb +=RYB@=+",
+  "description": "Badminton rotation och grupphantering",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#101418",
-  "theme_color": "#101418",
-  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "icons": [
     {
       "src": "icon-192.png",
