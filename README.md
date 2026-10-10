@@ -1,2 +1,0 @@
-# Fj-derligan
-Badminkton App
