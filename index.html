@@ -658,70 +658,91 @@ window.BADMINTON_COUNTRIES=[["AF","Afghanistan","Afghanistan","AFG"],["AL","Alba
 .threeDStage .threeDLabel.pos1,
 .threeDStage .threeDLabel.pos3 {justify-content:flex-end!important}
 </style>
+<style id="game-fullscreen-style">
+/* Helskärm för huvudappens spelvy (Live-vyn har egen knapp). */
+#gameView .gameFullscreenBtn{white-space:nowrap;font-size:clamp(12px,1.1vw,17px);padding:9px 12px;background:#238650;color:#fff;border:1px solid #397f63;border-radius:11px;cursor:pointer}
+#gameView:fullscreen{background:#0d141c;color:#fff;overflow:auto;padding:10px;box-sizing:border-box;width:100vw;height:100vh}
+#gameView:-webkit-full-screen{background:#0d141c;color:#fff;overflow:auto;padding:10px;box-sizing:border-box;width:100vw;height:100vh}
+#gameView:fullscreen .bigCourts{width:100%}
+@media(max-width:750px){#gameView .gameFullscreenBtn{padding:7px 9px;font-size:12px}}
+
+
+</style>
 </head>
 <body>
-<section id="badmintonViewer" style="display:none;min-height:100dvh;box-sizing:border-box;padding:18px;max-width:1000px;margin:auto;font-family:system-ui,sans-serif;color:white">
-  <h1 style="font-size:clamp(22px,5vw,38px)">🏸 Badminton – Live</h1>
-  <p id="viewerStatus" aria-live="polite">Ansluter till spelet …</p>
-  <h2 id="viewerRound" style="font-size:clamp(24px,6vw,52px);color:#7ee787"></h2>
-  <div id="viewerCourts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"></div>
-  <p id="viewerRest" style="font-size:clamp(18px,3vw,28px);color:#ffeb3b"></p>
-  <p style="font-size:12px;opacity:.75">Visningen uppdateras automatiskt ungefär var tredje sekund. Endast läsning.</p>
+<style>
+.viewer-mode body{margin:0!important;overflow-x:hidden}
+.viewer-mode #badmintonViewer{display:flex!important;flex-direction:column;box-sizing:border-box;width:100%;max-width:none!important;min-height:100dvh;padding:clamp(4px,.65vw,10px)!important;gap:5px;color:white;font-family:system-ui,sans-serif}
+#viewerHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;min-height:0;padding:0 2px}
+#viewerRound{margin:0;font-size:clamp(19px,2.1vw,28px);line-height:1.08;color:#7ee787}
+#viewerStatus{margin:2px 0 0;font-size:clamp(10px,.85vw,12px);line-height:1.1;opacity:.8}
+#viewerFullscreen{border:1px solid #71938a;background:#1e744d;color:white;border-radius:7px;padding:5px 9px;font-size:clamp(11px,.85vw,13px);line-height:1.15;font-weight:750;cursor:pointer;flex:none}
+#viewerCourts{display:grid;grid-template-columns:repeat(var(--court-count,1),minmax(0,1fr));gap:clamp(6px,1vw,16px);align-items:start;flex:1;min-height:0}
+.viewerCourt{min-width:0;background:#182028;border:1px solid #394754;border-radius:14px;padding:clamp(5px,.8vw,12px);display:flex;flex-direction:column;justify-content:center;gap:5px}
+.viewerCourt h3{margin:0;text-align:center;color:#7ee787;font-size:clamp(15px,1.7vw,28px)}
+.viewerStage{position:relative;width:100%;overflow:hidden;border-radius:10px;background:#075239}
+.viewerStage.single{aspect-ratio:828/677}.viewerStage.double{aspect-ratio:962/540}
+.viewerStage>img{display:block;width:100%;height:100%;object-fit:fill}
+.viewerName{position:absolute;z-index:2;display:flex;align-items:center;gap:.3em;max-width:calc(50% - 8px);box-sizing:border-box;white-space:nowrap;border-radius:8px;background:rgba(0,35,29,.63);border:1px solid rgba(220,255,240,.55);backdrop-filter:blur(3px);padding:3px 9px;font-size:clamp(11px,1.7vw,26px);font-weight:850;line-height:1.15;text-shadow:0 1px 2px #000}
+.viewerName.top{top:1%}.viewerName.bottom{bottom:1%}.viewerName.left{left:1%}.viewerName.right{right:1%}
+.viewerName.right{justify-content:flex-end}.viewerName span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.viewerFlag{width:1.25em;height:.85em;object-fit:cover;flex:none}
+#viewerRest{margin:0;text-align:center;color:#ffeb3b;font-size:clamp(13px,1.5vw,22px)}
+@media(max-width:700px){#viewerCourts{grid-template-columns:1fr!important}.viewerName{font-size:clamp(13px,3.5vw,22px)}}
+@media(min-width:701px){.viewer-mode #badmintonViewer:has(#viewerCourts[data-count="1"]) .viewerCourt{max-width:min(100%,140vh);width:100%;justify-self:center}}
+</style>
+<section id="badmintonViewer" style="display:none" aria-label="Badminton Live">
+ <header id="viewerHead"><div><h1 id="viewerRound">Badminton – Live</h1><p id="viewerStatus" aria-live="polite">Ansluter …</p></div><button type="button" id="viewerFullscreen">⛶ Helskärm</button></header>
+ <div id="viewerCourts"></div><p id="viewerRest"></p>
 </section>
 <script>
 (function(){
  'use strict';
  const params=new URLSearchParams(location.hash.slice(1));
- const session=params.get('live'), token=params.get('token');
- if(!session && !token)return;
- const view=document.getElementById('badmintonViewer');view.style.display='block';
- document.addEventListener('DOMContentLoaded',()=>{
-  for(const child of document.body.children){if(child!==view && child.tagName!=='SCRIPT')child.style.display='none';}
- });
- const status=document.getElementById('viewerStatus'), round=document.getElementById('viewerRound');
- const courts=document.getElementById('viewerCourts'), rest=document.getElementById('viewerRest');
+ const session=params.get('live'),token=params.get('token');
+ if(!session&&!token)return;
+ const view=document.getElementById('badmintonViewer');view.style.display='flex';
+ const status=document.getElementById('viewerStatus'),round=document.getElementById('viewerRound'),courts=document.getElementById('viewerCourts'),rest=document.getElementById('viewerRest');
+ const full=document.getElementById('viewerFullscreen');
+ full.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){status.textContent='Helskärm stöds inte i den här webbläsaren.';}};
+ document.addEventListener('fullscreenchange',()=>{full.textContent=document.fullscreenElement?'⤢ Avsluta helskärm':'⛶ Helskärm';});
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
- if(!uuid.test(session||'')|| !/^[0-9a-f]{64}$/.test(token||'')){status.textContent='❌ Ogiltig visningslänk.';return;}
- const base='https://frkhzwutziysnjibaxfa.supabase.co';
- const key='sb_publishable_Ls7ecNqa40yuRE8S1KiNCw_cHq_18Ej';
- let busy=false, previous='';
- function addText(parent,tag,value,css){const e=document.createElement(tag);e.textContent=value;if(css)e.style.cssText=css;parent.append(e);return e;}
+ if(!uuid.test(session||'')||!/^[0-9a-f]{64}$/.test(token||'')){status.textContent='❌ Ogiltig visningslänk.';return;}
+ const base='https://frkhzwutziysnjibaxfa.supabase.co',key='sb_publishable_Ls7ecNqa40yuRE8S1KiNCw_cHq_18Ej';
+ let busy=false,previous='';
+ function flagCode(p){return String(p.country_code||p.countryCode||p.nationality_code||p.flag_code||p.iso2||'').trim().toLowerCase();}
+ function nameLabel(stage,p,position){if(!p)return;const label=document.createElement('div');label.className='viewerName '+position;const code=flagCode(p);if(/^[a-z]{2}$/.test(code)){const img=document.createElement('img');img.className='viewerFlag';img.src='https://flagcdn.com/w40/'+code+'.png';img.alt=code.toUpperCase();img.onerror=()=>img.remove();label.append(img);}const span=document.createElement('span');span.textContent=p.name||'–';label.append(span);stage.append(label);}
  async function refresh(){
-  if(busy || document.hidden)return;
-  busy=true;
+  if(busy||document.hidden)return;busy=true;
   try{
-   const response=await fetch(base+'/rest/v1/rpc/get_badminton_live_view',{
-    method:'POST',headers:{'apikey':key,'Content-Type':'application/json'},
-    body:JSON.stringify({p_session_id:session,p_viewer_token:token}),cache:'no-store'
-   });
-   if(!response.ok){const error=await response.json().catch(()=>({}));throw Error(error.message||'Visningslänken fungerar inte längre.');}
-   const data=await response.json();
-   status.textContent='🟢 Ansluten – '+data.session_name;
-   const fingerprint=JSON.stringify(data);
-   if(fingerprint===previous)return;
-   previous=fingerprint;
-   round.textContent='Runda '+data.current_round;
+   const response=await fetch(base+'/rest/v1/rpc/get_badminton_live_view',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({p_session_id:session,p_viewer_token:token}),cache:'no-store'});
+   if(!response.ok){const err=await response.json().catch(()=>({}));throw Error(err.message||'Visningslänken fungerar inte längre.');}
+   const data=await response.json();status.textContent='🟢 Ansluten – '+(data.session_name||'Live');
+   const fingerprint=JSON.stringify(data);if(fingerprint===previous)return;previous=fingerprint;
+   round.textContent='🏸 Runda '+data.current_round;
    courts.replaceChildren();rest.replaceChildren();
-   const players=Array.isArray(data.players)?data.players:[];
-   for(let n=1;n<=data.court_count;n++){
-    const card=document.createElement('div');card.style.cssText='background:#182028;border:2px solid #394754;border-radius:14px;padding:16px;text-align:center';
-    addText(card,'h3','Bana '+n,'font-size:clamp(24px,4vw,38px);color:#7ee787;margin:4px 0 14px');
-    const playing=players.filter(p=>p.court===n);
-    for(const team of [1,2]){
-     const names=playing.filter(p=>p.team===team).map(p=>p.name);
-     addText(card,'div',names.join(' + ')||'–','font-size:clamp(20px,3vw,34px);font-weight:800;overflow-wrap:anywhere');
-     if(team===1)addText(card,'div','VS','font-size:20px;color:#ffd54a;margin:10px');
-    }
-    courts.append(card);
+   const players=Array.isArray(data.players)?data.players:[],count=Math.max(1,Math.min(3,Number(data.court_count)||1));
+   courts.style.setProperty('--court-count',count);courts.dataset.count=count;
+   for(let n=1;n<=count;n++){
+    const playing=players.filter(p=>Number(p.court)===n);
+    const team1=playing.filter(p=>Number(p.team)===1),team2=playing.filter(p=>Number(p.team)===2);
+    const doubles=team1.length>1||team2.length>1;
+    const card=document.createElement('section');card.className='viewerCourt';
+    const title=document.createElement('h3');title.textContent='🏸 Bana '+n+' — '+(doubles?'Dubbel':'Singel');card.append(title);
+    const stage=document.createElement('div');stage.className='viewerStage '+(doubles?'double':'single');
+    const img=document.createElement('img');img.src=doubles?'bana_dubbel.jpg':'bana_singel.jpg';img.alt='3D-badmintonbana';stage.append(img);
+    if(doubles){nameLabel(stage,team1[0],'top left');nameLabel(stage,team1[1],'top right');nameLabel(stage,team2[0],'bottom left');nameLabel(stage,team2[1],'bottom right');}
+    else{nameLabel(stage,team1[0]||team2[0],'top left');nameLabel(stage,team2[0]||team1[1],'bottom left');}
+    card.append(stage);courts.append(card);
    }
    const resting=players.filter(p=>p.activity==='rest').map(p=>p.name);
    rest.textContent=resting.length?'Vilar: '+resting.join(', '):'';
-  }catch(e){status.textContent='⚠️ '+e.message;}
-  finally{busy=false;}
+  }catch(e){status.textContent='⚠️ '+e.message;}finally{busy=false;}
  }
- void refresh();setInterval(refresh,3000);
+ void refresh();setInterval(refresh,1000);
 })();
 </script>
+
 <style>
 #cloudTestPanel{position:relative;z-index:3;margin:12px auto;max-width:720px;padding:16px;background:#172638;border:2px solid #5d9bff;border-radius:15px;color:white;box-sizing:border-box}
 #cloudTestPanel h2{margin:0 0 8px;font-size:20px}
@@ -2458,7 +2479,7 @@ function renderBigRound(){
    if(!n)return `<div class="threeDLabel pos${k} isEmpty"></div>`;
    return `<div class="threeDLabel pos${k}"><img alt="Flagga" data-country="${window.badmintonCountryOf(n)}" onerror="window.badmintonFlagFallback(this)" src="${window.badmintonFlagUrl(window.badmintonCountryOf(n))}"><span>${esc(n)}</span></div>`;
   }).join('');
-  return `<div class="bigCourt threeDCourt"><div class="bigCourtTitle">🏸 Bana ${i+1} — ${c.type}</div><div class="threeDStage ${single?'courtSingle':'courtDouble'}"><img src="${single?'bana_singel.svg':'bana_dubbel.svg'}" alt="${single?'3D-bana med två spelare':'3D-bana med fyra spelare'}">${labels}</div></div>`;
+  return `<div class="bigCourt threeDCourt"><div class="bigCourtTitle">🏸 Bana ${i+1} — ${c.type}</div><div class="threeDStage ${single?'courtSingle':'courtDouble'}"><img src="${single?'bana_singel.jpg':'bana_dubbel.jpg'}" alt="${single?'3D-bana med två spelare':'3D-bana med fyra spelare'}">${labels}</div></div>`;
  }).join('');
  document.getElementById('bigRest').innerHTML=item.rest.length?`⏸ Vilar: <b>${item.rest.map(esc).join(', ')}</b>`:'';
  document.getElementById('doneBadge').textContent=completedRounds.has(currentRoundIndex)?'✅ RUNDAN ÄR SPELAD':'';
@@ -2472,10 +2493,26 @@ function renderBigRound(){
  applyZoom();
 }
 function backToSetup(){
- document.getElementById('gameView').classList.remove('active');
+ // Avsluta spelvyns helskärm innan den döljs; annars kan sidan bli låst.
+ const game=document.getElementById('gameView');
+ const isGameFullscreen=document.fullscreenElement===game || document.webkitFullscreenElement===game;
+ if(isGameFullscreen){
+   try{
+     const result=document.exitFullscreen ? document.exitFullscreen() :
+       (document.webkitExitFullscreen ? document.webkitExitFullscreen() : null);
+     if(result && typeof result.catch==='function')result.catch(()=>{});
+   }catch(e){console.warn('Kunde inte avsluta helskärm',e);}
+ }
+ game.classList.remove('active');
  document.getElementById('setupView').classList.remove('hidden');
  document.getElementById('resumeBtn').style.display=schedule.length?'inline-block':'none';
- window.badmintonV14ShowTab?.('settings');window.scrollTo(0,0);
+ // Återställ normal skrollning även om webbläsaren lämnar fullscreen asynkront.
+ document.documentElement.style.removeProperty('overflow');
+ document.body.style.removeProperty('overflow');
+ document.documentElement.style.removeProperty('height');
+ document.body.style.removeProperty('height');
+ window.badmintonV14ShowTab?.('settings');
+ window.scrollTo(0,0);
 }
 function resumeGame(){
  if(!schedule.length) return;
@@ -2531,6 +2568,7 @@ window.addEventListener('focus',updateSelectedCount);
   <button class="timerBtn" onclick="markRoundDone()">✅ Klar</button>
 </div>
  <div aria-label="Textstorlek i spelvyn"><button title="Minska textstorlek" onclick="zoomChange(-0.1)">A−</button><span id="gameZoomValue" style="padding:0 5px">100%</span><button title="Öka textstorlek" onclick="zoomChange(0.1)">A+</button></div>
+<button type="button" id="gameFullscreenBtn" class="gameFullscreenBtn" onclick="toggleGameFullscreen()" aria-label="Visa spelvyn i helskärm" aria-pressed="false">⛶ Helskärm</button>
 </div>
 <div class="doneBadge" id="doneBadge"></div>
 <div class="bigCourts" id="bigCourts"></div><div class="bigRest" id="bigRest"></div>
@@ -3006,6 +3044,41 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(list){new MutationObserver(()=>{if(list.style.display==='none')list.style.display='block'}).observe(list,{attributes:true,attributeFilter:['style']});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,350));else setTimeout(init,350);
+})();
+</script>
+<script>
+(function(){
+  const game=document.getElementById('gameView');
+  const btn=document.getElementById('gameFullscreenBtn');
+  if(!game||!btn)return;
+  const sync=()=>{
+    const active=document.fullscreenElement===game || document.webkitFullscreenElement===game;
+    btn.textContent=active?'⤢ Avsluta helskärm':'⛶ Helskärm';
+    btn.setAttribute('aria-pressed',String(active));
+    btn.setAttribute('aria-label',active?'Avsluta helskärm':'Visa spelvyn i helskärm');
+  };
+  window.toggleGameFullscreen=async function(){
+    try{
+      if(document.fullscreenElement||document.webkitFullscreenElement){
+        if(document.exitFullscreen)await document.exitFullscreen();
+        else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+      }else if(game.requestFullscreen){await game.requestFullscreen();}
+      else if(game.webkitRequestFullscreen){game.webkitRequestFullscreen();}
+      else{alert('Helskärm stöds inte i den här webbläsaren. Prova F11 på datorn.');}
+    }catch(e){alert('Kunde inte öppna helskärm. Prova F11 på datorn.');}
+    sync();
+  };
+  const syncAndRestoreScroll=()=>{
+    sync();
+    if(!document.fullscreenElement && !document.webkitFullscreenElement &&
+       !game.classList.contains('active')){
+      document.documentElement.style.removeProperty('overflow');
+      document.body.style.removeProperty('overflow');
+    }
+  };
+  document.addEventListener('fullscreenchange',syncAndRestoreScroll);
+  document.addEventListener('webkitfullscreenchange',syncAndRestoreScroll);
+  sync();
 })();
 </script>
 </body>
