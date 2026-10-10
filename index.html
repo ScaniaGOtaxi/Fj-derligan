@@ -835,6 +835,14 @@ window.badmintonPlayerImage=function(name,team,side,position){
 #badmintonViewer .viewerCourt.completedRound .viewerStage img.genderAthlete,
 #badmintonViewer .viewerCourt.completedRound .viewerStage img.courtNet {z-index:3!important;}
 </style>
+<style id="live-qr-mobile-compact-v16">
+/* v1.6: Mobilanpassning enbart för Live & QR. 15% smalare spelkort,
+   bibehållna proportioner och oförändrad vanlig spelvy. */
+@media screen and (max-width: 700px) {
+  .viewerCourt { width:85%!important; max-width:85%!important; margin-left:auto!important; margin-right:auto!important; box-sizing:border-box!important; }
+  .viewerStage { width:100%!important; max-width:100%!important; }
+}
+</style>
 </head>
 <body>
 <style>
