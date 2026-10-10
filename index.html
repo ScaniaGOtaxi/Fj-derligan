@@ -470,6 +470,24 @@ select{min-width:130px}
 .threeDLabel.isSingle{visibility:visible}
 .playerNationality{max-width:98px!important;min-width:72px!important;padding:5px!important;font-size:12px!important}
 @media(max-width:650px){.threeDLabel{font-size:clamp(8px,2.4vw,16px)}.threeDCourt{min-height:0!important}}
+
+/* FIX v1.5: visa hela spelarnamn i alla banor */
+.threeDStage .threeDLabel,
+.threeDStage .threeDLabel.pos0,
+.threeDStage .threeDLabel.pos1,
+.threeDStage .threeDLabel.pos2,
+.threeDStage .threeDLabel.pos3,
+.threeDStage.courtSingle .threeDLabel.pos0,
+.threeDStage.courtSingle .threeDLabel.pos2 {
+  width:max-content!important; max-width:98%!important; min-width:0!important;
+  overflow:visible!important; white-space:nowrap!important; text-overflow:clip!important;
+  padding:2px 7px!important; justify-content:flex-start!important;
+}
+.threeDStage .threeDLabel.pos0, .threeDStage .threeDLabel.pos2,
+.threeDStage.courtSingle .threeDLabel.pos0, .threeDStage.courtSingle .threeDLabel.pos2 {left:0.8%!important;right:auto!important;}
+.threeDStage .threeDLabel.pos1, .threeDStage .threeDLabel.pos3 {right:0.8%!important;left:auto!important;}
+.threeDStage .threeDLabel span {overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;min-width:max-content!important;}
+.threeDStage .threeDLabel img {flex-shrink:0!important;}
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -521,7 +539,7 @@ window.BADMINTON_COUNTRIES=[["AF","Afghanistan","Afghanistan","AFG"],["AL","Alba
 </script>
 <style id="court-single-double-fix">
 .threeDStage{aspect-ratio:828/677!important}
-.threeDStage>img{object-fit:fill!important}
+.threeDStage>img{object-fit:cover!important}
 .threeDStage .threeDLabel{height:auto!important;min-height:6%;padding:2px 5px!important;line-height:1.1!important;z-index:3;background:rgba(0,35,29,.82)!important;backdrop-filter:blur(3px);border:1px solid rgba(220,255,240,.6)!important;max-width:45%;font-size:clamp(10px,1.5vw,24px)!important}
 .threeDStage .threeDLabel.pos0{top:4%!important;left:28%!important;width:26%!important}
 .threeDStage .threeDLabel.pos1{top:4%!important;left:59%!important;width:26%!important}
@@ -571,6 +589,74 @@ window.BADMINTON_COUNTRIES=[["AF","Afghanistan","Afghanistan","AFG"],["AL","Alba
  #gameView .gameNav{grid-template-columns:1fr 1fr 1fr}
  #gameView .gameNav button{font-size:11px;padding:8px 3px}
 }
+</style>
+<style id="svg-full-court-fix-v3">
+/* v1.5 SVG FIX 3: visa hela banbilden utan beskärning */
+.threeDStage.courtDouble{aspect-ratio:1672 / 941!important;}
+.threeDStage.courtSingle{aspect-ratio:828 / 677!important;}
+.threeDStage>img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center center!important;}
+</style>
+
+<style id="svg-proportionell-bana-fix-v4">
+/* Banans bredd anpassas efter tillgänglig höjd så hela bilden syns. */
+.threeDStage.courtDouble {
+  width:min(100%, calc((100dvh - 265px) * 1672 / 941))!important;
+  aspect-ratio:1672 / 941!important;
+  height:auto!important;
+  max-height:none!important;
+  flex:0 0 auto!important;
+  margin-inline:auto!important;
+  background:transparent!important;
+}
+.threeDStage.courtSingle {
+  width:min(100%, calc((100dvh - 265px) * 828 / 677))!important;
+  aspect-ratio:828 / 677!important;
+  height:auto!important;
+  max-height:none!important;
+  flex:0 0 auto!important;
+  margin-inline:auto!important;
+  background:transparent!important;
+}
+.threeDStage>img {display:block!important;width:100%!important;height:auto!important;aspect-ratio:inherit!important;object-fit:contain!important;}
+@media(max-width:700px){
+ .threeDStage.courtDouble,.threeDStage.courtSingle{width:100%!important;}
+}
+</style>
+<style id="namnskylt-auto-bredd-fix">
+/* FIX: namnskyltarna växer efter texten, även när A+/A- ändrar storlek. */
+.threeDStage .threeDLabel,
+.threeDStage .threeDLabel.pos0,
+.threeDStage .threeDLabel.pos1,
+.threeDStage .threeDLabel.pos2,
+.threeDStage .threeDLabel.pos3,
+.threeDStage.courtSingle .threeDLabel.pos0,
+.threeDStage.courtSingle .threeDLabel.pos2 {
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  width:max-content!important;
+  max-width:98.4%!important;
+  min-width:0!important;
+  padding:3px 10px!important;
+  gap:.35em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  flex-wrap:nowrap!important;
+  justify-content:flex-start!important;
+}
+.threeDStage .threeDLabel span {
+  display:inline-block!important;
+  width:auto!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  flex-shrink:0!important;
+}
+.threeDStage .threeDLabel img {flex:0 0 auto!important}
+.threeDStage .threeDLabel.pos1,
+.threeDStage .threeDLabel.pos3 {justify-content:flex-end!important}
 </style>
 </head>
 <body>
@@ -2372,7 +2458,7 @@ function renderBigRound(){
    if(!n)return `<div class="threeDLabel pos${k} isEmpty"></div>`;
    return `<div class="threeDLabel pos${k}"><img alt="Flagga" data-country="${window.badmintonCountryOf(n)}" onerror="window.badmintonFlagFallback(this)" src="${window.badmintonFlagUrl(window.badmintonCountryOf(n))}"><span>${esc(n)}</span></div>`;
   }).join('');
-  return `<div class="bigCourt threeDCourt"><div class="bigCourtTitle">🏸 Bana ${i+1} — ${c.type}</div><div class="threeDStage ${single?'courtSingle':'courtDouble'}"><img src="${single?'bana_singel.jpg':'bana_dubbel.jpg'}" alt="${single?'3D-bana med två spelare':'3D-bana med fyra spelare'}">${labels}</div></div>`;
+  return `<div class="bigCourt threeDCourt"><div class="bigCourtTitle">🏸 Bana ${i+1} — ${c.type}</div><div class="threeDStage ${single?'courtSingle':'courtDouble'}"><img src="${single?'bana_singel.svg':'bana_dubbel.svg'}" alt="${single?'3D-bana med två spelare':'3D-bana med fyra spelare'}">${labels}</div></div>`;
  }).join('');
  document.getElementById('bigRest').innerHTML=item.rest.length?`⏸ Vilar: <b>${item.rest.map(esc).join(', ')}</b>`:'';
  document.getElementById('doneBadge').textContent=completedRounds.has(currentRoundIndex)?'✅ RUNDAN ÄR SPELAD':'';
@@ -2810,6 +2896,34 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .threeDStage.courtSingle .threeDLabel.pos0{left:0.8%!important;right:auto!important;top:0.8%!important;bottom:auto!important;width:31%!important}
 .threeDStage.courtSingle .threeDLabel.pos2{left:0.8%!important;right:auto!important;top:auto!important;bottom:0.8%!important;width:31%!important}
 .threeDStage .threeDLabel span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* FIX: Namnskyltens bredd följer faktiskt textinnehåll, även vid A+/A-. */
+.threeDStage .threeDLabel,
+.threeDStage .threeDLabel.pos0,
+.threeDStage .threeDLabel.pos1,
+.threeDStage .threeDLabel.pos2,
+.threeDStage .threeDLabel.pos3,
+.threeDStage.courtSingle .threeDLabel.pos0,
+.threeDStage.courtSingle .threeDLabel.pos2 {
+ width:max-content!important;
+ max-width:98.4%!important;
+ min-width:0!important;
+ padding:3px 20px 3px 8px!important;
+ box-sizing:border-box!important;
+ overflow:visible!important;
+ text-overflow:clip!important;
+ white-space:nowrap!important;
+ flex-wrap:nowrap!important;
+}
+.threeDStage .threeDLabel span {
+ display:inline-block!important;
+ flex:0 0 auto!important;
+ width:max-content!important;
+ max-width:none!important;
+ min-width:max-content!important;
+ overflow:visible!important;
+ text-overflow:clip!important;
+ white-space:nowrap!important;
+}
 </style>
 <script id="fix41-recovery-script">
 (function(){
