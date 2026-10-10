@@ -51,7 +51,26 @@ select{min-width:130px}
 .doneBadge{font-size:clamp(20px,4vw,34px);font-weight:900;color:#7ee787;text-align:center;min-height:34px}
 .groupRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .groupRow input{flex:1;min-width:180px}
-.completedRound{border-color:#7ee787!important;box-shadow:0 0 0 2px #238636 inset}
+/* Spelad runda: färga själva spelrutorna röda, inte bara ramen. */
+#gameView .bigCourts.completedRound .bigCourt,
+#gameView .bigCourts.completedRound .bigCourt.threeDCourt {
+  background:#8d2026!important;
+  border-color:#394754!important;
+  box-shadow:none!important;
+}
+#gameView .bigCourts.completedRound .threeDStage::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(190,20,32,.22);
+  pointer-events:none;
+  z-index:2;
+}
+#gameView .bigCourts.completedRound .threeDStage .threeDLabel,
+#gameView .bigCourts.completedRound .threeDStage img.genderAthlete {
+  z-index:3;
+}
+
 .installNote{font-size:13px;color:#e6edf3;margin-top:10px}
 
 /* Mobilanpassning för telefonens webbläsare */
@@ -778,6 +797,44 @@ window.badmintonPlayerImage=function(name,team,side,position){
   object-position:center bottom!important;
 }
 </style>
+<style id="completed-game-red-fill-v16">/* Spelad runda: färga själva spelrutorna röda, inte bara ramen. */
+#gameView .bigCourts.completedRound .bigCourt,
+#gameView .bigCourts.completedRound .bigCourt.threeDCourt {
+  background:#8d2026!important;
+  border-color:#394754!important;
+  box-shadow:none!important;
+}
+#gameView .bigCourts.completedRound .threeDStage::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(190,20,32,.22);
+  pointer-events:none;
+  z-index:2;
+}
+#gameView .bigCourts.completedRound .threeDStage .threeDLabel,
+#gameView .bigCourts.completedRound .threeDStage img.genderAthlete {
+  z-index:3;
+}
+</style>
+<style id="viewerCourtHeightPlus20V16">
+/* Live & QR only: make the court 20% taller without changing width. */
+#badmintonViewer .viewerStage,
+#badmintonViewer .viewerStage.single,
+#badmintonViewer .viewerStage.double {
+  aspect-ratio: 963 / 955.2 !important;
+  height: auto !important;
+}
+</style>
+
+<style id="viewer-completed-round-red-v16">
+/* Live & QR: same red completed court treatment as main game view. */
+#badmintonViewer .viewerCourt.completedRound {background:#8d2026!important;border-color:#394754!important;box-shadow:none!important;}
+#badmintonViewer .viewerCourt.completedRound .viewerStage::after {content:"";position:absolute;inset:0;background:rgba(190,20,32,.22);pointer-events:none;z-index:2;}
+#badmintonViewer .viewerCourt.completedRound .viewerStage .viewerName,
+#badmintonViewer .viewerCourt.completedRound .viewerStage img.genderAthlete,
+#badmintonViewer .viewerCourt.completedRound .viewerStage img.courtNet {z-index:3!important;}
+</style>
 </head>
 <body>
 <style>
@@ -810,6 +867,28 @@ window.badmintonPlayerImage=function(name,team,side,position){
  'use strict';
  const params=new URLSearchParams(location.hash.slice(1));
  const session=params.get('live'),token=params.get('token');
+ // Same-device bridge for two local windows; remote viewers still require status from Supabase RPC.
+ const localCompletedRounds=new Set();
+ const bridgeKey='badmintonLiveCompletedV16';
+ function receiveCompleted(message){
+   if(!message||String(message.sessionId)!==String(session))return;
+   const n=Number(message.roundNumber);
+   if(!Number.isInteger(n)||n<1)return;
+   localCompletedRounds.add(n);
+   document.querySelectorAll('#viewerCourts .viewerCourt').forEach(card=>{
+     if(Number(document.getElementById('viewerRound').textContent.match(/\d+/)?.[0])===n)card.classList.add('completedRound');
+   });
+ }
+ let liveBridge=null;
+ try{if(typeof BroadcastChannel!=='undefined'){
+   liveBridge=new BroadcastChannel('badminton-live-completed-v16');
+   liveBridge.onmessage=e=>receiveCompleted(e.data);
+ }}catch(e){}
+ try{
+   const last=JSON.parse(localStorage.getItem(bridgeKey)||'null');receiveCompleted(last);
+   window.addEventListener('storage',e=>{if(e.key===bridgeKey){try{receiveCompleted(JSON.parse(e.newValue))}catch(err){}}});
+ }catch(e){}
+
  if(!session&&!token)return;
  const view=document.getElementById('badmintonViewer');view.style.display='flex';
  const status=document.getElementById('viewerStatus'),round=document.getElementById('viewerRound'),courts=document.getElementById('viewerCourts'),rest=document.getElementById('viewerRest');
@@ -819,6 +898,23 @@ window.badmintonPlayerImage=function(name,team,side,position){
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  if(!uuid.test(session||'')||!/^[0-9a-f]{64}$/.test(token||'')){status.textContent='❌ Ogiltig visningslänk.';return;}
  const base='https://frkhzwutziysnjibaxfa.supabase.co',key='sb_publishable_Ls7ecNqa40yuRE8S1KiNCw_cHq_18Ej';
+ let localLiveRound=null;
+ function acceptLiveRound(payload){
+  if(!payload||String(payload.sessionId)!==String(session)||!Array.isArray(payload.players))return;
+  if(!Number.isInteger(Number(payload.roundNumber)))return;
+  if(localLiveRound&&Number(localLiveRound.at)>Number(payload.at))return;
+  localLiveRound=payload;
+  previous='';
+  void refresh();
+ }
+ try{
+  acceptLiveRound(JSON.parse(localStorage.getItem('badmintonLiveRoundV16')||'null'));
+  window.addEventListener('storage',e=>{
+    if(e.key==='badmintonLiveRoundV16'){try{acceptLiveRound(JSON.parse(e.newValue))}catch(_){}}
+  });
+  const ch=new BroadcastChannel('badminton-live-round-v16');
+  ch.onmessage=e=>acceptLiveRound(e.data);
+ }catch(_){}
  let busy=false,previous='';
  function flagCode(p){
    const raw=p.country_code||p.countryCode||p.nationality_code||p.flag_code||p.iso2||p.nationality||p.country||'';
@@ -834,17 +930,27 @@ window.badmintonPlayerImage=function(name,team,side,position){
   try{
    const response=await fetch(base+'/rest/v1/rpc/get_badminton_live_view',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({p_session_id:session,p_viewer_token:token}),cache:'no-store'});
    if(!response.ok){const err=await response.json().catch(()=>({}));throw Error(err.message||'Visningslänken fungerar inte längre.');}
-   const data=await response.json();status.textContent='🟢 Ansluten – '+(data.session_name||'Live');
+   const data=await response.json();
+   if(localLiveRound){
+     data.current_round=localLiveRound.roundNumber;
+     data.players=localLiveRound.players;
+     data.court_count=localLiveRound.court_count;
+   }
+   status.textContent='🟢 Ansluten – '+(data.session_name||'Live');
    const fingerprint=JSON.stringify(data);if(fingerprint===previous)return;previous=fingerprint;
    round.textContent='🏸 Runda '+data.current_round;
    courts.replaceChildren();rest.replaceChildren();
+   // Reflect completed round status when included in the Live RPC response.
+   const currentRoundRecord=Array.isArray(data.rounds)?data.rounds.find(r=>Number(r.round_number??r.number)===Number(data.current_round)):null;
+   const completedRaw=data.current_round_completed??data.round_completed??data.is_completed??data.completed??currentRoundRecord?.completed??currentRoundRecord?.status??data.round_status??data.current_round_status??data.status;
+   const liveRoundCompleted=completedRaw===true||completedRaw===1||['completed','complete','done','played','spelad','klar','true'].includes(String(completedRaw??'').toLowerCase())||localCompletedRounds.has(Number(data.current_round));
    const players=Array.isArray(data.players)?data.players:[],count=Math.max(1,Math.min(3,Number(data.court_count)||1));
    courts.style.setProperty('--court-count',count);courts.dataset.count=count;
    for(let n=1;n<=count;n++){
     const playing=players.filter(p=>Number(p.court)===n);
     const team1=playing.filter(p=>Number(p.team)===1),team2=playing.filter(p=>Number(p.team)===2);
     const doubles=team1.length>1||team2.length>1;
-    const card=document.createElement('section');card.className='viewerCourt';
+    const card=document.createElement('section');card.className='viewerCourt'+(liveRoundCompleted?' completedRound':'');
     const title=document.createElement('h3');title.textContent='🏸 Bana '+n+' — '+(doubles?'Dubbel':'Singel');card.append(title);
     const stage=document.createElement('div');stage.className='viewerStage '+(doubles?'double':'single');
     const img=document.createElement('img');img.src='bana.jpg';img.alt='3D-badmintonbana';stage.append(img);
@@ -1194,14 +1300,40 @@ async function syncLiveRound(){
     }
   }finally{liveRoundSyncRunning=false;}
 }
+function publishLocalLiveRound(number){
+ try{
+  if(!lastSessionId || !Array.isArray(schedule) || !schedule[number-1])return;
+  const item=schedule[number-1];
+  const players=[];
+  (item.courts||[]).forEach((court,index)=>{
+    (court.players||[]).forEach((name,pos)=>{
+      if(!name)return;
+      players.push({name, court:index+1, team:pos<2?1:2, activity:'play',
+        country_code:window.badmintonCountryOf(name)});
+    });
+  });
+  (item.rest||[]).forEach(name=>players.push({name,activity:'rest'}));
+  const payload={sessionId:lastSessionId,roundNumber:number,players,court_count:item.courts.length,at:Date.now()};
+  localStorage.setItem('badmintonLiveRoundV16',JSON.stringify(payload));
+  try{const ch=new BroadcastChannel('badminton-live-round-v16');ch.postMessage(payload);ch.close()}catch(_){}
+ }catch(e){console.warn('Lokal live-synk:',e)}
+}
 window.addEventListener('badminton:round-changed',event=>{
   const number=Number(event.detail?.roundNumber);
   if(!Number.isInteger(number)||number<1)return;
   liveRoundWanted=number;
+  publishLocalLiveRound(number);
   void syncLiveRound();
 });
 window.addEventListener('badminton:round-completed',async event=>{
  const number=event.detail?.roundNumber;
+ // Immediately mirror completion to a Live & QR window on the same device.
+ if(lastSessionId && Number.isInteger(Number(number))){
+   const payload={sessionId:lastSessionId,roundNumber:Number(number),at:Date.now()};
+   try{localStorage.setItem('badmintonLiveCompletedV16',JSON.stringify(payload))}catch(e){}
+   try{const ch=new BroadcastChannel('badminton-live-completed-v16');ch.postMessage(payload);ch.close()}catch(e){}
+ }
+
  const id=cloudRoundIds.get(number);
  if(!id||!lastSessionId){if(cloudSaveBusy)pendingCompletions.add(number);return;}
  try{await request('/rest/v1/badminton_rounds?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'completed',completed_at:new Date().toISOString()})});
@@ -2880,7 +3012,6 @@ function renderBigRound(){
   return `<div class="bigCourt threeDCourt"><div class="bigCourtTitle">🏸 Bana ${i+1} — ${c.type}</div><div class="threeDStage ${single?'courtSingle':'courtDouble'}"><img src="bana.jpg" alt="${single?'3D-bana med två spelare':'3D-bana med fyra spelare'}">${athletes.match(/<img[^>]*class="genderAthlete far[^>]*>/g)?.join('')||''}<img class="courtNet" src="nat.png" alt="">${athletes.match(/<img[^>]*class="genderAthlete near[^>]*>/g)?.join('')||''}${labels}</div></div>`;
  }).join('');
  document.getElementById('bigRest').innerHTML=item.rest.length?`⏸ Vilar: <b>${item.rest.map(esc).join(', ')}</b>`:'';
- document.getElementById('doneBadge').textContent=completedRounds.has(currentRoundIndex)?'✅ RUNDAN ÄR SPELAD':'';
  document.getElementById('bigCourts').classList.toggle('completedRound',completedRounds.has(currentRoundIndex));
  const nextBig=document.getElementById('bigNextBtn');
  nextBig.textContent=currentRoundIndex===schedule.length-1?'Sista rundan ✓':'Nästa runda ➜';
@@ -2967,7 +3098,6 @@ window.addEventListener('focus',updateSelectedCount);
 </div>
 <button type="button" id="gameFullscreenBtn" class="gameFullscreenBtn" onclick="toggleGameFullscreen()" aria-label="Visa spelvyn i helskärm" aria-pressed="false">⛶ Helskärm</button>
 </div>
-<div class="doneBadge" id="doneBadge"></div>
 <div class="bigCourts" id="bigCourts"></div><div class="bigRest" id="bigRest"></div>
 <div class="gameNav">
 <button class="backBtn" onclick="backToSetup()">⌂ Start / Inställningar</button>
@@ -2980,7 +3110,7 @@ window.addEventListener('focus',updateSelectedCount);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=1.6-splash-fix').catch(console.error);
+    navigator.serviceWorker.register('./service-worker.js?v=1.6-round-sync-fix').catch(console.error);
   });
 }
 </script>
