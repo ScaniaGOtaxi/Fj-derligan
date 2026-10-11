@@ -1263,7 +1263,7 @@ importBtn.addEventListener('click',async()=>{
  });
  shareButton.addEventListener('click',async()=>{
   if(!accessToken||!groupSelect.value){say('Logga in och välj grupp först.');return;}
-  if(currentShareLink && !window.confirm('Skapa en ny visningslänk? Den tidigare länken slutar fungera.'))return;
+  if(currentShareLink && !(await window.badmintonConfirmNewShareLink()))return;
   shareButton.disabled=true;shareStatus.textContent='Skapar visningslänk …';
   try{
    const active=await request('/rest/v1/badminton_sessions?select=id,name&group_id=eq.'+encodeURIComponent(groupSelect.value)+'&status=eq.active&limit=1');
@@ -3990,6 +3990,23 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 <script>
+window.badmintonConfirmNewShareLink=function(){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');
+  overlay.className='bmConfirmOverlay';
+  overlay.innerHTML='<div class="bmConfirmDialog" role="dialog" aria-modal="true" aria-labelledby="bmNewShareTitle"><h3 id="bmNewShareTitle">Skapa ny visningslänk?</h3><p>Den tidigare Live & QR-länken slutar fungera. Spelare som har den gamla länken behöver få den nya.</p><div class="bmConfirmActions"><button type="button" class="bmConfirmCancel">Avbryt</button><button type="button" class="bmConfirmDanger">Skapa ny länk</button></div></div>';
+  const previous=document.activeElement;
+  let finished=false;
+  function finish(value){if(finished)return;finished=true;document.removeEventListener('keydown',onKey);overlay.remove();previous?.focus?.();resolve(value)}
+  function onKey(e){if(e.key==='Escape')finish(false)}
+  overlay.querySelector('.bmConfirmCancel').onclick=()=>finish(false);
+  overlay.querySelector('.bmConfirmDanger').onclick=()=>finish(true);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false)});
+  document.addEventListener('keydown',onKey);
+  document.body.append(overlay);
+  overlay.querySelector('.bmConfirmCancel').focus();
+ });
+};
 window.badmintonConfirmActiveGame=function(name){
  return new Promise(resolve=>{
   const overlay=document.createElement('div');
