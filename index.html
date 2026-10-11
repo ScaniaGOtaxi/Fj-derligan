@@ -843,6 +843,19 @@ window.badmintonPlayerImage=function(name,team,side,position){
   .viewerStage { width:100%!important; max-width:100%!important; }
 }
 </style>
+<style id="viewer-share-mobile-styles">
+#liveSharePanel{max-width:100%;overflow:hidden}
+#viewerShareContent{width:100%;max-width:460px;margin:12px auto}
+#viewerQr{box-sizing:border-box;display:flex;justify-content:center;align-items:center;margin:12px auto 4px;padding:16px;background:#fff;border-radius:16px;width:min(100%,290px);min-height:260px}
+#viewerQr img,#viewerQr canvas{max-width:100%!important;height:auto!important;image-rendering:pixelated}
+.viewerLinkBox{background:#24394b;border-radius:10px;padding:13px;margin:12px 0;text-align:center;overflow-wrap:anywhere}
+.viewerLinkBox a{color:#b8dcff;text-decoration:underline;font-size:clamp(13px,3.5vw,16px)}
+.viewerShareActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.viewerShareActions button{min-height:48px;white-space:normal;overflow-wrap:anywhere;padding:10px 6px}
+#shareViewerWhatsApp{background:#23844d;color:#fff}
+#shareViewerNative{grid-column:1/-1}
+@media(max-width:400px){#viewerQr{width:min(100%,270px);padding:12px}.viewerShareActions{grid-template-columns:1fr}#shareViewerNative{grid-column:auto}}
+</style>
 </head>
 <body>
 <style>
@@ -1005,12 +1018,20 @@ window.badmintonPlayerImage=function(name,team,side,position){
 <div class="cloudRow"><button type="button" id="cloudImportRotation">🏸 Hämta gruppens spelare till rotationsschemat</button></div><div id="cloudPlayers" style="white-space:pre-wrap;font-size:13px"></div>
 <div id="cloudStatus" role="status">Redo för anslutningstest.</div><div id="cloudSessionStatus" style="font-size:13px;margin-top:8px" aria-live="polite">Molnsession: inte skapad ännu.</div><div class="cloudRow"><button type="button" class="secondary" id="cloudVerifySession">Kontrollera senaste sessionen</button><button type="button" id="cloudResumeSession">↻ Återuppta senaste spel</button></div><div id="cloudGroups"></div>
  <div class="card" id="liveSharePanel" style="margin-top:10px">
-  <h3>📱 Dela livevisning med spelarna</h3>
-  <p class="small">Välj en grupp och återuppta dess aktiva spel. Skapa sedan en visningslänk. En ny länk ersätter den gamla.</p>
-  <button type="button" id="createViewerLink">🔗 Skapa visningslänk</button>
-  <div id="viewerLinkResult" style="margin-top:10px;overflow-wrap:anywhere" aria-live="polite"></div>
-  <div id="viewerQr" style="margin:12px 0;background:white;display:none;width:max-content;padding:10px;border-radius:8px"></div>
-  <button type="button" id="copyViewerLink" class="secondary" style="display:none">Kopiera länk</button>
+  <h3>🏸 Dela Live &amp; QR</h3>
+  <p class="small">Visa QR-koden för spelarna eller dela länken. En ny visningslänk ersätter den gamla.</p>
+  <div id="viewerShareContent" style="display:none">
+   <div id="viewerQr" aria-label="QR-kod för livevisning"></div>
+   <p class="small" style="text-align:center">📷 Skanna QR-koden för att följa spelet live</p>
+   <div class="viewerLinkBox"><span id="viewerLinkResult" aria-live="polite"></span></div>
+   <div class="viewerShareActions">
+    <button type="button" id="shareViewerWhatsApp">💬 WhatsApp</button>
+    <button type="button" id="copyViewerLink" class="secondary">📋 Kopiera länk</button>
+    <button type="button" id="shareViewerNative" class="secondary">📤 Dela via mobilen</button>
+   </div>
+  </div>
+  <div id="viewerShareStatus" class="small" role="status" aria-live="polite"></div>
+  <button type="button" id="createViewerLink" class="secondary" style="margin-top:12px">🔗 Skapa ny visningslänk</button>
  </div>
 <div class="cloudRow"><button type="button" id="cloudGroupStats">📊 Visa gruppstatistik (Supabase)</button></div>
 <div id="cloudStats" class="card" style="display:none;margin-top:10px;font-size:14px" aria-live="polite"></div>
@@ -1204,41 +1225,64 @@ importBtn.addEventListener('click',async()=>{
  }catch(e){say('❌ Kunde inte hämta spelare till rotationen: '+e.message)}
  finally{importBtn.disabled=false}
 });
- const sharePanel=document.getElementById('liveSharePanel');
  const shareButton=document.getElementById('createViewerLink');
  const shareResult=document.getElementById('viewerLinkResult');
  const shareQr=document.getElementById('viewerQr');
+ const shareContent=document.getElementById('viewerShareContent');
+ const shareStatus=document.getElementById('viewerShareStatus');
  const copyButton=document.getElementById('copyViewerLink');
+ const whatsAppButton=document.getElementById('shareViewerWhatsApp');
+ const nativeShareButton=document.getElementById('shareViewerNative');
  let currentShareLink='';
+ function getPublishedLink(){
+   if(location.protocol!=='file:')return new URL(location.href);
+   return new URL('https://scaniagotaxi.github.io/Fj-derligan/');
+ }
+ function displayShortLink(url){
+   const u=new URL(url);
+   return u.host+u.pathname.replace(/\/$/,'')+' / Live-länk';
+ }
+ function shareMessage(){return '🏸 Följ vårt badmintonspel live!\n'+currentShareLink;}
  copyButton.addEventListener('click',async()=>{
    if(!currentShareLink)return;
-   try{await navigator.clipboard.writeText(currentShareLink);say('✅ Visningslänken kopierad.');}
-   catch(e){say('Kopiera länken manuellt från rutan.');}
+   try{await navigator.clipboard.writeText(currentShareLink);shareStatus.textContent='✅ Hela visningslänken kopierad.';}
+   catch(e){
+     const t=document.createElement('textarea');t.value=currentShareLink;t.style.position='fixed';t.style.opacity='0';document.body.append(t);t.select();
+     let ok=false;try{ok=document.execCommand('copy')}catch(_){}t.remove();
+     shareStatus.textContent=ok?'✅ Hela visningslänken kopierad.':'Kopiering stöds inte här. Öppna länken och kopiera adressen.';
+   }
+ });
+ whatsAppButton.addEventListener('click',()=>{
+   if(!currentShareLink)return;
+   window.open('https://wa.me/?text='+encodeURIComponent(shareMessage()),'_blank','noopener,noreferrer');
+ });
+ nativeShareButton.addEventListener('click',async()=>{
+   if(!currentShareLink)return;
+   if(navigator.share){try{await navigator.share({title:'Badminton – Live',text:'🏸 Följ vårt badmintonspel live!',url:currentShareLink});}catch(e){if(e.name!=='AbortError')shareStatus.textContent='Kunde inte dela. Prova Kopiera länk.';}}
+   else{shareStatus.textContent='Delningsmenyn stöds inte i denna webbläsare. Använd WhatsApp eller Kopiera länk.';}
  });
  shareButton.addEventListener('click',async()=>{
   if(!accessToken||!groupSelect.value){say('Logga in och välj grupp först.');return;}
-  shareButton.disabled=true;shareResult.textContent='Skapar visningslänk …';shareQr.style.display='none';shareQr.replaceChildren();copyButton.style.display='none';
+  if(currentShareLink && !window.confirm('Skapa en ny visningslänk? Den tidigare länken slutar fungera.'))return;
+  shareButton.disabled=true;shareStatus.textContent='Skapar visningslänk …';
   try{
    const active=await request('/rest/v1/badminton_sessions?select=id,name&group_id=eq.'+encodeURIComponent(groupSelect.value)+'&status=eq.active&limit=1');
    if(active.length!==1)throw Error('Gruppen har inget aktivt spel.');
    const token=await request('/rest/v1/rpc/create_badminton_viewer_token',{method:'POST',body:JSON.stringify({p_session_id:active[0].id})});
    if(typeof token!=='string'||!/^[0-9a-f]{64}$/.test(token))throw Error('Ingen giltig visningskod returnerades.');
-   const link=new URL(location.href);link.hash=new URLSearchParams({live:active[0].id,token}).toString();
+   const link=getPublishedLink();link.hash=new URLSearchParams({live:active[0].id,token}).toString();
    currentShareLink=link.toString();
    shareResult.replaceChildren();
-   const caption=document.createElement('p');caption.textContent='🔗 Spelarnas visningslänk (dela bara med deltagarna):';shareResult.append(caption);
-   const a=document.createElement('a');a.href=currentShareLink;a.textContent=currentShareLink;a.target='_blank';a.rel='noopener noreferrer';a.style.color='#a9d6ff';shareResult.append(a);
-   copyButton.style.display='';
-   if(location.protocol==='file:'){
-    const warn=document.createElement('p');warn.textContent='⚠️ Den här filen är öppnad lokalt. Länken fungerar inte på andra telefoner förrän HTML-filen publiceras på en HTTPS-adress.';shareResult.append(warn);
-   }
+   const a=document.createElement('a');a.href=currentShareLink;a.textContent=displayShortLink(currentShareLink);a.target='_blank';a.rel='noopener noreferrer';a.title='Öppna fullständig Live-länk';shareResult.append(a);
+   shareQr.replaceChildren();
    if(typeof QRCode==='function'){
-    shareQr.style.display='block';new QRCode(shareQr,{text:currentShareLink,width:220,height:220,correctLevel:QRCode.CorrectLevel.M});
-   }else{
-    const warn=document.createElement('p');warn.textContent='QR-koden kunde inte laddas. Länken ovan fungerar ändå på en publicerad HTTPS-adress.';shareResult.append(warn);
-   }
+    new QRCode(shareQr,{text:currentShareLink,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});
+   }else{shareStatus.textContent='⚠️ QR-koden kunde inte laddas, men länken kan delas.';}
+   shareContent.style.display='';
+   if(location.protocol==='file:')shareStatus.textContent='ℹ️ Lokal testfil: QR-koden pekar till GitHub Pages. Kontrollera att senaste versionen är publicerad där.';
+   else shareStatus.textContent='✅ Visningslänk skapad för '+active[0].name+'.';
    say('✅ Visningslänk skapad för '+active[0].name+'.');
-  }catch(e){shareResult.textContent='❌ '+e.message;}
+  }catch(e){shareStatus.textContent='❌ '+e.message;}
   finally{shareButton.disabled=false;}
  });
 const sessionStatus=document.getElementById('cloudSessionStatus');
@@ -1424,7 +1468,7 @@ window.badmintonV13PrepareNewGame=async function(){
   if(groupSelect.value!==groupId)throw Error('Gruppen har ändrats. Försök igen.');
   if(active.length){
    const name=active[0].name;
-   const close=confirm('Gruppen har redan ett aktivt spel: ”'+name+'”.\n\nOK = Avsluta det gamla spelet och skapa ett nytt.\nAvbryt = Behåll det gamla spelet (du kan återuppta det med knappen Återuppta senaste spel).\n\nAvslutade rundor och statistik sparas.');
+   const close=await window.badmintonConfirmActiveGame(name);
    if(!close){sessionStatus.textContent='ℹ️ Befintligt spel behålls. Klicka på Återuppta senaste spel om du vill fortsätta.';return false;}
    const changed=await request('/rest/v1/badminton_sessions?id=eq.'+encodeURIComponent(active[0].id)+'&group_id=eq.'+encodeURIComponent(groupId)+'&status=eq.active&select=id',{
     method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'completed',ended_at:new Date().toISOString()})
@@ -1726,14 +1770,14 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 
 <div id="helpPanel" class="card helpPanel">
 <h2>❓ Hjälp och användarguide – Badminton App v1.6</h2>
-<p>Här finns instruktioner för hela appen. Följ snabbstarten för ett vanligt spelpass eller öppna avsnittet som gäller din funktion. Vissa funktioner kräver internet, inloggning och rätt behörighet i Supabase.</p>
+<p>Här hittar du en snabbstart och tydliga instruktioner för spel, avslutade rundor, Live &amp; QR, statistik och administration. Molnfunktioner kräver internet och rätt behörighet.</p>
 <div class="helpMode"><b>🚀 Snabbstart – från grupp till spel</b><br>
 1. Gå till <b>Admin</b> och logga in med e-post och lösenord.<br>
 2. Öppna <b>Spelinställningar → Välj grupp</b>. Tryck <b>Hämta grupper</b> och välj grupp.<br>
 3. Under <b>Hantera spelare</b>: tryck <b>Hämta gruppens spelare till rotationsschemat</b> vid behov. Markera dagens deltagare i spelarlistan.<br>
 4. Välj <b>antal banor</b> och <b>antal rundor</b>.<br>
 5. Tryck <b>Skapa nytt rotationsschema</b> och öppna <b>Badminton Rotation – Spel</b>. Där visas 3D-banor anpassade för singel och dubbel.<br>
-6. Använd timer, markera spelade rundor och gå vidare med <b>Nästa runda</b>.</div>
+6. Tryck <b>✓ Klar</b> när rundan är färdig. <b>Hela spelrutan blir röd</b> som kvitto på att den är spelad. Tryck sedan <b>Nästa runda</b>.</div>
 <h3>🔐 1. Admin – inloggning och kontosäkerhet</h3>
 <p><b>Logga in som Admin:</b> ange registrerad e-postadress och lösenord. Inloggningsstatus visar kontots behörighet och, när den finns tillgänglig, e-postadressen. <b>Logga ut</b> avslutar sessionen. <b>Admin</b> hanterar tilldelade grupper; <b>Super Admin</b> kan även hantera grupper och behörigheter.</p>
 <p><b>Glömt lösenord?</b> Använd <b>Skicka återställningslänk</b> under <b>Lösenord och kontosäkerhet</b>. Följ länken som skickas till kontots e-postadress. För återställning krävs att Supabase Auth är rätt konfigurerat och att appens publicerade HTTPS-adress är tillåten. <b>Ändra lösenord (inloggad)</b> låter en inloggad användare välja ett nytt lösenord.</p>
@@ -1756,10 +1800,32 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p>Spelvyn visar <b>aktuell runda</b>, <b>banor</b>, lag, motståndare och eventuella vilande spelare. Använd <b>Nästa runda</b> och <b>Föregående runda</b> för att bläddra utan att skapa om schemat. <b>Start/Inställningar</b> återgår till inställningarna och ska behålla rotationen. <b>Återgå till spelet</b> öppnar ett befintligt schema.</p>
 <p><b>3D-visning:</b> en singelmatch visar <b>två spelare</b> (en på varje sida av nätet). En dubbelmatch visar <b>fyra spelare</b> (två i varje lag). Röda tröjor visar ena sidan och blå tröjor den andra. Namn och flaggor läggs ovanpå banbilden av appen och ska visas <b>en gång per aktiv spelare</b>. De ska ändras när du går till nästa eller föregående runda. Spelarna har olika bilder för man och kvinna och olika spelställningar för att göra dubbelspel mer naturligt. Blå spelare visas med ryggen mot åskådaren och röda spelare på motsatt sida. Banan och nätet är gemensamma bakgrundsbilder.</p>
 
-<p><b>Timer:</b> ställ in speltiden och starta/pausa timern. <b>Nollställ</b> återställer tiden. Ljudsignal vid sluttid beror på webbläsarens ljudbehörighet. <b>✓ Klar</b> markerar rundan som spelad. Helskärm och liggande visning kan underlätta vid spelplanen.</p>
-<h3>📱 7. Live &amp; QR</h3>
-<p>För ett aktivt molnspel kan Admin välja <b>Skapa visningslänk</b> och dela länken eller QR-koden. Andra kan se aktuell runda utan Admin-inloggning. <b>Kopiera länk</b> kopierar adressen. En ny visningslänk kan ersätta en tidigare länk.</p>
-<div class="helpMode"><b>QR fungerar inte?</b> En lokal <code>file:///</code>-adress på din dator fungerar inte som delbar länk för andra enheter. Använd en publicerad <b>HTTPS-adress</b> och kontrollera att rätt session är aktiv.</div>
+<p><b>Timer:</b> välj speltid och tryck <b>Start</b>. <b>Nollställ</b> återställer tiden. Ljudsignal kan bero på webbläsarens ljudinställningar. Helskärm och liggande läge ger mer plats.</p>
+<div class="helpMode"><b>🔴 Avslutade rundor – färgmarkering</b><br>
+• <b>Vanlig spelruta:</b> rundan är inte markerad som klar.<br>
+• <b>Röd spelruta:</b> rundan har markerats som spelad med <b>✓ Klar</b>.<br>
+• Du behöver ingen extra text ”Rundan är spelad” – färgen visar statusen.<br>
+• <b>Nästa runda</b> och <b>Föregående runda</b> visar respektive rundas egen status. En ny, ospelad runda har vanlig färg.<br>
+• Färgen ändrar inte spelarnas lag, namn eller placering.</div>
+<h3>📱 7. Live &amp; QR – följ spelet på mobil eller dator</h3>
+<p><b>Vad är Live &amp; QR?</b> En visningssida för deltagare och åskådare. Den visar aktuell runda, banor, spelare, namn och flaggor utan att tittaren behöver logga in som Admin.</p>
+<div class="helpMode"><b>📲 Dela Live-visningen</b><br>
+1. Starta eller återuppta ett aktivt spel som är kopplat till Supabase.<br>
+2. Öppna fliken <b>Live &amp; QR</b> och välj <b>Skapa visningslänk</b> om en länk saknas.<br>
+3. Visa <b>QR-koden</b> så att andra kan skanna den, eller tryck <b>Kopiera länk</b> och skicka adressen.<br>
+4. Öppna länken i mobilens eller datorns webbläsare. Tittaren ser spelet men kan inte styra rundorna.</div>
+<div class="helpMode"><b>🔄 Så uppdateras Live &amp; QR</b><br>
+• När Admin byter runda ska Live-sidan visa samma rundnummer och nya spelare efter synkronisering.<br>
+• När Admin trycker <b>✓ Klar</b> ska den avslutade rundans <b>spelruta bli röd även i Live &amp; QR</b>.<br>
+• En ny, ospelad runda visas med vanlig färg. Tidigare spelade rundor behåller sin status.<br>
+• På mobil är Live-rutorna anpassade till en mindre skärm. Vrid gärna mobilen till liggande läge för större banbilder.<br>
+• Synkronisering mellan olika enheter sker via Supabase och kräver internet.</div>
+<div class="helpMode"><b>⚠️ Om Live &amp; QR inte visar rätt runda eller färg</b><br>
+1. Kontrollera att båda sidorna hör till <b>samma aktiva spel</b> och att Live-länken inte är gammal.<br>
+2. Vänta en kort stund och uppdatera Live-sidan.<br>
+3. Kontrollera internet och att GitHub Pages har publicerat senaste versionen.<br>
+4. Om röd färg saknas trots att rundan är klar: kontrollera att Supabase skickar <code>round_completed</code> och att rundans status har sparats.<br>
+5. En lokal <code>file:///</code>-adress är inte en delbar mobiladress; använd appens publicerade <b>HTTPS-länk</b>.</div>
 <h3>📊 8. Statistik och rapporter</h3>
 <p><b>Lokal statistik:</b> visar exempelvis antal matcher, singel, dubbel, vila och fördelning mellan spelare. Växla mellan <b>Totalt</b> och <b>Idag</b>. <b>Uppdatera statistik</b> läser om resultaten. <b>Exportera PDF</b>, <b>Exportera CSV</b> och <b>Dela rapport</b> används för att spara eller dela statistik. <b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse.</p>
 <p><b>Gruppstatistik (Supabase):</b> välj grupp och använd <b>Visa gruppstatistik (Supabase)</b>. Lokal statistik och molnstatistik kan skilja sig eftersom de hämtas från olika lagringsplatser.</p>
@@ -1778,7 +1844,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <div class="helpMode"><b>Fel antal spelare på 3D-banan:</b> kontrollera om banan är märkt Singel eller Dubbel. Singel ska visa två spelare och dubbel fyra. Kontrollera också att du använder den senaste HTML-versionen.</div>
 <div class="helpMode"><b>Dubbel namnskylt eller fel flagga:</b> prova att uppdatera sidan och kontrollera nationalitetsvalet i spelarlistan. Om den gamla texten syns bakom namnet kan webbläsaren ha sparat en äldre banbild; töm webbplatsens cache eller installera den nya versionen.</div>
 <div class="helpMode"><b>Radera grupp fungerar inte:</b> kontrollera att du är Super Admin, att gruppnamnet bekräftats exakt och att Supabase-SQL för full gruppradering har installerats. Om ett databasfel visas behöver det åtgärdas i Supabase.</div>
-<div class="helpMode"><b>Live/QR uppdateras inte:</b> kontrollera HTTPS-adress, aktiv session och internetanslutning. Skapa vid behov en ny visningslänk.</div>
+<div class="helpMode"><b>Live &amp; QR uppdateras inte:</b> se steg-för-steg-felsökningen i avsnitt 7. Kontrollera rätt session, publicerad HTTPS-länk och Supabase-synkronisering.</div>
 <h3>🖥️ 12. Visning och textstorlek</h3>
 <p>Spelarnamnen anpassas efter skärmens storlek. Knapparna A+ och A− samt separat återställning av textstorlek finns inte längre. Använd webbläsarens zoom eller helskärm om du behöver en större visning. Rubrikerna Bana 1, Bana 2 och Bana 3 ändras inte separat.</p>
 <h3>ℹ️ Om appen</h3>
@@ -2509,6 +2575,8 @@ function exportStatisticsPDF(){
   transform:translateX(-50%)!important;
 }
 </style>
+
+</body>
 </body></html>`;
 
   const blob=new Blob([report],{type:'text/html;charset=utf-8'});
@@ -3250,7 +3318,7 @@ function init(){
  const groupControls=document.createElement('div');groupControls.className='v22GroupControls';groups.append(groupControls);
  move('cloudLoadGroups',groupControls,true);move('cloudGroupSelect',groupControls,true);
  const groupList=document.createElement('details');groupList.className='v22GroupDetails';
- const groupSummary=document.createElement('summary');groupSummary.textContent='Visa alla tillgängliga grupper';groupList.append(groupSummary);groups.append(groupList);
+ const groupSummary=document.createElement('summary');groupSummary.textContent='Visa alla tillgängliga grupper';groupList.append(groupSummary);groups.append(groupList);groupList.hidden=true; // Dubblerad grupplista dold, gruppvalet finns kvar.
  move('cloudGroups',groupList);
  const groupStatus=document.createElement('div');groupStatus.className='v22GroupStatus';groups.append(groupStatus);move('cloudStatus',groupStatus);
  const game=card('settings');move('cloudResumeSession',game,true);move('cloudSessionStatus',game);
@@ -3293,7 +3361,7 @@ const rotation=card('settings');const note=document.createElement('p');note.id='
  const shortcut=player.querySelector('button:not(#cloudAddPlayer):not(#cloudLoadPlayers):not(#cloudImportRotation)');
  if(shortcut&&shortcut.textContent.includes('Visa spelarlista'))shortcut.remove();
  const advanced=document.createElement('details');advanced.className='v23Advanced';
- advanced.innerHTML='<summary>Fler spelarverktyg (Supabase och import)</summary>';
+ advanced.innerHTML='<summary>Avancerat: import och Supabase-spelare</summary>';advanced.open=false;
  player.append(advanced);
  const importRow=document.getElementById('cloudImportRotation')?.closest('.cloudRow');
  if(importRow)advanced.append(importRow);
@@ -3885,5 +3953,59 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   transform:translateX(-50%)!important;
 }
 </style>
+<style id="badminton-mobile-ui-16">
+/* Ändringar enbart i gränssnittet – spel- och molnlogik lämnas kvar. */
+.v22GroupDetails[hidden]{display:none!important}
+.v23Advanced>summary{cursor:pointer}
+.threeDStage .threeDLabel{
+ font-size:clamp(13px,2.8vw,34px)!important;
+ min-height:11%!important;
+ padding:3px 10px!important;
+ max-width:49%!important;
+}
+.threeDStage .threeDLabel img{width:1.35em!important;height:.9em!important}
+.threeDStage .threeDLabel.pos0,.threeDStage .threeDLabel.pos2{left:1.5%!important}
+.threeDStage .threeDLabel.pos1,.threeDStage .threeDLabel.pos3{left:auto!important;right:1.5%!important}
+.bmConfirmOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px}
+.bmConfirmDialog{width:min(96vw,480px);max-height:calc(100dvh - 32px);overflow:auto;background:#152536;color:#f2f7fb;border:1px solid #54718b;border-radius:16px;padding:22px;box-shadow:0 20px 70px #0009}
+.bmConfirmDialog h3{margin:0 0 12px;font-size:clamp(19px,4vw,24px)}
+.bmConfirmDialog p{line-height:1.5;overflow-wrap:anywhere}
+.bmConfirmActions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+.bmConfirmActions button{flex:1 1 175px;min-height:48px;border-radius:10px;padding:10px;font-weight:700}
+.bmConfirmDanger{background:#b93d40!important;color:white!important}
+.bmConfirmCancel{background:#294a60!important;color:white!important}
+@media(max-width:700px){
+ html,body{max-width:100%;overflow-x:hidden}
+ #v14Nav{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ #cloudTestPanel .card{padding:12px!important}
+ .v22GroupControls,.v22GroupControls>.cloudRow{flex-wrap:wrap!important;max-width:100%}
+ input,select,textarea{max-width:100%;min-width:0}
+ button,select{min-height:42px}
+ .threeDStage .threeDLabel{font-size:clamp(12px,3.4vw,22px)!important;min-height:10%!important;padding:2px 5px!important;max-width:48%!important}
+ .threeDStage .threeDLabel img{width:1.15em!important}
+ .bmConfirmDialog{padding:16px}
+}
+@media(max-width:420px){
+ .threeDStage .threeDLabel{font-size:clamp(11px,3.5vw,17px)!important}
+}
+</style>
+<script>
+window.badmintonConfirmActiveGame=function(name){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');
+  overlay.className='bmConfirmOverlay';
+  overlay.innerHTML='<div class="bmConfirmDialog" role="dialog" aria-modal="true" aria-labelledby="bmActiveTitle"><h3 id="bmActiveTitle">Aktivt spel finns redan</h3><p class="bmActiveName"></p><p>Vill du avsluta det gamla spelet och skapa ett nytt? Avslutade rundor och statistik sparas.</p><div class="bmConfirmActions"><button type="button" class="bmConfirmCancel">Behåll befintligt spel</button><button type="button" class="bmConfirmDanger">Avsluta och skapa nytt</button></div></div>';
+  overlay.querySelector('.bmActiveName').textContent='Gruppen har redan ett aktivt spel: '+name;
+  const previous=document.activeElement;
+  function finish(value){document.removeEventListener('keydown',onKey);overlay.remove();previous?.focus?.();resolve(value)}
+  function onKey(e){if(e.key==='Escape')finish(false)}
+  overlay.querySelector('.bmConfirmCancel').onclick=()=>finish(false);
+  overlay.querySelector('.bmConfirmDanger').onclick=()=>finish(true);
+  document.addEventListener('keydown',onKey);
+  document.body.append(overlay);
+  overlay.querySelector('.bmConfirmCancel').focus();
+ });
+};
+</script>
 </body>
 </html>
