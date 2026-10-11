@@ -529,30 +529,6 @@ select{min-width:130px}
 #playerPool .modeTip{width:100%!important}
 @media(max-width:540px){#playerPool .bmFlagGrid{grid-template-columns:minmax(0,1fr)}#playerPool .bmPlayerIdentity .playerName{font-size:16px!important}#playerPool .bmPlayerTop{align-items:center}#playerPool .playerMode{min-width:155px!important}}
 
-
-/* v2.0: readable player preferences, explicit save and independent country search */
-#playerPool .bmModeOptions{display:flex;flex-direction:column;gap:7px;width:100%}
-#playerPool .bmModeOption{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:1px solid #41566a;border-radius:10px;background:#14202b;cursor:pointer;font-size:16px!important;line-height:1.4}
-#playerPool .bmModeOption:has(input:checked){border-color:#5cb9a4;background:#18352f}
-#playerPool .bmModeOption input{flex:0 0 19px;width:19px;height:19px;margin-top:3px;accent-color:#5bd4ad}
-#playerPool .bmModeOptionText{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
-#playerPool .bmModeOptionText strong{font-size:16px!important}
-#playerPool .bmModeOptionText span{font-size:14px!important;font-weight:400;line-height:1.45;color:#d0deec}
-#playerPool .bmPlayerBottom{display:flex!important;flex-direction:column!important;gap:10px!important;align-items:stretch!important}
-#playerPool .bmModeField{width:100%!important}
-#playerPool .bmPlayerSaveActions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;width:100%}
-#playerPool .bmSaveStatus{font-size:13px;color:#aebecf;margin-right:auto;overflow-wrap:anywhere;max-width:60%}
-#playerPool .bmSaveStatus.unsaved{color:#ffd166;font-weight:700}
-#playerPool .bmSaveStatus.saved{color:#7ee787;font-weight:700}
-#playerPool .bmSaveStatus.error{color:#ff9b9b;font-weight:700}
-#playerPool .bmSavePlayerBtn{font-size:15px!important;font-weight:800;background:#23864d!important;color:#fff!important;border:1px solid #55b77c!important;border-radius:9px;padding:10px 15px!important}
-#playerPool .bmSavePlayerBtn:disabled{opacity:.45;cursor:default}
-#playerPool .bmCountryResults{max-height:170px;overflow:auto;border:1px solid #52738c;border-radius:8px;background:#172734;z-index:2}
-#playerPool .bmCountryResults[hidden]{display:none!important}
-#playerPool .bmCountryResults button{display:block;width:100%;text-align:left;font-size:14px!important;padding:8px 10px!important;background:transparent;border:0;border-bottom:1px solid #304253;color:#fff}
-#playerPool .bmCountryResults button:hover,#playerPool .bmCountryResults button:focus{background:#2c5265}
-#playerPool .bmCountryResults>div{padding:9px;font-size:14px}
-@media(max-width:600px){#playerPool .bmFlagGrid{grid-template-columns:1fr!important}}
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -1219,9 +1195,7 @@ async function loadGroups(quiet=false){
  data.forEach(g=>groupSelect.add(new Option(g.name,g.id)));
  if(data.some(g=>g.id===selected))groupSelect.value=selected;
  resetImport();
- if(groupSelect.value)await bmAutoLoadGroupPlayers();
- if(!quiet&&groupSelect.value)say('✅ Grupper och spelare hämtade från Supabase.');
- else if(!quiet)say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');
+ if(!quiet)say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');
 }
 async function restoreAuth(){
  try{
@@ -1263,53 +1237,28 @@ async function request(path, options={}){
 }
 // Gruppbundna spelarinställningar i Supabase. Kräver migrationen i SQL-filen.
 const bmSyncTimers=new Map();
-// Spara direkt fran Spelinstallningar, aven utan manuell import till rotationen.
-// Explicit saving: changing a player only marks that player's card as unsaved.
-const bmDirtyPlayers=new Set();
 window.bmCloudSettingsChanged=function(name){
- const key=String(name||'').trim().toLocaleLowerCase('sv');
- bmDirtyPlayers.add(key);
- document.querySelectorAll('[data-bm-player-key]').forEach(card=>{
-  if(card.dataset.bmPlayerKey===key){
-   const status=card.querySelector('.bmSaveStatus');
-   const btn=card.querySelector('.bmSavePlayerBtn');
-   if(status){status.textContent='● Ej sparat';status.className='bmSaveStatus unsaved'}
-   if(btn)btn.disabled=false;
-  }
- });
-};
-window.bmSavePlayerSettings=async function(name,card){
  const groupId=groupSelect.value;
- const normalized=String(name||'').trim().toLocaleLowerCase('sv');
- const status=card.querySelector('.bmSaveStatus');
- const btn=card.querySelector('.bmSavePlayerBtn');
- const report=(message,kind)=>{if(status){status.textContent=message;status.className='bmSaveStatus '+kind}};
- if(!accessToken||!groupId){report('⚠️ Logga in och välj grupp','error');return}
- const country=window.badmintonCountryOf(name)||null;
- const second=window.bmSecondFlagOf(name)||null;
- const gender=window.badmintonGenderOf(name)||'man';
- const pool=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
- const mode=pool.find(x=>String(x.name).trim().toLocaleLowerCase('sv')===normalized)?.mode||'normal';
- const snapshot=JSON.stringify([country,second,gender,mode]);
- btn.disabled=true;report('Sparar…','saving');
- try{
-  let playerId=(importedGroupId===groupId)?importedPlayerIds.get(normalized):null;
-  if(!playerId){
-   const rows=await request('/rest/v1/badminton_players?select=id,name&group_id=eq.'+encodeURIComponent(groupId));
-   const found=Array.isArray(rows)?rows.find(x=>String(x.name).trim().toLocaleLowerCase('sv')===normalized):null;
-   if(!found)throw Error('Spelaren finns inte i Supabase-gruppen. Importera spelaren först.');
-   playerId=found.id;importedPlayerIds.set(normalized,playerId);importedGroupId=groupId;
-  }
-  const updated=await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{
-   method:'PATCH',headers:{Prefer:'return=representation'},
-   body:JSON.stringify({country_code:country,second_country_code:second,player_gender:gender,player_mode:mode})
-  });
-  if(!Array.isArray(updated)||updated.length!==1)throw Error('Databasen bekräftade inte sparningen. Kontrollera behörighet.');
-  const now=JSON.stringify([window.badmintonCountryOf(name)||null,window.bmSecondFlagOf(name)||null,window.badmintonGenderOf(name)||'man',
-    (JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]').find(x=>String(x.name).trim().toLocaleLowerCase('sv')===normalized)||{}).mode||'normal']);
-  if(now!==snapshot){report('● Nya ändringar – spara igen','unsaved');btn.disabled=false;return}
-  bmDirtyPlayers.delete(normalized);report('✓ Sparat i Supabase','saved');
- }catch(e){report('❌ '+e.message,'error');btn.disabled=false;}
+ const playerId=importedPlayerIds.get(String(name).trim().toLocaleLowerCase('sv'));
+ if(!accessToken||!groupId||!playerId||importedGroupId!==groupId){
+  if(accessToken && groupId && importedGroupId!==groupId)say('⚠️ Importera gruppens spelare till rotationen innan inställningar kan synkas.');
+  return;
+ }
+ const key=groupId+'::'+playerId;
+ clearTimeout(bmSyncTimers.get(key));
+ bmSyncTimers.set(key,setTimeout(async()=>{
+  const country=window.badmintonCountryOf(name)||null;
+  const second=window.bmSecondFlagOf(name)||null;
+  const gender=window.badmintonGenderOf(name)||'man';
+  const pool=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
+  const mode=pool.find(x=>x.name===name)?.mode||'normal';
+  try{
+   await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{
+    method:'PATCH',headers:{Prefer:'return=minimal'},
+    body:JSON.stringify({country_code:country,second_country_code:second,player_gender:gender,player_mode:mode})
+   });
+  }catch(e){say('❌ Inställningarna för '+name+' kunde inte sparas i Supabase: '+e.message+' (kontrollera SQL-migrationen)')}
+ },450));
 };
 async function bmLoadCloudSettings(groupId,data){
  // Hämta innan den lokala spelarlistan visas; ersätt inte äldre data vid databasfel.
@@ -1395,10 +1344,10 @@ async function loadPlayers(){
  catch(e){say('❌ Kunde inte hämta spelare: '+e.message)}
 }
 document.getElementById('cloudLoadPlayers').addEventListener('click',loadPlayers);
-async function bmImportGroupPlayers({silent=false}={}){
+importBtn.addEventListener('click',async()=>{
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return}
  const id=groupSelect.value;if(!id){say('Välj grupp först.');return}
- importBtn.disabled=true;if(!silent)say('Hämtar spelare till rotationen …');
+ importBtn.disabled=true;say('Hämtar spelare till rotationen …');
  try{
   const data=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
   if(groupSelect.value!==id){say('Gruppen ändrades. Försök igen.');return}
@@ -1407,10 +1356,7 @@ async function bmImportGroupPlayers({silent=false}={}){
   // Spara originalets lokala spelarregister en gång, utan att ändra Supabase.
   if(localStorage.getItem('badmintonV13OriginalPoolBackup')===null)
    localStorage.setItem('badmintonV13OriginalPoolBackup',localStorage.getItem('badmintonPlayerPool')||'[]');
-  const priorGroup=localStorage.getItem('badmintonV13ActiveGroupId');
-  let previous=[];try{previous=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]')}catch{}
-  const selectedByName=new Map(priorGroup===id&&Array.isArray(previous)?previous.map(x=>[String(x.name).trim().toLocaleLowerCase('sv'),!!x.selected]):[]);
-  const pool=data.map(x=>({name:x.name,selected:selectedByName.get(String(x.name).trim().toLocaleLowerCase('sv'))||false,mode:x.player_mode||'normal'}));
+  const pool=data.map(x=>({name:x.name,selected:false,mode:x.player_mode||'normal'}));
   localStorage.setItem('badmintonPlayerPool',JSON.stringify(pool));
   localStorage.setItem('badmintonV13ActiveGroupId',id);
   importedGroupId=id;
@@ -1418,28 +1364,11 @@ async function bmImportGroupPlayers({silent=false}={}){
   await bmLoadCloudSettings(id,data);
   if(typeof renderPlayerPool==='function')renderPlayerPool();
   if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
-  say('☁️ Hämtat '+pool.length+' spelare och deras inställningar från Supabase.');
-  if(!silent)document.getElementById('setupView')?.scrollIntoView({behavior:'smooth'});
+  say('☁️ Synkroniserat '+pool.length+' spelare och deras flaggor, kön och läge från Supabase. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
+  document.getElementById('setupView').scrollIntoView({behavior:'smooth'});
  }catch(e){say('❌ Kunde inte hämta spelare till rotationen: '+e.message)}
  finally{importBtn.disabled=false}
-}
-
-// Hämta automatiskt när grupp väljs och vid återställd inloggning.
-let bmGroupLoadSerial=0;
-async function bmAutoLoadGroupPlayers(){
- const serial=++bmGroupLoadSerial;
- if(!accessToken||!groupSelect.value)return;
- if(bmDirtyPlayers.size){say('⚠️ Osparade spelarändringar. Spara dem innan du hämtar gruppen igen.');return}
- // Låt tidigare hämtning slutföras innan nästa påbörjas.
- if(importBtn.disabled)return;
- if(serial!==bmGroupLoadSerial)return;
- await bmImportGroupPlayers({silent:true});
-}
-importBtn.addEventListener('click',()=>bmImportGroupPlayers());
-// Visa spelare ska även fylla den lokala spelarlistan, inte bara visa molnnamnen.
-const bmCloudLoadButton=document.getElementById('cloudLoadPlayers');
-if(bmCloudLoadButton){bmCloudLoadButton.removeEventListener('click',loadPlayers);bmCloudLoadButton.addEventListener('click',()=>bmImportGroupPlayers({silent:true}));}
-groupSelect.addEventListener('change',()=>{if(groupSelect.value)bmAutoLoadGroupPlayers()});
+});
  const shareButton=document.getElementById('createViewerLink');
  const shareResult=document.getElementById('viewerLinkResult');
  const shareQr=document.getElementById('viewerQr');
@@ -3061,7 +2990,7 @@ function renderPlayerPool(){
  box.innerHTML='';
  p.forEach((x,i)=>{
   if(!x.mode)x.mode='normal';
-  const row=document.createElement('div'); row.className='playerChoice';row.dataset.bmPlayerKey=String(x.name).trim().toLocaleLowerCase('sv');
+  const row=document.createElement('div'); row.className='playerChoice';
   const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!x.selected;
   cb.onchange=()=>togglePlayer(i,cb.checked);
   const name=document.createElement('span'); name.className='playerName'; name.textContent=x.name;
@@ -3069,21 +2998,6 @@ function renderPlayerPool(){
   mode.innerHTML='<option value="normal">⚪ Normal</option><option value="moreSingles">🎯 Mer singel</option><option value="onlySingles">🔒 Endast singel</option>';
   mode.value=x.mode;
   mode.onchange=()=>setPlayerMode(i,mode.value);
-  const modeOptions=document.createElement('div');modeOptions.className='bmModeOptions';
-  const choices=[
-   ['normal','⚪ Normal','Spelaren kan spela både dubbel och singel.'],
-   ['moreSingles','🎯 Mer singel','Appen försöker ge spelaren fler singelmatcher, men dubbel är också möjligt.'],
-   ['onlySingles','🔒 Endast singel','Spelaren placeras aldrig i dubbel. Om singel inte går att ordna får spelaren vila.']
-  ];
-  choices.forEach(([value,title,description])=>{
-   const label=document.createElement('label');label.className='bmModeOption';
-   const radio=document.createElement('input');radio.type='radio';radio.name='bmMode_'+i;radio.value=value;radio.checked=mode.value===value;
-   radio.onchange=()=>{if(radio.checked){mode.value=value;mode.onchange?.()}};
-   const content=document.createElement('span');content.className='bmModeOptionText';
-   const strong=document.createElement('strong');strong.textContent=title;
-   const explanation=document.createElement('span');explanation.textContent=description;
-   content.append(strong,explanation);label.append(radio,content);modeOptions.append(label);
-  });
   const gender=document.createElement('select');gender.className='playerGender';
   gender.innerHTML='<option value="man">👨 Man</option><option value="kvinna">👩 Kvinna</option>';
   gender.value=window.badmintonGenderOf(x.name);
@@ -3135,32 +3049,11 @@ function renderPlayerPool(){
   }
   nationSearch.oninput=()=>{
     renderNationOptions(nationSearch.value);
-
+    if(nation.options.length===1){
+      commitNation(nation.options[0].value);
+    }
   };
   nationSearch.onfocus=()=>nationSearch.select();
-  function attachCountrySearch(search,select,choose,allowNone){
-   const results=document.createElement('div');results.className='bmCountryResults';results.hidden=true;
-   search.insertAdjacentElement('afterend',results);
-   const originalInput=search.oninput;
-   search.oninput=()=>{
-    const q=search.value.trim().toLocaleLowerCase('sv');
-    // Keep dropdown options and selected value intact while searching.
-    results.replaceChildren();results.hidden=!q;
-    if(!q)return;
-    const matches=allCountries.filter(([code,sv,en,alpha3])=>[code,sv,en,alpha3].some(t=>String(t||'').toLocaleLowerCase('sv').includes(q))).slice(0,15);
-    if(allowNone && ['ingen','ta bort','utan'].some(v=>v.includes(q))){
-     const b=document.createElement('button');b.type='button';b.textContent='Ingen andra flagga';
-     b.onclick=()=>{choose('');search.value='';results.hidden=true};results.append(b);
-    }
-    matches.forEach(([code,sv])=>{
-     const b=document.createElement('button');b.type='button';b.textContent=sv+' ('+code+')';
-     b.onclick=()=>{choose(code);search.value='';results.hidden=true};results.append(b);
-    });
-    if(!matches.length){const empty=document.createElement('div');empty.textContent='Inga matchande länder';results.append(empty)}
-   };
-   search.addEventListener('keydown',e=>{if(e.key==='Escape'){results.hidden=true;search.value=''}});
-   // Native selector remains available for browsing all countries.
-  }
   const flagPreview=document.createElement('div');flagPreview.className='nationFlagPreview';
   function showFlagPreview(){
     const code=window.badmintonCountryOf(x.name);
@@ -3216,15 +3109,6 @@ function renderPlayerPool(){
     secondSearch.oninput();
     showFlagPreview();
   };
-  attachCountrySearch(nationSearch,nation,code=>{
-    commitNation(code);nationSearch.value='';renderNationOptions('');nation.value=code;
-  },false);
-  attachCountrySearch(secondSearch,secondNation,code=>{
-    window.bmSetSecondFlag(x.name,code);secondSearch.value='';secondNation.replaceChildren();
-    const none=document.createElement('option');none.value='';none.textContent='Ingen andra flagga';secondNation.append(none);
-    allCountries.forEach(([c,sv])=>{const opt=document.createElement('option');opt.value=c;opt.textContent=sv;secondNation.append(opt)});
-    secondNation.value=code;showFlagPreview();
-  },true);
   showFlagPreview();
   const flagOne=document.createElement('div');flagOne.className='bmFlagField';
   const firstTitle=document.createElement('label');firstTitle.textContent='Flagga 1';flagOne.append(firstTitle,nationSearch,nation);
@@ -3240,16 +3124,9 @@ function renderPlayerPool(){
   const modeField=document.createElement('div');modeField.className='bmModeField';
   const modeLabel=document.createElement('label');modeLabel.textContent='Spelpreferens';
   const modeControls=document.createElement('div');modeControls.className='bmModeControls';modeControls.append(mode,info);
-  modeField.append(modeLabel,modeOptions);
-  const actions=document.createElement('div');actions.className='bmPlayerSaveActions';
-  const saveStatus=document.createElement('span');saveStatus.className='bmSaveStatus';saveStatus.textContent='';
-  const saveBtn=document.createElement('button');saveBtn.type='button';saveBtn.className='bmSavePlayerBtn';
-  saveBtn.textContent='💾 Spara';saveBtn.onclick=()=>window.bmSavePlayerSettings(x.name,row);
-  if(bmDirtyPlayers.has(String(x.name).trim().toLocaleLowerCase('sv'))){saveStatus.textContent='● Ej sparat';saveStatus.classList.add('unsaved')}
-  else {saveStatus.textContent='Ändra och spara';saveBtn.disabled=true}
-  actions.append(saveStatus,saveBtn,del);
-  bottom.append(modeField,actions);
-  row.append(top,nationWrap,bottom); box.appendChild(row);
+  modeField.append(modeLabel,modeControls);
+  bottom.append(modeField,del);
+  row.append(top,nationWrap,bottom,tip); box.appendChild(row);
  });
  savePlayerPool(p);
  updateSelectedCount();
