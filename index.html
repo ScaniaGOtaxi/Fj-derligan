@@ -1030,7 +1030,6 @@ window.badmintonPlayerImage=function(name,team,side,position){
     <button type="button" id="shareViewerNative" class="secondary">📤 Dela via mobilen</button>
    </div>
   </div>
-  <div class="viewerQrTools"><button type="button" id="verifyViewerLink" class="secondary">✓ Kontrollera QR/länk</button><button type="button" id="showViewerLink" class="secondary">↻ Visa befintlig QR</button></div>
   <div id="viewerShareStatus" class="small" role="status" aria-live="polite"></div>
   <button type="button" id="createViewerLink" class="secondary" style="margin-top:12px">🔗 Skapa ny visningslänk</button>
  </div>
@@ -1262,50 +1261,24 @@ importBtn.addEventListener('click',async()=>{
    if(navigator.share){try{await navigator.share({title:'Badminton – Live',text:'🏸 Följ vårt badmintonspel live!',url:currentShareLink});}catch(e){if(e.name!=='AbortError')shareStatus.textContent='Kunde inte dela. Prova Kopiera länk.';}}
    else{shareStatus.textContent='Delningsmenyn stöds inte i denna webbläsare. Använd WhatsApp eller Kopiera länk.';}
  });
- async function validateViewerLink(url){
-   const parsed=new URL(url);const params=new URLSearchParams(parsed.hash.slice(1));
-   const session=params.get('live'),token=params.get('token');
-   if(!session||!token)throw Error('Länken saknar sessions-ID eller token.');
-   const base=window.SUPABASE_URL||'https://frkhzwutziysnjibaxfa.supabase.co';
-   const key=window.SUPABASE_ANON_KEY||document.querySelector('meta[name="supabase-anon-key"]')?.content;
-   // Use the existing authenticated request helper (Supabase project configuration).
-   const result=await request('/rest/v1/rpc/get_badminton_live_view',{method:'POST',body:JSON.stringify({p_session_id:session,p_viewer_token:token})});
-   if(!result||typeof result!=='object'||result.error)throw Error(result?.message||'Live-visningen kunde inte verifieras.');
-   return result;
- }
- function drawShareLink(link,sessionId){
-   currentShareLink=link;currentShareSession=sessionId;
-   shareResult.replaceChildren();
-   const a=document.createElement('a');a.href=link;a.textContent=displayShortLink(link);a.target='_blank';a.rel='noopener noreferrer';a.title='Öppna fullständig Live-länk';shareResult.append(a);
-   shareQr.replaceChildren();
-   if(typeof QRCode==='function')new QRCode(shareQr,{text:link,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});
-   shareContent.style.display='';
- }
- document.getElementById('verifyViewerLink').addEventListener('click',async()=>{
-   if(!currentShareLink){shareStatus.textContent='ℹ️ Ingen visningslänk finns i den här fliken. Skapa en länk först.';return}
-   shareStatus.textContent='⏳ Kontrollerar QR-koden mot Supabase …';
-   try{await validateViewerLink(currentShareLink);shareStatus.textContent='✅ QR-koden är giltig för det aktiva spelet.'}
-   catch(e){shareStatus.textContent='❌ QR-koden kunde inte verifieras: '+e.message+' Använd Skapa ny visningslänk, utan att starta om spelet.'}
- });
- document.getElementById('showViewerLink').addEventListener('click',()=>{
-   if(!currentShareLink){shareStatus.textContent='ℹ️ Ingen tidigare länk finns i den här fliken. Skapa en ny för det aktiva spelet.';return}
-   drawShareLink(currentShareLink,currentShareSession);shareStatus.textContent='ℹ️ Befintlig QR-kod visas. Tryck Kontrollera QR/länk för att verifiera den.';
- });
  shareButton.addEventListener('click',async()=>{
   if(!accessToken||!groupSelect.value){say('Logga in och välj grupp först.');return;}
-  if(cloudSaveBusy){shareStatus.textContent='⏳ Vänta tills spelet är färdigsparat i Supabase innan du skapar QR-koden.';return;}
   if(currentShareLink && !(await window.badmintonConfirmNewShareLink()))return;
   shareButton.disabled=true;shareStatus.textContent='Skapar visningslänk …';
   try{
    const active=await request('/rest/v1/badminton_sessions?select=id,name&group_id=eq.'+encodeURIComponent(groupSelect.value)+'&status=eq.active&limit=1');
    if(active.length!==1)throw Error('Gruppen har inget aktivt spel.');
-   if(lastSessionId && active[0].id!==lastSessionId)throw Error('Det aktiva spelet i Supabase stämmer inte med den öppna rotationen. Kontrollera/återuppta senaste sessionen först.');
    const token=await request('/rest/v1/rpc/create_badminton_viewer_token',{method:'POST',body:JSON.stringify({p_session_id:active[0].id})});
    if(typeof token!=='string'||!/^[0-9a-f]{64}$/.test(token))throw Error('Ingen giltig visningskod returnerades.');
    const link=getPublishedLink();link.hash=new URLSearchParams({live:active[0].id,token}).toString();
-   const newLink=link.toString();
-   await validateViewerLink(newLink);
-   drawShareLink(newLink,active[0].id);
+   currentShareLink=link.toString();
+   shareResult.replaceChildren();
+   const a=document.createElement('a');a.href=currentShareLink;a.textContent=displayShortLink(currentShareLink);a.target='_blank';a.rel='noopener noreferrer';a.title='Öppna fullständig Live-länk';shareResult.append(a);
+   shareQr.replaceChildren();
+   if(typeof QRCode==='function'){
+    new QRCode(shareQr,{text:currentShareLink,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});
+   }else{shareStatus.textContent='⚠️ QR-koden kunde inte laddas, men länken kan delas.';}
+   shareContent.style.display='';
    if(location.protocol==='file:')shareStatus.textContent='ℹ️ Lokal testfil: QR-koden pekar till GitHub Pages. Kontrollera att senaste versionen är publicerad där.';
    else shareStatus.textContent='✅ Visningslänk skapad för '+active[0].name+'.';
    say('✅ Visningslänk skapad för '+active[0].name+'.');
@@ -1467,7 +1440,7 @@ document.getElementById('cloudResumeSession').addEventListener('click',async()=>
   const done=rounds.flatMap((r,i)=>r.status==='completed'?[i]:[]);
   const firstPending=rounds.findIndex(r=>r.status!=='completed');
   const resumeIndex=firstPending===-1?rounds.length-1:firstPending;
-  if(!(await window.bmCenteredConfirm('Återuppta tidigare spel','Återuppta ”'+session.name+'” ('+rounds.length+' rundor, '+done.length+' färdiga)? Ett eventuellt öppet lokalt schema ersätts.','Återuppta spel')))return;
+  if(!confirm('Återuppta ”'+session.name+'” ('+rounds.length+' rundor, '+done.length+' färdiga)? Ett eventuellt öppet lokalt schema ersätts.'))return;
   // Uppdatera molnkopplingen innan vyn öppnas. Ingen ny session skapas.
   lastSessionId=session.id;
    liveRoundWanted=null;
@@ -1613,7 +1586,7 @@ async function changeAdminAssignment(action){
  if(!groupId||!userId){adminStatus.textContent='Välj både grupp och Admin först.';return;}
  const groupName=groupSelect.selectedOptions[0]?.text||'gruppen';
  const email=adminSelect.selectedOptions[0]?.text||'Admin';
- if(!(await window.bmCenteredConfirm('Bekräfta',(action==='add'?'Tilldela ':'Ta bort ')+'Admin-behörighet för '+email+' i '+groupName+'?','Bekräfta')))return;
+ if(!confirm((action==='add'?'Tilldela ':'Ta bort ')+'Admin-behörighet för '+email+' i '+groupName+'?'))return;
  const addBtn=document.getElementById('cloudAssignAdmin'),removeBtn=document.getElementById('cloudRemoveAdmin');
  addBtn.disabled=true;removeBtn.disabled=true;adminStatus.textContent='Sparar behörigheten …';
  try{
@@ -1653,7 +1626,7 @@ async function renderGroupOverview(){
   for(const [action,label] of [['add','Tilldela Admin'],['remove','Ta bort Admin']]){
    adminActions.append(overviewButton(label,async()=>{
     const userId=adminChoice.value;if(!userId){overviewStatus.textContent='Välj en Admin först.';return;}
-    if(!(await window.bmCenteredConfirm('Bekräfta',(action==='add'?'Tilldela ':'Ta bort ')+adminChoice.selectedOptions[0].text+(action==='add'?' till ':' från ')+g.name+'?','Bekräfta')))return;
+    if(!window.confirm((action==='add'?'Tilldela ':'Ta bort ')+adminChoice.selectedOptions[0].text+(action==='add'?' till ':' från ')+g.name+'?'))return;
     try{await request('/rest/v1/rpc/manage_badminton_group_admin',{method:'POST',body:JSON.stringify({p_group_id:g.id,p_user_id:userId,p_action:action})});await refreshGroupOverview();overviewStatus.textContent='✅ Admin-behörigheten har uppdaterats.';}
     catch(e){overviewStatus.textContent='❌ '+e.message;}
    },action==='remove'));
@@ -1662,8 +1635,8 @@ async function renderGroupOverview(){
   const playersTitle=document.createElement('strong');playersTitle.textContent='Spelare i gruppen';card.append(playersTitle);
   const playerList=document.createElement('div');playerList.textContent='Hämtar spelare …';card.append(playerList);
   const removeGroup=overviewButton('🗑 Radera grupp',async()=>{
-   if(!(await window.bmCenteredConfirm('Bekräfta','VARNING! Radera gruppen '+g.name+' PERMANENT? Alla spelare, spelsessioner, rundor och Admin-tilldelningar i gruppen försvinner. Detta kan inte ångras.','Bekräfta')))return;
-   const confirmed=await window.bmCenteredPrompt('Bekräfta borttagning','Skriv exakt gruppnamnet för att radera ALLT i gruppen: '+g.name);
+   if(!window.confirm('VARNING! Radera gruppen '+g.name+' PERMANENT? Alla spelare, spelsessioner, rundor och Admin-tilldelningar i gruppen försvinner. Detta kan inte ångras.'))return;
+   const confirmed=window.prompt('Skriv exakt gruppnamnet för att radera ALLT i gruppen: '+g.name);
    if(confirmed!==g.name){overviewStatus.textContent='Raderingen avbröts – gruppnamnet matchade inte.';return;}
    removeGroup.disabled=true;overviewStatus.textContent='Raderar gruppen '+g.name+' och dess innehåll …';
    try{
@@ -1684,7 +1657,7 @@ async function renderGroupOverview(){
     const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #345';
     const name=document.createElement('span');name.textContent=m.name;
     const del=overviewButton('Radera spelare',async()=>{
-     if(!(await window.bmCenteredConfirm('Bekräfta','Radera '+m.name+' från '+g.name+'? Detta kan påverka sparad spelhistorik.','Bekräfta')))return;
+     if(!window.confirm('Radera '+m.name+' från '+g.name+'? Detta kan påverka sparad spelhistorik.'))return;
      try{await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(m.id)+'&group_id=eq.'+encodeURIComponent(g.id),{method:'DELETE',headers:{Prefer:'return=representation'}}).then(rows=>{if(!Array.isArray(rows)||!rows.length)throw Error('Ingen spelare raderades. Kontrollera databasbehörigheter.');});line.remove();overviewStatus.textContent='✅ Spelaren har raderats.';}
      catch(e){overviewStatus.textContent='❌ Kunde inte radera spelare: '+e.message;}
     },true);
@@ -1721,7 +1694,7 @@ async function changeOverviewAssignment(action){
  const already=adminRecords.some(a=>a.user_id===userId&&a.group_id===groupId);
  if(action==='add'&&already){overviewStatus.textContent='ℹ️ '+email+' hanterar redan '+groupName+'.';return;}
  if(action==='remove'&&!already){overviewStatus.textContent='ℹ️ '+email+' hanterar inte '+groupName+'.';return;}
- if(!(await window.bmCenteredConfirm('Bekräfta',(action==='add'?'Tilldela ':'Ta bort ') + email + (action==='add'?' till ':' från ') + groupName + '?','Bekräfta')))return;
+ if(!confirm((action==='add'?'Tilldela ':'Ta bort ') + email + (action==='add'?' till ':' från ') + groupName + '?'))return;
  const add=document.getElementById('cloudOverviewAssign'),remove=document.getElementById('cloudOverviewRemove');
  add.disabled=true;remove.disabled=true;overviewStatus.textContent='Sparar …';
  try{
@@ -2628,7 +2601,7 @@ function exportStatisticsPDF(){
   const win=window.open(url,'_blank');
   if(!win){
     URL.revokeObjectURL(url);
-    window.bmCenteredAlert('Rapportsidan kunde inte öppnas. Tillåt popup-fönster för appen och försök igen.');
+    alert('Rapportsidan kunde inte öppnas. Tillåt popup-fönster för appen och försök igen.');
     return;
   }
   setTimeout(()=>URL.revokeObjectURL(url),60000);
@@ -2654,14 +2627,14 @@ async function shareStatistics(){
     try{await navigator.share({title:'Badminton App – Statistik',text:text});}catch(e){}
   }else if(navigator.clipboard){
     await navigator.clipboard.writeText(text);
-    window.bmCenteredAlert('Rapporten har kopierats. Du kan nu klistra in den där du vill dela den.');
+    alert('Rapporten har kopierats. Du kan nu klistra in den där du vill dela den.');
   }else{
-    window.bmCenteredAlert(text);
+    alert(text);
   }
 }
 
-async function resetStatistics(){
-  if(!(await window.bmCenteredConfirm('Bekräfta','Vill du nollställa all sparad statistik? Detta går inte att ångra.','Bekräfta')))return;
+function resetStatistics(){
+  if(!confirm('Vill du nollställa all sparad statistik? Detta går inte att ångra.'))return;
   localStorage.removeItem(STATS_KEY);
   localStorage.removeItem(STATS_DAILY_KEY);
   renderStatistics();
@@ -2679,7 +2652,7 @@ function refreshGroups(){
 }
 function saveGroup(){
   const name=document.getElementById('groupName').value.trim();
-  if(!name){window.bmCenteredAlert('Skriv ett namn på gruppen först.');return}
+  if(!name){alert('Skriv ett namn på gruppen först.');return}
   const players=[...document.querySelectorAll('#names input')].map(x=>x.value.trim()).filter(Boolean);
   const groups=getGroups(); groups[name]={players};
   localStorage.setItem('badmintonGroups',JSON.stringify(groups));refreshGroups();
@@ -2853,14 +2826,14 @@ function addPlayer(){
  const inp=document.getElementById('newPlayer'), name=inp.value.trim();
  if(!name)return;
  const p=getPlayerPool();
- if(p.some(x=>x.name.toLowerCase()===name.toLowerCase())){window.bmCenteredAlert('Spelaren finns redan i listan.');return}
+ if(p.some(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Spelaren finns redan i listan.');return}
  p.push({name:name,selected:true,mode:'normal'}); savePlayerPool(p); inp.value=''; refreshPlayerListUI();
 }
-async function removePlayer(i){
+function removePlayer(i){
  const p=getPlayerPool();
  if(!p[i])return;
  const name=p[i].name;
- if(!(await window.bmCenteredConfirm('Bekräfta','Vill du radera '+name+' från spelarlistan?','Bekräfta')))return;
+ if(!confirm('Vill du radera '+name+' från spelarlistan?'))return;
  p.splice(i,1);
  savePlayerPool(p);
  refreshPlayerListUI();
@@ -2952,7 +2925,7 @@ function inc(map,key,n=1){map[key]=(map[key]||0)+n}
 function buildSchedule(){
  const players=selectedPlayers();
  if(players.length<3 || players.length>12){
-   window.bmCenteredAlert('Välj mellan 3 och 12 spelare för dagens spel.'); return false;
+   alert('Välj mellan 3 och 12 spelare för dagens spel.'); return false;
  }
  const R=+document.getElementById('rounds').value;
  const wantedCourts=+document.getElementById('courts').value;
@@ -3715,8 +3688,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
       }else if(game.requestFullscreen){await game.requestFullscreen();}
       else if(game.webkitRequestFullscreen){game.webkitRequestFullscreen();}
-      else{window.bmCenteredAlert('Helskärm stöds inte i den här webbläsaren. Prova F11 på datorn.');}
-    }catch(e){window.bmCenteredAlert('Kunde inte öppna helskärm. Prova F11 på datorn.');}
+      else{alert('Helskärm stöds inte i den här webbläsaren. Prova F11 på datorn.');}
+    }catch(e){alert('Kunde inte öppna helskärm. Prova F11 på datorn.');}
     sync();
   };
   const syncAndRestoreScroll=()=>{
@@ -4281,68 +4254,5 @@ window.badmintonConfirmActiveGame=function(name){
 #gameView .bmSettingsRow select{background:#102131;color:white;border:1px solid #53677b;border-radius:9px;padding:8px;font-size:14px;min-height:40px}
 @media(max-width:720px){#gameView .bmSettingsMenu{right:6px;top:55px;width:min(310px,calc(100vw - 12px));padding:10px}#gameView .bmSettingsRow{font-size:13px}}
 </style>
-<script id="bm-centered-confirm-restore">
-window.bmCenteredConfirm=function(title,message,acceptLabel){return new Promise(resolve=>{
- const overlay=document.createElement('div');overlay.className='bmConfirmOverlay';
- const dialog=document.createElement('div');dialog.className='bmConfirmDialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
- const h=document.createElement('h3');h.textContent=title;const p=document.createElement('p');p.textContent=message;
- const actions=document.createElement('div');actions.className='bmConfirmActions';
- const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Avbryt';cancel.className='bmConfirmCancel';
- const ok=document.createElement('button');ok.type='button';ok.textContent=acceptLabel;ok.className='bmConfirmDanger';
- actions.append(cancel,ok);dialog.append(h,p,actions);overlay.append(dialog);document.body.append(overlay);
- const finish=value=>{overlay.remove();document.removeEventListener('keydown',onKey);resolve(value)};
- const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);
- cancel.onclick=()=>finish(false);ok.onclick=()=>finish(true);overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false)});cancel.focus();
-})};
-</script>
-<style id="bm-qr-verification-v20">
-.viewerQrTools{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:12px 0}
-.viewerQrTools button{min-height:44px;font-size:14px}
-.bmConfirmOverlay{position:fixed!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:2147483647!important;padding:16px!important}
-@media(max-width:480px){.viewerQrTools{flex-direction:column}.viewerQrTools button{width:100%}}
-</style>
-<style id="bm-unified-popup-style">
-.bmConfirmOverlay{background:rgba(5,12,25,.77)!important;backdrop-filter:blur(5px);box-sizing:border-box}
-.bmConfirmDialog{box-sizing:border-box;width:min(440px,100%)!important;max-height:calc(100dvh - 32px);overflow-y:auto;position:relative!important;margin:auto!important;padding:24px!important;border-radius:18px!important;box-shadow:0 20px 70px rgba(0,0,0,.55)!important}
-.bmConfirmDialog h3{margin:0 30px 12px 0!important;font-size:21px!important;line-height:1.3}
-.bmConfirmDialog p{overflow-wrap:anywhere;white-space:pre-line;line-height:1.5}
-.bmConfirmDialog input{display:block;box-sizing:border-box;width:100%;padding:12px;border:1px solid #758aa6;border-radius:9px;background:#14243b;color:white;font-size:16px;margin:12px 0}
-.bmConfirmActions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
-.bmConfirmActions button{min-height:44px;min-width:100px;cursor:pointer}
-.bmPopupX{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.12);color:white;border:0;font-size:24px;cursor:pointer}
-/* Samma centrering för inställningsfönstret på dator, surfplatta och telefon. */
-#gameView .bmSettingsMenu{position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(420px,calc(100vw - 32px))!important;max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;z-index:2147483640!important;box-sizing:border-box!important;border-radius:18px!important;box-shadow:0 0 0 100vmax rgba(5,12,25,.72),0 18px 65px rgba(0,0,0,.65)!important}
-@media(max-width:480px){.bmConfirmDialog{padding:18px!important}.bmConfirmActions{flex-direction:column-reverse}.bmConfirmActions button{width:100%}}
-</style>
-<script id="bm-unified-popup-helpers">
-(function(){
- const old=window.bmCenteredConfirm;
- window.bmCenteredConfirm=function(title,message,acceptLabel){
-   return old(title,message,acceptLabel||'Bekräfta');
- };
- function popup(title,message,kind){return new Promise(resolve=>{
-   const overlay=document.createElement('div');overlay.className='bmConfirmOverlay';
-   const dialog=document.createElement('div');dialog.className='bmConfirmDialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
-   const heading=document.createElement('h3');heading.textContent=title;
-   const body=document.createElement('p');body.textContent=String(message);
-   const x=document.createElement('button');x.className='bmPopupX';x.textContent='×';x.type='button';x.setAttribute('aria-label','Stäng');
-   const actions=document.createElement('div');actions.className='bmConfirmActions';
-   const cancel=document.createElement('button');cancel.type='button';cancel.className='bmConfirmCancel';cancel.textContent='Avbryt';
-   const ok=document.createElement('button');ok.type='button';ok.className='bmConfirmDanger';ok.textContent='OK';
-   const input=kind==='prompt'?document.createElement('input'):null;
-   if(input){input.type='text';input.autocomplete='off'}
-   if(kind==='prompt')actions.append(cancel,ok);else actions.append(ok);
-   dialog.append(x,heading,body);if(input)dialog.append(input);dialog.append(actions);overlay.append(dialog);document.body.append(overlay);
-   let done=false;function finish(v){if(done)return;done=true;document.removeEventListener('keydown',key);overlay.remove();resolve(v)}
-   function key(e){if(e.key==='Escape')finish(kind==='prompt'?null:undefined);if(e.key==='Enter'&&kind==='prompt')finish(input.value)}
-   document.addEventListener('keydown',key);
-   x.onclick=()=>finish(kind==='prompt'?null:undefined);cancel.onclick=()=>finish(null);ok.onclick=()=>finish(input?input.value:undefined);
-   overlay.onclick=e=>{if(e.target===overlay)finish(kind==='prompt'?null:undefined)};
-   (input||ok).focus();
- })}
- window.bmCenteredPrompt=(title,message)=>popup(title,message,'prompt');
- window.bmCenteredAlert=message=>popup('Information',message,'alert');
-})();
-</script>
 </body>
 </html>
