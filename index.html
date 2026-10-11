@@ -532,7 +532,7 @@ window.BADMINTON_COUNTRIES=[["AF","Afghanistan","Afghanistan","AFG"],["AL","Alba
  const KEY='badmintonV14CountryByPlayer';
  function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
  window.badmintonCountryOf=function(name){return read()[String(name).toLocaleLowerCase('sv')]||'SE'};
- window.badmintonSetCountry=function(name,code){const obj=read();obj[String(name).toLocaleLowerCase('sv')]=code;localStorage.setItem(KEY,JSON.stringify(obj));if(typeof renderBigRound==='function'&&typeof schedule!=='undefined'&&schedule.length)renderBigRound()};
+ window.badmintonSetCountry=function(name,code){const obj=read();obj[String(name).toLocaleLowerCase('sv')]=code;localStorage.setItem(KEY,JSON.stringify(obj));window.bmCloudSettingsChanged?.(name);if(typeof renderBigRound==='function'&&typeof schedule!=='undefined'&&schedule.length)renderBigRound()};
  const shapes={AU:'<rect width="48" height="32" fill="#012169"/><path d="M0 0h23v20H0z" fill="#fff"/><path d="M0 0l23 16M23 0L0 16" stroke="#c8102e" stroke-width="3"/><path d="M11 0v20M0 8h23" stroke="white" stroke-width="5"/><path d="M11 0v20M0 8h23" stroke="#c8102e" stroke-width="2"/><g fill="white"><circle cx="32" cy="7" r="2"/><circle cx="40" cy="17" r="2"/><circle cx="30" cy="24" r="2"/></g>',SE:'<rect width="48" height="32" fill="#006aa7"/><path d="M15 0v32M0 16h48" stroke="#fecc00" stroke-width="6"/>',PL:'<path fill="white" d="M0 0h48v20H0z"/><path fill="#dc143c" d="M0 16h48v20H0z"/>',NO:'<rect width="48" height="32" fill="#ba0c2f"/><path d="M17 0v32M0 16h48" stroke="white" stroke-width="9"/><path d="M17 0v32M0 16h48" stroke="#00205b" stroke-width="5"/>',DK:'<rect width="48" height="32" fill="#c8102e"/><path d="M17 0v32M0 16h48" stroke="white" stroke-width="5"/>',FI:'<rect width="48" height="32" fill="white"/><path d="M17 0v32M0 16h48" stroke="#003580" stroke-width="7"/>',DE:'<path d="M0 0h48v11H0z"/><path fill="#d00" d="M0 11h48v11H0z"/><path fill="#ffce00" d="M0 22h48v10H0z"/>',UA:'<path fill="#0057b7" d="M0 0h48v20H0z"/><path fill="#ffd700" d="M0 16h48v20H0z"/>',GB:'<rect width="48" height="32" fill="#012169"/><path d="M0 0l48 32M48 0L0 32" stroke="white" stroke-width="8"/><path d="M24 0v32M0 16h48" stroke="white" stroke-width="10"/><path d="M24 0v32M0 16h48" stroke="#c8102e" stroke-width="5"/>',FR:'<path fill="#0055a4" d="M0 0h16v32H0z"/><path fill="white" d="M16 0h16v32H16z"/><path fill="#ef4135" d="M32 0h16v32H32z"/>',ES:'<rect width="48" height="32" fill="#aa151b"/><rect y="8" width="48" height="16" fill="#f1bf00"/>'};
  window.badmintonFlagUrl=function(code){
   const c=String(code||'SE').toUpperCase();
@@ -709,7 +709,7 @@ window.badmintonGenderOf=function(name){
  catch(e){return 'man';}
 };
 window.badmintonSetGender=function(name,gender){
- try{const m=JSON.parse(localStorage.getItem('badmintonGenderProfiles')||'{}');m[String(name||'').trim().toLowerCase()]=gender==='kvinna'?'kvinna':'man';localStorage.setItem('badmintonGenderProfiles',JSON.stringify(m));}
+ try{const m=JSON.parse(localStorage.getItem('badmintonGenderProfiles')||'{}');m[String(name||'').trim().toLowerCase()]=gender==='kvinna'?'kvinna':'man';localStorage.setItem('badmintonGenderProfiles',JSON.stringify(m));window.bmCloudSettingsChanged?.(name);}
  catch(e){}
 };
 window.badmintonPlayerImage=function(name,team,side,position){
@@ -1161,6 +1161,50 @@ async function request(path, options={}){
  if(!response.ok)throw Error((result&&typeof result==='object'&&(result.msg||result.message||result.error_description||result.error))||'HTTP '+response.status);
  return result;
 }
+// Gruppbundna spelarinställningar i Supabase. Kräver migrationen i SQL-filen.
+const bmSyncTimers=new Map();
+window.bmCloudSettingsChanged=function(name){
+ const groupId=groupSelect.value;
+ const playerId=importedPlayerIds.get(name);
+ if(!accessToken||!groupId||!playerId||importedGroupId!==groupId)return;
+ const key=groupId+'::'+playerId;
+ clearTimeout(bmSyncTimers.get(key));
+ bmSyncTimers.set(key,setTimeout(async()=>{
+  const country=window.badmintonCountryOf(name)||null;
+  const second=window.bmSecondFlagOf(name)||null;
+  const gender=window.badmintonGenderOf(name)||'man';
+  const pool=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
+  const mode=pool.find(x=>x.name===name)?.mode||'normal';
+  try{
+   await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{
+    method:'PATCH',headers:{Prefer:'return=minimal'},
+    body:JSON.stringify({country_code:country,second_country_code:second,player_gender:gender,player_mode:mode})
+   });
+  }catch(e){say('❌ Inställningarna för '+name+' kunde inte sparas i Supabase: '+e.message+' (kontrollera SQL-migrationen)')}
+ },450));
+};
+async function bmLoadCloudSettings(groupId,data){
+ // Hämta innan den lokala spelarlistan visas; ersätt inte äldre data vid databasfel.
+ const byName=new Map(data.map(x=>[x.name.toLocaleLowerCase('sv'),x]));
+ const countries=JSON.parse(localStorage.getItem('badmintonV14CountryByPlayer')||'{}');
+ const genders=JSON.parse(localStorage.getItem('badmintonGenderProfiles')||'{}');
+ const second=JSON.parse(localStorage.getItem('bmDualFlagsByGroup')||'{}');
+ const pool=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
+ for(const [name,row] of byName){
+  if(row.country_code)countries[name]=row.country_code;
+  else delete countries[name];
+  if(row.player_gender)genders[name]=row.player_gender;
+  else delete genders[name];
+  const k=groupId+'::'+name;
+  second[k]=row.second_country_code||'';
+  const player=pool.find(x=>x.name.toLocaleLowerCase('sv')===name);
+  if(player)player.mode=row.player_mode||'normal';
+ }
+ localStorage.setItem('badmintonV14CountryByPlayer',JSON.stringify(countries));
+ localStorage.setItem('badmintonGenderProfiles',JSON.stringify(genders));
+ localStorage.setItem('bmDualFlagsByGroup',JSON.stringify(second));
+ localStorage.setItem('badmintonPlayerPool',JSON.stringify(pool));
+}
 document.getElementById('cloudLogin').addEventListener('click',async()=>{
  const email=document.getElementById('cloudEmail').value.trim();
  const password=document.getElementById('cloudPassword').value;
@@ -1228,7 +1272,7 @@ importBtn.addEventListener('click',async()=>{
  const id=groupSelect.value;if(!id){say('Välj grupp först.');return}
  importBtn.disabled=true;say('Hämtar spelare till rotationen …');
  try{
-  const data=await request('/rest/v1/badminton_players?select=id,name&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
+  const data=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
   if(groupSelect.value!==id){say('Gruppen ändrades. Försök igen.');return}
   if(!Array.isArray(data))throw Error('Oväntat svar från databasen');
   if(!data.length){say('Gruppen saknar spelare. Lägg till spelare först.');return}
@@ -1242,6 +1286,7 @@ importBtn.addEventListener('click',async()=>{
   localStorage.setItem('badmintonV13ActiveGroupId',id);
   importedGroupId=id;
   importedPlayerIds=new Map(data.map(x=>[x.name,x.id]));
+  await bmLoadCloudSettings(id,data);
   if(typeof renderPlayerPool==='function')renderPlayerPool();
   if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
   say('✅ '+pool.length+' spelare från '+groupSelect.selectedOptions[0].text+' är inlästa. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
@@ -2853,6 +2898,7 @@ window.bmSetSecondFlag=function(name,code){
   let obj={};try{obj=JSON.parse(localStorage.getItem('bmDualFlagsByGroup')||'{}')}catch{}
   obj[groupId+'::'+String(name).toLocaleLowerCase('sv')]=code;
   localStorage.setItem('bmDualFlagsByGroup',JSON.stringify(obj));
+  window.bmCloudSettingsChanged?.(name);
   if(typeof renderBigRound==='function')try{renderBigRound()}catch{}
 };
 window.bmDualFlagElement=function(first,second){
@@ -2977,6 +3023,7 @@ function setPlayerMode(i,mode){
  const p=getPlayerPool();
  if(p[i])p[i].mode=mode;
  savePlayerPool(p);
+ if(p[i])window.bmCloudSettingsChanged?.(p[i].name);
 }
 function addPlayer(){
  const inp=document.getElementById('newPlayer'), name=inp.value.trim();
