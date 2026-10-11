@@ -1,0 +1,10 @@
+TESTVERSION – DUBBLA FLAGGOR
+
+En flagga: samma som tidigare.
+Två flaggor: diagonalt delade i spelarlistans förhandsvisning.
+
+VIKTIGT: Denna testversion sparar flagga 2 lokalt per spelgrupp i webbläsaren.
+Synkronisering till Supabase och visning på andra enheter är INTE implementerad ännu.
+För detta krävs en genomgång av databasens befintliga kolumner och behörigheter.
+
+Live & QR-koden har lämnats orörd från den fungerande versionen.
