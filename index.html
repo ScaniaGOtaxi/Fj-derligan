@@ -1479,14 +1479,26 @@ window.addEventListener('badminton:rotation-created', async (event)=>{
  const id=groupSelect.value;
  const serial=++rotationSerial;
  if(cloudSaveBusy){sessionStatus.textContent='⚠️ Föregående molnsparning pågår. Vänta innan du skapar ett nytt schema.';return;}
- if(!accessToken || !id || importedGroupId!==id){sessionStatus.textContent='⚠️ Rotationen är lokal. Logga in, välj grupp och hämta dess spelare först för molnsparning.';return;}
+ if(!accessToken || !id){sessionStatus.textContent='⚠️ Logga in och välj en Supabase-grupp för att aktivera Live & QR.';return;}
  if(!Array.isArray(rounds)||rounds.length!==roundCount){sessionStatus.textContent='❌ Kunde inte läsa rotationsschemat för molnsparning.';return;}
  cloudSaveBusy=true;lastSessionId=null;cloudRoundIds.clear();pendingCompletions.clear();
  sessionStatus.textContent='⏳ Sparar session, rundor och spelare i Supabase …';
  let createdSession=null;
  try{
   const names=new Set(rounds.flatMap(r=>[...r.rest,...r.courts.flatMap(c=>c.players)]));
-  for(const name of names)if(!importedPlayerIds.has(name))throw Error('Spelaren '+name+' saknar ID i vald Supabase-grupp. Hämta spelarlistan igen.');
+  // Live/QR ska fungera även om rotationsspelarna laddades lokalt, utan separat import.
+  // Hämta spelar-ID direkt från vald Supabase-grupp; ändra inte den lokala spelarlistan.
+  const groupPlayers=await request('/rest/v1/badminton_players?select=id,name&group_id=eq.'+encodeURIComponent(id));
+  if(!Array.isArray(groupPlayers))throw Error('Kunde inte hämta gruppens spelare från Supabase.');
+  const nameKey=n=>String(n||'').trim().toLocaleLowerCase('sv');
+  const byName=new Map(groupPlayers.map(p=>[nameKey(p.name),p.id]));
+  const playerIds=new Map();
+  for(const name of names){
+   const playerId=byName.get(nameKey(name));
+   if(!playerId)throw Error('Spelaren '+name+' saknas i Supabase-gruppen. Lägg till spelaren i gruppen innan Live & QR används.');
+   playerIds.set(name,playerId);
+  }
+  if(groupSelect.value!==id)throw Error('Gruppen ändrades under sparningen. Försök igen.');
   const result=await request('/rest/v1/badminton_sessions?select=id,group_id,name,court_count,status',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({group_id:id,name:'Rotationsschema '+new Date().toLocaleString('sv-SE'),court_count:courtCount,status:'active'})});
   if(!Array.isArray(result)||!result[0]?.id)throw Error('Inget sessions-ID returnerades');
   createdSession=result[0].id;
@@ -1497,8 +1509,8 @@ window.addEventListener('badminton:rotation-created', async (event)=>{
   const positions=[];
   rounds.forEach((round,i)=>{
    const roundId=ids.get(i+1);
-   round.courts.forEach((court,j)=>court.players.forEach((name,k)=>positions.push({round_id:roundId,player_id:importedPlayerIds.get(name),court_number:j+1,team_number:court.type==='Dubbel'?(k<2?1:2):(k+1),activity:court.type==='Dubbel'?'double':'single'})));
-   round.rest.forEach(name=>positions.push({round_id:roundId,player_id:importedPlayerIds.get(name),court_number:null,team_number:null,activity:'rest'}));
+   round.courts.forEach((court,j)=>court.players.forEach((name,k)=>positions.push({round_id:roundId,player_id:playerIds.get(name),court_number:j+1,team_number:court.type==='Dubbel'?(k<2?1:2):(k+1),activity:court.type==='Dubbel'?'double':'single'})));
+   round.rest.forEach(name=>positions.push({round_id:roundId,player_id:playerIds.get(name),court_number:null,team_number:null,activity:'rest'}));
   });
   // I singel ska team_number vara 1 eller 2; övriga former stöds i denna version endast med 2 eller 4 spelare per bana.
   if(positions.length)await request('/rest/v1/badminton_round_players',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(positions)});
