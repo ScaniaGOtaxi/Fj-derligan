@@ -1237,27 +1237,38 @@ async function request(path, options={}){
 }
 // Gruppbundna spelarinställningar i Supabase. Kräver migrationen i SQL-filen.
 const bmSyncTimers=new Map();
+// Spara direkt fran Spelinstallningar, aven utan manuell import till rotationen.
 window.bmCloudSettingsChanged=function(name){
  const groupId=groupSelect.value;
- const playerId=importedPlayerIds.get(String(name).trim().toLocaleLowerCase('sv'));
- if(!accessToken||!groupId||!playerId||importedGroupId!==groupId){
-  if(accessToken && groupId && importedGroupId!==groupId)say('⚠️ Importera gruppens spelare till rotationen innan inställningar kan synkas.');
-  return;
+ const normalized=String(name||'').trim().toLocaleLowerCase('sv');
+ if(!accessToken||!groupId){
+  say('⚠️ Välj spelgrupp och logga in för att spara '+name+' i Supabase.');return;
  }
- const key=groupId+'::'+playerId;
+ const key=groupId+'::'+normalized;
  clearTimeout(bmSyncTimers.get(key));
  bmSyncTimers.set(key,setTimeout(async()=>{
   const country=window.badmintonCountryOf(name)||null;
   const second=window.bmSecondFlagOf(name)||null;
   const gender=window.badmintonGenderOf(name)||'man';
   const pool=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
-  const mode=pool.find(x=>x.name===name)?.mode||'normal';
+  const mode=pool.find(x=>String(x.name).trim().toLocaleLowerCase('sv')===normalized)?.mode||'normal';
   try{
-   await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{
-    method:'PATCH',headers:{Prefer:'return=minimal'},
+   let playerId=(importedGroupId===groupId)?importedPlayerIds.get(normalized):null;
+   if(!playerId){
+    const rows=await request('/rest/v1/badminton_players?select=id,name&group_id=eq.'+encodeURIComponent(groupId));
+    const found=Array.isArray(rows)?rows.find(x=>String(x.name).trim().toLocaleLowerCase('sv')===normalized):null;
+    if(!found)throw Error('Spelaren finns inte i den valda Supabase-gruppen. Lägg till eller importera spelaren i gruppen först.');
+    playerId=found.id;
+    importedPlayerIds.set(normalized,playerId);
+    importedGroupId=groupId;
+   }
+   const updated=await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{
+    method:'PATCH',headers:{Prefer:'return=representation'},
     body:JSON.stringify({country_code:country,second_country_code:second,player_gender:gender,player_mode:mode})
    });
-  }catch(e){say('❌ Inställningarna för '+name+' kunde inte sparas i Supabase: '+e.message+' (kontrollera SQL-migrationen)')}
+   if(!Array.isArray(updated)||updated.length!==1)throw Error('Databasen bekräftade inte uppdateringen. Kontrollera gruppbehörighet (RLS).');
+   say('✅ Sparat i Supabase: '+name+' – '+(country||'ingen flagga')+(second?' + '+second:''));
+  }catch(e){say('❌ Kunde inte spara '+name+' i Supabase: '+e.message);}
  },450));
 };
 async function bmLoadCloudSettings(groupId,data){

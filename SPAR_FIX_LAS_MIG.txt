@@ -1,0 +1,1 @@
+Automatisk Supabase-sparning fran Spelinstallningar. Kontrollerar att PATCH verkligen uppdaterar exakt en spelare. Vid fel visas meddelande. Testa med samma grupp pa tva enheter.
