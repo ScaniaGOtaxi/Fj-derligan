@@ -1219,7 +1219,9 @@ async function loadGroups(quiet=false){
  data.forEach(g=>groupSelect.add(new Option(g.name,g.id)));
  if(data.some(g=>g.id===selected))groupSelect.value=selected;
  resetImport();
- if(!quiet)say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');
+ if(groupSelect.value)await bmAutoLoadGroupPlayers();
+ if(!quiet&&groupSelect.value)say('✅ Grupper och spelare hämtade från Supabase.');
+ else if(!quiet)say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');
 }
 async function restoreAuth(){
  try{
@@ -1393,10 +1395,10 @@ async function loadPlayers(){
  catch(e){say('❌ Kunde inte hämta spelare: '+e.message)}
 }
 document.getElementById('cloudLoadPlayers').addEventListener('click',loadPlayers);
-importBtn.addEventListener('click',async()=>{
+async function bmImportGroupPlayers({silent=false}={}){
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return}
  const id=groupSelect.value;if(!id){say('Välj grupp först.');return}
- importBtn.disabled=true;say('Hämtar spelare till rotationen …');
+ importBtn.disabled=true;if(!silent)say('Hämtar spelare till rotationen …');
  try{
   const data=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
   if(groupSelect.value!==id){say('Gruppen ändrades. Försök igen.');return}
@@ -1405,7 +1407,10 @@ importBtn.addEventListener('click',async()=>{
   // Spara originalets lokala spelarregister en gång, utan att ändra Supabase.
   if(localStorage.getItem('badmintonV13OriginalPoolBackup')===null)
    localStorage.setItem('badmintonV13OriginalPoolBackup',localStorage.getItem('badmintonPlayerPool')||'[]');
-  const pool=data.map(x=>({name:x.name,selected:false,mode:x.player_mode||'normal'}));
+  const priorGroup=localStorage.getItem('badmintonV13ActiveGroupId');
+  let previous=[];try{previous=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]')}catch{}
+  const selectedByName=new Map(priorGroup===id&&Array.isArray(previous)?previous.map(x=>[String(x.name).trim().toLocaleLowerCase('sv'),!!x.selected]):[]);
+  const pool=data.map(x=>({name:x.name,selected:selectedByName.get(String(x.name).trim().toLocaleLowerCase('sv'))||false,mode:x.player_mode||'normal'}));
   localStorage.setItem('badmintonPlayerPool',JSON.stringify(pool));
   localStorage.setItem('badmintonV13ActiveGroupId',id);
   importedGroupId=id;
@@ -1413,11 +1418,28 @@ importBtn.addEventListener('click',async()=>{
   await bmLoadCloudSettings(id,data);
   if(typeof renderPlayerPool==='function')renderPlayerPool();
   if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
-  say('☁️ Synkroniserat '+pool.length+' spelare och deras flaggor, kön och läge från Supabase. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
-  document.getElementById('setupView').scrollIntoView({behavior:'smooth'});
+  say('☁️ Hämtat '+pool.length+' spelare och deras inställningar från Supabase.');
+  if(!silent)document.getElementById('setupView')?.scrollIntoView({behavior:'smooth'});
  }catch(e){say('❌ Kunde inte hämta spelare till rotationen: '+e.message)}
  finally{importBtn.disabled=false}
-});
+}
+
+// Hämta automatiskt när grupp väljs och vid återställd inloggning.
+let bmGroupLoadSerial=0;
+async function bmAutoLoadGroupPlayers(){
+ const serial=++bmGroupLoadSerial;
+ if(!accessToken||!groupSelect.value)return;
+ if(bmDirtyPlayers.size){say('⚠️ Osparade spelarändringar. Spara dem innan du hämtar gruppen igen.');return}
+ // Låt tidigare hämtning slutföras innan nästa påbörjas.
+ if(importBtn.disabled)return;
+ if(serial!==bmGroupLoadSerial)return;
+ await bmImportGroupPlayers({silent:true});
+}
+importBtn.addEventListener('click',()=>bmImportGroupPlayers());
+// Visa spelare ska även fylla den lokala spelarlistan, inte bara visa molnnamnen.
+const bmCloudLoadButton=document.getElementById('cloudLoadPlayers');
+if(bmCloudLoadButton){bmCloudLoadButton.removeEventListener('click',loadPlayers);bmCloudLoadButton.addEventListener('click',()=>bmImportGroupPlayers({silent:true}));}
+groupSelect.addEventListener('change',()=>{if(groupSelect.value)bmAutoLoadGroupPlayers()});
  const shareButton=document.getElementById('createViewerLink');
  const shareResult=document.getElementById('viewerLinkResult');
  const shareQr=document.getElementById('viewerQr');
