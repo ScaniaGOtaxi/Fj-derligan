@@ -3095,11 +3095,20 @@ function renderPlayerPool(){
     const none=document.createElement('option');none.value='';none.textContent='Ingen andra flagga';secondNation.append(none);
     const matches=allCountries.filter(([code,sv,en,alpha3])=>!q||[code,sv,en,alpha3].some(t=>String(t||'').toLocaleLowerCase('sv').includes(q)));
     matches.forEach(([code,sv])=>{const opt=document.createElement('option');opt.value=code;opt.textContent=sv;secondNation.append(opt)});
-    if(matches.some(c=>c[0]===saved))secondNation.value=saved;
-    else secondNation.value='';
-    if(q && matches.length===1){secondNation.value=matches[0][0];window.bmSetSecondFlag(x.name,secondNation.value);showFlagPreview()}
+    // Keep the saved flag visible while filtering; searching must never save or clear a flag.
+    if(saved && !matches.some(c=>c[0]===saved)){
+      const existing=allCountries.find(c=>c[0]===saved);
+      if(existing){const opt=document.createElement('option');opt.value=saved;opt.textContent=existing[1]+' (valt)';secondNation.append(opt);}
+    }
+    secondNation.value=saved || '';
   };
-  secondNation.onchange=()=>{window.bmSetSecondFlag(x.name,secondNation.value);secondSearch.value='';secondSearch.oninput();showFlagPreview();};
+  secondNation.onchange=()=>{
+    const chosen=secondNation.value;
+    window.bmSetSecondFlag(x.name,chosen);
+    secondSearch.value='';
+    secondSearch.oninput();
+    showFlagPreview();
+  };
   showFlagPreview();
   const flagOne=document.createElement('div');flagOne.className='bmFlagField';
   const firstTitle=document.createElement('label');firstTitle.textContent='Flagga 1';flagOne.append(firstTitle,nationSearch,nation);
