@@ -1,0 +1,1 @@
+TEST: Spelarrader ordnade som namn + kön, flagga 1 + flagga 2 med varsin sökruta, spelpreferens + radera. Supabase och Live & QR har inte ändrats. Kontrollera i mobil och dator.

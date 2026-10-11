@@ -331,7 +331,7 @@ select{min-width:130px}
 /* v1.1 */
 .playerChoice{flex-wrap:wrap}
 .playerChoice .playerName{font-weight:800;min-width:80px}
-.playerMode{font-size:8px!important;max-width:120px;padding:5px!important}
+.playerMode{font-size:14px!important;max-width:180px;min-width:145px;padding:9px 8px!important;line-height:1.35!important}.playerMode option{font-size:14px!important}
 .modeInfo{font-size:8px;color:#9fb3c8;width:100%;padding-left:25px}
 .helpPanel{display:none}
 .helpPanel.open{display:block}
@@ -508,6 +508,27 @@ select{min-width:130px}
 .threeDStage .threeDLabel span {overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;min-width:max-content!important;}
 .threeDStage .threeDLabel img {flex-shrink:0!important;}
 .viewerFlagPair{display:inline-flex;align-items:center;gap:3px;flex:0 0 auto}.viewerFlagPair .viewerFlag{display:block;flex:0 0 auto;max-width:none!important}
+
+/* v2.0: tydlig ordning i spelarinställningarna */
+#playerPool .playerChoice{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important;padding:14px!important;min-width:0!important}
+#playerPool .bmPlayerTop,#playerPool .bmPlayerBottom{display:flex;align-items:end;justify-content:space-between;gap:12px;width:100%;min-width:0}
+#playerPool .bmPlayerIdentity{display:flex;align-items:center;gap:10px;min-width:0;align-self:center}
+#playerPool .bmPlayerIdentity .playerName{font-size:18px!important;overflow-wrap:anywhere}
+#playerPool .bmGenderField,#playerPool .bmModeField{display:flex;flex-direction:column;gap:5px;min-width:0}
+#playerPool .bmGenderField label,#playerPool .bmModeField label,#playerPool .bmFlagField label{font-size:13px!important;font-weight:700;color:#c5d7e8}
+#playerPool .nationPicker{width:100%!important;max-width:none!important;min-width:0!important;display:flex!important;flex-direction:column!important;gap:8px!important}
+#playerPool .bmFlagGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+#playerPool .bmFlagField{display:flex;flex-direction:column;gap:6px;min-width:0}
+#playerPool .bmFlagField .nationSearch,#playerPool .bmFlagField .playerNationality{width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box;font-size:14px!important}
+#playerPool .bmFlagField .bmSecondFlagLabel{margin:0!important;display:block!important}
+#playerPool .nationFlagPreview{margin:0!important;align-self:flex-start}
+#playerPool .bmModeControls{display:flex;align-items:center;gap:8px}
+#playerPool .playerMode{font-size:15px!important;min-width:175px!important;max-width:240px!important}
+#playerPool .playerMode option{font-size:15px!important}
+#playerPool .deletePlayerBtn{align-self:end}
+#playerPool .modeTip{width:100%!important}
+@media(max-width:540px){#playerPool .bmFlagGrid{grid-template-columns:minmax(0,1fr)}#playerPool .bmPlayerIdentity .playerName{font-size:16px!important}#playerPool .bmPlayerTop{align-items:center}#playerPool .playerMode{min-width:155px!important}}
+
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -880,7 +901,28 @@ window.badmintonPlayerImage=function(name,team,side,position){
 </style><style id="bm-game-full-flags-stable">
 .threeDStage .threeDLabel>.bmGameFullFlags{display:inline-flex!important;align-items:center!important;gap:3px!important;position:relative!important;flex:0 0 auto!important;min-width:0!important;width:auto!important;height:auto!important;overflow:visible!important;visibility:visible!important;opacity:1!important;vertical-align:middle!important}
 .threeDStage .threeDLabel>.bmGameFullFlags>img.bmGameFullFlag{display:block!important;position:static!important;flex:0 0 auto!important;width:1.35em!important;min-width:1.35em!important;max-width:1.35em!important;height:.9em!important;min-height:.9em!important;max-height:.9em!important;object-fit:cover!important;clip-path:none!important;transform:none!important;visibility:visible!important;opacity:1!important;border-radius:2px!important}
-</style></head>
+</style><style id="bm-compact-player-layout-fix">
+/* Compact controls: prevent older flex sizing rules from stretching inputs */
+#playerPool .playerChoice .nationPicker{display:block!important;height:auto!important;min-height:0!important;align-items:stretch!important;overflow:visible!important}
+#playerPool .playerChoice .bmFlagGrid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;align-items:start!important;width:100%!important}
+#playerPool .playerChoice .bmFlagField{display:flex!important;flex-direction:column!important;gap:6px!important;min-width:0!important;height:auto!important;align-items:stretch!important}
+#playerPool .playerChoice .bmFlagField label{display:block!important;position:static!important;font-size:13px!important;line-height:18px!important;margin:0!important}
+#playerPool .playerChoice .bmFlagField input.nationSearch,
+#playerPool .playerChoice .bmFlagField select.playerNationality{
+ display:block!important;position:static!important;flex:none!important;align-self:stretch!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ height:40px!important;min-height:40px!important;max-height:40px!important;
+ padding:7px 10px!important;margin:0!important;box-sizing:border-box!important;
+ font-size:14px!important;line-height:22px!important;vertical-align:middle!important;
+}
+#playerPool .playerChoice .nationFlagPreview{display:flex!important;align-items:center!important;gap:8px!important;position:static!important;float:none!important;clear:both!important;width:auto!important;max-width:100%!important;margin:10px 0 0!important;min-height:26px!important;overflow:hidden!important}
+#playerPool .playerChoice .bmPlayerBottom{margin-top:12px!important;align-items:end!important}
+#playerPool .playerChoice .bmModeField{min-width:0!important}
+#playerPool .playerChoice .playerMode{font-size:15px!important;height:44px!important;min-height:44px!important;line-height:22px!important}
+#playerPool .playerChoice .bmPlayerTop{margin-bottom:10px!important}
+@media(max-width:600px){#playerPool .playerChoice .bmFlagGrid{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+</head>
 <body>
 <style>
 .viewer-mode body{margin:0!important;overflow-x:hidden}
@@ -3041,14 +3083,41 @@ function renderPlayerPool(){
     nationSearch.value='';renderNationOptions('');nation.value=chosen;
   };
   const secondTitle=document.createElement('label');secondTitle.className='bmSecondFlagLabel';secondTitle.textContent='Flagga 2 (valfri)';
+  const secondSearch=document.createElement('input');secondSearch.type='search';secondSearch.className='nationSearch bmSecondSearch';secondSearch.placeholder='Sök land 2…';secondSearch.setAttribute('aria-label','Sök andra flaggan för '+x.name);secondSearch.autocomplete='off';
   const secondNation=document.createElement('select');secondNation.className='playerNationality bmSecondFlag';secondNation.setAttribute('aria-label','Andra flagga för '+x.name);
   const emptyOpt=document.createElement('option');emptyOpt.value='';emptyOpt.textContent='Ingen andra flagga';secondNation.append(emptyOpt);
   allCountries.forEach(([code,sv])=>{const opt=document.createElement('option');opt.value=code;opt.textContent=sv;secondNation.append(opt)});
   secondNation.value=window.bmSecondFlagOf(x.name);
-  secondNation.onchange=()=>{window.bmSetSecondFlag(x.name,secondNation.value);showFlagPreview();};
+  secondSearch.oninput=()=>{
+    const q=secondSearch.value.trim().toLocaleLowerCase('sv');
+    const saved=window.bmSecondFlagOf(x.name);
+    secondNation.replaceChildren();
+    const none=document.createElement('option');none.value='';none.textContent='Ingen andra flagga';secondNation.append(none);
+    const matches=allCountries.filter(([code,sv,en,alpha3])=>!q||[code,sv,en,alpha3].some(t=>String(t||'').toLocaleLowerCase('sv').includes(q)));
+    matches.forEach(([code,sv])=>{const opt=document.createElement('option');opt.value=code;opt.textContent=sv;secondNation.append(opt)});
+    if(matches.some(c=>c[0]===saved))secondNation.value=saved;
+    else secondNation.value='';
+    if(q && matches.length===1){secondNation.value=matches[0][0];window.bmSetSecondFlag(x.name,secondNation.value);showFlagPreview()}
+  };
+  secondNation.onchange=()=>{window.bmSetSecondFlag(x.name,secondNation.value);secondSearch.value='';secondSearch.oninput();showFlagPreview();};
   showFlagPreview();
-  nationWrap.append(nationSearch,nation,secondTitle,secondNation,flagPreview);
-  row.append(cb,name,gender,nationWrap,mode,info,del,tip); box.appendChild(row);
+  const flagOne=document.createElement('div');flagOne.className='bmFlagField';
+  const firstTitle=document.createElement('label');firstTitle.textContent='Flagga 1';flagOne.append(firstTitle,nationSearch,nation);
+  const flagTwo=document.createElement('div');flagTwo.className='bmFlagField';flagTwo.append(secondTitle,secondSearch,secondNation);
+  const flagGrid=document.createElement('div');flagGrid.className='bmFlagGrid';flagGrid.append(flagOne,flagTwo);
+  nationWrap.append(flagGrid,flagPreview);
+  const top=document.createElement('div');top.className='bmPlayerTop';
+  const identity=document.createElement('div');identity.className='bmPlayerIdentity';identity.append(cb,name);
+  const genderField=document.createElement('div');genderField.className='bmGenderField';
+  const genderLabel=document.createElement('label');genderLabel.textContent='Kön';genderField.append(genderLabel,gender);
+  top.append(identity,genderField);
+  const bottom=document.createElement('div');bottom.className='bmPlayerBottom';
+  const modeField=document.createElement('div');modeField.className='bmModeField';
+  const modeLabel=document.createElement('label');modeLabel.textContent='Spelpreferens';
+  const modeControls=document.createElement('div');modeControls.className='bmModeControls';modeControls.append(mode,info);
+  modeField.append(modeLabel,modeControls);
+  bottom.append(modeField,del);
+  row.append(top,nationWrap,bottom,tip); box.appendChild(row);
  });
  savePlayerPool(p);
  updateSelectedCount();

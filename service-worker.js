@@ -1,4 +1,4 @@
-const CACHE = 'badminton-v2-cloud-sync-20261011b';
+const CACHE = 'badminton-v2-cloud-sync-20261011b-mode-text-20261011-layoutfix';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png', './qr-local.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
