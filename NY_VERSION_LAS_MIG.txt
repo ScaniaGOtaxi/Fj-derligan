@@ -1,0 +1,9 @@
+Badminton App v2.0 – Testversion
+
+- Spara-knapp per spelare. Inställningarna sparas först vid klick, med bekräftelse från Supabase.
+- Två oberoende landsökningar med klickbara resultat. Sökning ändrar inte flaggorna.
+- Tre tydliga spelpreferenser med förklaringar.
+- Live & QR, 3D-vyn och poängräkningen har inte avsiktligt ändrats.
+
+OBS: Testa först med en spelare. Du måste vara inloggad och ha valt grupp i Supabase.
+Kör inte SQL-filerna igen om migrationerna redan körts.
