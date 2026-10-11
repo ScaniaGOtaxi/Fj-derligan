@@ -3029,30 +3029,32 @@ function renderPlayerPool(){
   const currentCountry=window.badmintonCountryOf(x.name);
   function renderNationOptions(term){
     const q=String(term||'').trim().toLocaleLowerCase('sv');
-    const matching=allCountries.filter(([code,sv,en,alpha3])=>!q||[code,sv,en,alpha3].some(t=>String(t).toLocaleLowerCase('sv').includes(q)));
+    const saved=window.badmintonCountryOf(x.name);
+    const matching=allCountries.filter(([code,sv,en,alpha3])=>!q||[code,sv,en,alpha3].some(t=>String(t||'').toLocaleLowerCase('sv').includes(q)));
     nation.replaceChildren();
+    // Search results must not silently replace the saved country.
+    const hint=document.createElement('option');hint.value='';
+    hint.textContent=q?'Välj land bland sökresultaten…':'Välj flagga 1…';
+    hint.disabled=true;nation.appendChild(hint);
+    if(saved && !matching.some(c=>c[0]===saved)){
+      const existing=allCountries.find(c=>c[0]===saved);
+      if(existing){const opt=document.createElement('option');opt.value=saved;opt.textContent=existing[1]+' (nuvarande)';nation.appendChild(opt);}
+    }
     matching.forEach(([code,sv,en,alpha3])=>{
       const opt=document.createElement('option');opt.value=code;opt.textContent=sv+' ('+alpha3+')';nation.appendChild(opt);
     });
-    const saved=window.badmintonCountryOf(x.name);
-    if(matching.some(c=>c[0]===saved))nation.value=saved;
-    else if(matching.length){nation.selectedIndex=0; nation.title='Välj ett land i listan för att spara';}
+    // Keep current selection only when no search is active.
+    if(!q && saved)nation.value=saved;
+    else nation.value='';
   }
   renderNationOptions('');
-  // The visible selection must never silently differ from the saved country.
-  // A unique search result is selected immediately; ambiguous searches require
-  // an explicit choice in the dropdown.
   function commitNation(code){
     if(!code)return;
     window.badmintonSetCountry(x.name,code);
     showFlagPreview();
   }
-  nationSearch.oninput=()=>{
-    renderNationOptions(nationSearch.value);
-    if(nation.options.length===1){
-      commitNation(nation.options[0].value);
-    }
-  };
+  // Typing filters only; choosing a country is always explicit.
+  nationSearch.oninput=()=>renderNationOptions(nationSearch.value);
   nationSearch.onfocus=()=>nationSearch.select();
   const flagPreview=document.createElement('div');flagPreview.className='nationFlagPreview';
   function showFlagPreview(){
@@ -3100,7 +3102,12 @@ function renderPlayerPool(){
       const existing=allCountries.find(c=>c[0]===saved);
       if(existing){const opt=document.createElement('option');opt.value=saved;opt.textContent=existing[1]+' (valt)';secondNation.append(opt);}
     }
-    secondNation.value=saved || '';
+    if(q){
+      const hint=document.createElement('option');hint.value='__search_hint__';
+      hint.textContent='Välj land bland sökresultaten…';hint.disabled=true;
+      secondNation.insertBefore(hint,secondNation.firstChild);
+      secondNation.value='__search_hint__';
+    }else secondNation.value=saved || '';
   };
   secondNation.onchange=()=>{
     const chosen=secondNation.value;
