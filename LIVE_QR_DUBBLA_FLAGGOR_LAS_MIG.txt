@@ -1,0 +1,7 @@
+Live & QR: visning av två hela flaggor bredvid varandra är nu implementerad.
+För att båda ska synas på andra enheter måste Supabase RPC-funktionen
+get_badminton_live_view returnera second_country_code (och country_code)
+för varje spelare i data.players. Detta kan kräva en SQL-uppdatering av
+befintlig RPC-funktion; ingen osäker publik läsrätt har lagts till.
+Om RPC bara returnerar den första flaggan visas fortsatt bara en flagga.
+Live-länkar och QR-generering är inte ändrade.

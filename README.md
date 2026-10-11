@@ -41,3 +41,6 @@ Webbapp för badmintonrotation, spelgrupper och livevisning. Publiceras med GitH
 - `SUPABASE_SPELARINSTALLNINGAR.sql` – databasändring för testfunktionen.
 - `LAS_MIG_SUPABASE.txt` – instruktioner för Supabase.
 - `DUBBLA_FLAGGOR_LAS_MIG.txt` och `TVA_HELA_FLAGGOR_LAS_MIG.txt` – information om flaggvisning.
+
+## Live & QR – poängräkning (test)
+Poängen visas skrivskyddade per bana i Live & QR när poängräkning är aktiverad. Kör `SUPABASE_LIVE_POANG.sql` i Supabase SQL Editor. SQL-koden utgår från att `badminton_sessions.user_id` är sessionsägarens ID; anpassa efter ert schema vid behov. Funktionen måste testas mot den faktiska databasen.

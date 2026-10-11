@@ -507,6 +507,7 @@ select{min-width:130px}
 .threeDStage .threeDLabel.pos1, .threeDStage .threeDLabel.pos3 {right:0.8%!important;left:auto!important;}
 .threeDStage .threeDLabel span {overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;min-width:max-content!important;}
 .threeDStage .threeDLabel img {flex-shrink:0!important;}
+.viewerFlagPair{display:inline-flex;align-items:center;gap:3px;flex:0 0 auto}.viewerFlagPair .viewerFlag{display:block;flex:0 0 auto;max-width:none!important}
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
@@ -898,6 +899,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 .viewerName.top{top:1%}.viewerName.bottom{bottom:1%}.viewerName.left{left:1%}.viewerName.right{right:1%}
 .viewerName.right{justify-content:flex-end}.viewerName span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .viewerFlag{width:1.25em;height:.85em;object-fit:cover;flex:none}
+.viewerLiveScore{position:absolute;z-index:10050;top:29%;left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 12px;border-radius:10px;background:rgba(10,22,31,.89);border:1px solid #9aafc0;color:white;font-size:clamp(13px,1.9vw,27px);font-weight:850;pointer-events:none}
 #viewerRest{margin:0;text-align:center;color:#ffeb3b;font-size:clamp(13px,1.5vw,22px)}
 @media(max-width:700px){#viewerCourts{grid-template-columns:1fr!important}.viewerName{font-size:clamp(13px,3.5vw,22px)}}
 @media(min-width:701px){.viewer-mode #badmintonViewer:has(#viewerCourts[data-count="1"]) .viewerCourt{max-width:min(100%,140vh);width:100%;justify-self:center}}
@@ -968,13 +970,35 @@ window.badmintonPlayerImage=function(name,team,side,position){
    if(/^[A-Z]{2}$/.test(value))return value;
    return window.badmintonCountryOf(p.name);
   }
- function nameLabel(stage,p,position){if(!p)return;const label=document.createElement('div');label.className='viewerName '+position;const code=flagCode(p);if(/^[A-Z]{2}$/.test(code)){const img=document.createElement('img');img.className='viewerFlag';img.dataset.country=code;img.src=window.badmintonFlagUrl(code);img.alt='Flagga '+code;img.onerror=()=>window.badmintonFlagFallback(img);label.append(img);}const span=document.createElement('span');span.textContent=p.name||'–';label.append(span);stage.append(label);}
+ function nameLabel(stage,p,position){
+  if(!p)return;
+  const label=document.createElement('div');label.className='viewerName '+position;
+  const first=flagCode(p);
+  const rawSecond=p.second_country_code||p.secondCountryCode||p.second_flag_code||p.flag2||'';
+  const second=String(rawSecond).trim().toUpperCase();
+  const codes=[first];
+  if(/^[A-Z]{2}$/.test(second)&&second!==first)codes.push(second);
+  const flags=document.createElement('span');flags.className='viewerFlagPair';
+  codes.forEach(code=>{
+    if(!/^[A-Z]{2}$/.test(code))return;
+    const img=document.createElement('img');img.className='viewerFlag';img.dataset.country=code;
+    img.src=window.badmintonFlagUrl(code);img.alt='Flagga '+code;
+    img.onerror=()=>window.badmintonFlagFallback(img);flags.append(img);
+  });
+  label.append(flags);
+  const span=document.createElement('span');span.textContent=p.name||'–';label.append(span);stage.append(label);
+}
  async function refresh(){
   if(busy||document.hidden)return;busy=true;
   try{
    const response=await fetch(base+'/rest/v1/rpc/get_badminton_live_view',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({p_session_id:session,p_viewer_token:token}),cache:'no-store'});
    if(!response.ok){const err=await response.json().catch(()=>({}));throw Error(err.message||'Visningslänken fungerar inte längre.');}
    const data=await response.json();
+   // Read-only scores, authorized by the same viewer token as the Live link.
+   try{
+     const sr=await fetch(base+'/rest/v1/rpc/get_badminton_live_scores',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({p_session_id:session,p_viewer_token:token}),cache:'no-store'});
+     if(sr.ok){const extra=await sr.json();data.live_scores=extra.scores||{};data.scores_enabled=extra.enabled===true;}
+   }catch(_){/* Older database schema: continue displaying Live without scores. */}
    // Supabase is authoritative on GitHub Pages and other hosted environments.
    // Only use the local bridge for file:// testing, where it was originally needed.
    if(location.protocol==='file:' && localLiveRound){
@@ -1010,6 +1034,14 @@ window.badmintonPlayerImage=function(name,team,side,position){
       stage.append(figure);
     });
     const netLayer=document.createElement('img');netLayer.src='nat.png';netLayer.alt='';netLayer.className='courtNet';stage.append(netLayer);
+    const scoreMap=data.live_scores||{};
+    const score=scoreMap[String(n)]||scoreMap[n];
+    if(data.scores_enabled && score){
+      const scoreboard=document.createElement('div');scoreboard.className='viewerLiveScore';
+      const red=document.createElement('span');red.textContent='🔴 '+Math.max(0,Number(score.red)||0);
+      const blue=document.createElement('span');blue.textContent=Math.max(0,Number(score.blue)||0)+' 🔵';
+      scoreboard.append(red,document.createTextNode(' – '),blue);stage.append(scoreboard);
+    }
     card.append(stage);courts.append(card);
    }
    const resting=players.filter(p=>p.activity==='rest').map(p=>p.name);
@@ -1165,8 +1197,11 @@ async function request(path, options={}){
 const bmSyncTimers=new Map();
 window.bmCloudSettingsChanged=function(name){
  const groupId=groupSelect.value;
- const playerId=importedPlayerIds.get(name);
- if(!accessToken||!groupId||!playerId||importedGroupId!==groupId)return;
+ const playerId=importedPlayerIds.get(String(name).trim().toLocaleLowerCase('sv'));
+ if(!accessToken||!groupId||!playerId||importedGroupId!==groupId){
+  if(accessToken && groupId && importedGroupId!==groupId)say('⚠️ Importera gruppens spelare till rotationen innan inställningar kan synkas.');
+  return;
+ }
  const key=groupId+'::'+playerId;
  clearTimeout(bmSyncTimers.get(key));
  bmSyncTimers.set(key,setTimeout(async()=>{
@@ -1185,7 +1220,7 @@ window.bmCloudSettingsChanged=function(name){
 };
 async function bmLoadCloudSettings(groupId,data){
  // Hämta innan den lokala spelarlistan visas; ersätt inte äldre data vid databasfel.
- const byName=new Map(data.map(x=>[x.name.toLocaleLowerCase('sv'),x]));
+ const byName=new Map(data.map(x=>[String(x.name).trim().toLocaleLowerCase('sv'),x]));
  const countries=JSON.parse(localStorage.getItem('badmintonV14CountryByPlayer')||'{}');
  const genders=JSON.parse(localStorage.getItem('badmintonGenderProfiles')||'{}');
  const second=JSON.parse(localStorage.getItem('bmDualFlagsByGroup')||'{}');
@@ -1262,8 +1297,8 @@ restoreAuth();
 async function loadPlayers(){
  const id=groupSelect.value;if(!id){say('Välj en grupp först.');return}
  say('Hämtar spelare …');
- try{const data=await request('/rest/v1/badminton_players?select=id,name&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
- players.textContent='Spelare i '+groupSelect.selectedOptions[0].text+' ('+data.length+'):\n'+(data.map(x=>'• '+x.name).join('\n')||'Inga spelare ännu.');say('✅ Spelarlistan är hämtad.');}
+ try{const data=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
+ players.textContent='Spelare i '+groupSelect.selectedOptions[0].text+' ('+data.length+'):\n'+(data.map(x=>'• '+x.name).join('\n')||'Inga spelare ännu.');say('✅ Spelarlistan är hämtad. Klicka på Hämta till rotationen för att synka alla inställningar på den här enheten.');}
  catch(e){say('❌ Kunde inte hämta spelare: '+e.message)}
 }
 document.getElementById('cloudLoadPlayers').addEventListener('click',loadPlayers);
@@ -1279,17 +1314,15 @@ importBtn.addEventListener('click',async()=>{
   // Spara originalets lokala spelarregister en gång, utan att ändra Supabase.
   if(localStorage.getItem('badmintonV13OriginalPoolBackup')===null)
    localStorage.setItem('badmintonV13OriginalPoolBackup',localStorage.getItem('badmintonPlayerPool')||'[]');
-  const old=JSON.parse(localStorage.getItem('badmintonPlayerPool')||'[]');
-  const modes=new Map(old.map(x=>[String(x.name).toLocaleLowerCase('sv'),x.mode||'normal']));
-  const pool=data.map(x=>({name:x.name,selected:false,mode:modes.get(x.name.toLocaleLowerCase('sv'))||'normal'}));
+  const pool=data.map(x=>({name:x.name,selected:false,mode:x.player_mode||'normal'}));
   localStorage.setItem('badmintonPlayerPool',JSON.stringify(pool));
   localStorage.setItem('badmintonV13ActiveGroupId',id);
   importedGroupId=id;
-  importedPlayerIds=new Map(data.map(x=>[x.name,x.id]));
+  importedPlayerIds=new Map(data.map(x=>[String(x.name).trim().toLocaleLowerCase('sv'),x.id]));
   await bmLoadCloudSettings(id,data);
   if(typeof renderPlayerPool==='function')renderPlayerPool();
   if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
-  say('✅ '+pool.length+' spelare från '+groupSelect.selectedOptions[0].text+' är inlästa. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
+  say('☁️ Synkroniserat '+pool.length+' spelare och deras flaggor, kön och läge från Supabase. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
   document.getElementById('setupView').scrollIntoView({behavior:'smooth'});
  }catch(e){say('❌ Kunde inte hämta spelare till rotationen: '+e.message)}
  finally{importBtn.disabled=false}
@@ -1489,6 +1522,7 @@ window.addEventListener('badminton:round-changed',event=>{
   if(!Number.isInteger(number)||number<1)return;
   liveRoundWanted=number;
   publishLocalLiveRound(number);
+  window.badmintonPushLiveScores?.();
   void syncLiveRound();
 });
 window.addEventListener('badminton:round-completed',async event=>{
@@ -4299,6 +4333,28 @@ window.badmintonConfirmActiveGame=function(name){
  let scores={};
  try{scores=JSON.parse(localStorage.getItem(scoreKey)||'{}')||{}}catch(_){scores={}}
  function save(){localStorage.setItem(scoreKey,JSON.stringify(scores))}
+ let scoreSyncTimer;
+ function pushLiveScores(){
+   clearTimeout(scoreSyncTimer);
+   scoreSyncTimer=setTimeout(async()=>{
+     try{
+       const sid=typeof lastSessionId!=='undefined'?lastSessionId:null;
+       const token=typeof accessToken!=='undefined'?accessToken:null;
+       if(!sid||!token||typeof schedule==='undefined'||!schedule?.[currentRoundIndex])return;
+       const payload={p_session_id:sid,p_round_number:currentRoundIndex+1,p_enabled:enabled,p_scores:{}};
+       schedule[currentRoundIndex].courts.forEach((_,i)=>{
+         const key=matchKey(i);const pair=scores[key]||[0,0];
+         payload.p_scores[String(i+1)]={red:pair[0],blue:pair[1]};
+       });
+       const url=window.SUPABASE_URL||'https://frkhzwutziysnjibaxfa.supabase.co';
+       const anon=window.SUPABASE_ANON_KEY||'sb_publishable_Ls7ecNqa40yuRE8S1KiNCw_cHq_18Ej';
+       if(!url||!anon)return;
+       const res=await fetch(url.replace(/\/$/,'')+'/rest/v1/rpc/set_badminton_live_scores',{method:'POST',headers:{apikey:anon,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+       if(!res.ok)console.warn('Live-poäng synkroniserades inte:',await res.text());
+     }catch(err){console.warn('Live-poäng:',err)}
+   },300);
+ }
+ window.badmintonPushLiveScores=pushLiveScores;
  function matchKey(i){
    const c=schedule?.[currentRoundIndex]?.courts?.[i];
    if(!c)return null;
@@ -4334,7 +4390,7 @@ window.badmintonConfirmActiveGame=function(name){
        if(!b)return;
        const team=Number(b.dataset.team),delta=Number(b.dataset.delta);
        const old=scores[key]||[0,0];
-       old[team]=Math.max(0,old[team]+delta);scores[key]=old;save();render();
+       old[team]=Math.max(0,old[team]+delta);scores[key]=old;save();render();pushLiveScores();
      });
      stage.appendChild(el);
    });
@@ -4359,7 +4415,7 @@ window.badmintonConfirmActiveGame=function(name){
    btn?.setAttribute('aria-expanded','true');
    const score=menu.querySelector('#bmMenuScore');
    score.checked=enabled;
-   score.addEventListener('change',()=>{enabled=score.checked;localStorage.setItem(enabledKey,String(enabled));render()});
+   score.addEventListener('change',()=>{enabled=score.checked;localStorage.setItem(enabledKey,String(enabled));render();pushLiveScores()});
    const minutes=menu.querySelector('#bmMenuMinutes');
    const mainMinutes=document.getElementById('timerMinutes');
    minutes.value=mainMinutes?.value||'10';
