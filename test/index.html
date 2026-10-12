@@ -344,8 +344,10 @@ select{min-width:130px}
 .v11badge{font-size:8px;opacity:.75;margin-left:5px}
 
 
+.playerModeControls{display:flex;flex-direction:column;align-items:flex-start;gap:10px;max-width:100%}
+.playerModeControls .playerMode{width:100%}
 .modeInfoBtn{
-  min-width:26px!important;width:26px;height:26px;padding:0!important;
+  min-width:36px!important;width:36px;height:36px;padding:0!important;background:#218647!important;color:white!important;
   border-radius:50%!important;font-weight:900!important;font-size:12px!important;
 }
 .modeTip{
@@ -2822,24 +2824,15 @@ function renderPlayerPool(){
   gender.onchange=()=>{window.badmintonSetGender(x.name,gender.value);if(typeof schedule!=='undefined'&&schedule.length)renderBigRound();};
   const info=document.createElement('button'); info.type='button'; info.className='modeInfoBtn'; info.textContent='ⓘ';
   info.setAttribute('aria-label','Förklara spelarval');
-  const tip=document.createElement('div'); tip.className='modeTip';
-  function updateTip(){
-    const v=mode.value;
-    tip.innerHTML=v==='normal'
-      ? '<b>⚪ Normal:</b> Spelaren kan spela både dubbel och singel.'
-      : v==='moreSingles'
-      ? '<b>🎯 Mer singel:</b> Appen försöker ge spelaren singel oftare, men spelaren kan även spela dubbel.'
-      : '<b>🔒 Endast singel:</b> Spelaren placeras aldrig i dubbel. Om singel inte kan ordnas får spelaren vila.';
-  }
-  updateTip();
-  info.onclick=()=>{updateTip();tip.classList.toggle('open')};
-  const oldModeChange=mode.onchange;
-  mode.onchange=()=>{setPlayerMode(i,mode.value);updateTip()};
+  const modeControls=document.createElement('div');modeControls.className='playerModeControls';
+  modeControls.append(mode,info);
+  info.onclick=()=>window.badmintonExplainModes(mode.value);
+  mode.onchange=()=>{setPlayerMode(i,mode.value);window.badmintonExplainModes(mode.value);};
   const del=document.createElement('button'); del.type='button'; del.textContent='🗑️'; del.className='deletePlayerBtn'; del.title='Radera spelare'; del.setAttribute('aria-label','Radera '+x.name);
   del.onclick=()=>removePlayer(i);
   const nationWrap=document.createElement('div');nationWrap.className='nationPicker';
   nationWrap.append(window.badmintonCreateFlagPicker(x.name,1),window.badmintonCreateFlagPicker(x.name,2));
-  row.append(cb,name,gender,nationWrap,mode,info,del,tip); box.appendChild(row);
+  row.append(cb,name,gender,nationWrap,modeControls,del); box.appendChild(row);
  });
  savePlayerPool(p);
  updateSelectedCount();
