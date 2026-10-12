@@ -4231,7 +4231,7 @@ window.badmintonConfirmActiveGame=function(name){
  window.badmintonLoadScores=async function(){
   const session=window.badmintonScoreSession?.();if(!session)return;
   const round=currentRoundIndex,revision=scoreRevision;
-  try{const rows=await window.badmintonCloudRequest('/rest/v1/badminton_live_scores?select=court_number,red,blue,enabled&session_id=eq.'+encodeURIComponent(session)+'&round_number=eq.'+(round+1));
+  try{const rows=await window.badmintonCloudRequest('/rest/v1/rpc/get_badminton_admin_scores',{method:'POST',body:JSON.stringify({p_session_id:session,p_round_number:round+1})});
    if(session!==window.badmintonScoreSession?.()||round!==currentRoundIndex||revision!==scoreRevision)return;
    if(!Array.isArray(rows))throw Error('Oväntat poängsvar');
    enabled=rows.some(r=>r.enabled);bmStorage.setItem(enabledKey,String(enabled));

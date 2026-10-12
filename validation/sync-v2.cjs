@@ -24,7 +24,7 @@ else if(u.pathname.endsWith('create_badminton_viewer_token'))body='a'.repeat(64)
 else if(u.pathname.endsWith('get_badminton_live_view_v2'))body={session_name:'Testspel',current_round:currentRound,court_count:1,players:members.map((p,i)=>({...p,court:1,team:i<2?1:2,activity:'play'}))};
 else if(u.pathname.endsWith('set_badminton_live_scores')){scoreEnabled=payload.p_enabled;scoreValues[payload.p_round_number]=payload.p_scores;body=null;}
 else if(u.pathname.endsWith('get_badminton_live_scores'))body={enabled:scoreEnabled,scores:scoreValues[currentRound]||{}};
-else if(u.pathname.endsWith('badminton_live_scores'))body=Object.entries(scoreValues[Number(u.searchParams.get('round_number').slice(3))]||{}).map(([court,v])=>({court_number:Number(court),...v,enabled:scoreEnabled}));
+else if(u.pathname.endsWith('get_badminton_admin_scores'))body=Object.entries(scoreValues[payload.p_round_number]||{}).map(([court,v])=>({court_number:Number(court),...v,enabled:scoreEnabled}));
 else throw Error('Unexpected API route '+u.pathname);
 await route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
 }

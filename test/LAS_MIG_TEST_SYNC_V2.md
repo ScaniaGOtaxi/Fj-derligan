@@ -30,16 +30,13 @@ produktionens schema, RLS eller RPC-definitioner.
    Befintlig RLS för `badminton_players` måste tillåta Admin att läsa och uppdatera
    spelare i sin grupp. Klienten visar fel om sparningen nekas.
 
-2. Kontrollera poängschemat innan `SUPABASE_LIVE_POANG.sql` körs.
-   Den filen bygger på det befintliga repo-skriptets ägarmodell och kräver
-   `badminton_sessions.user_id`. Poäng får då skrivas/läsas av sessionens ägare;
-   anonyma Live-besökare får läsa genom den tokenkontrollerade RPC:n.
-   Om ert schema saknar `user_id`, eller om flera gruppadministratörer ska kunna
-   ändra samma spels poäng, behövs en anpassning av rättighetskontrollen först.
-   Kör inte ett gissat schema eller öppna anonyma skrivrättigheter.
-   Skriptet lägger till poängtabell, RPC:er och ägarpolicys, och använder en
-   transaktion. Det ersätter de två poäng-RPC:erna från originalskriptet och kan
-   därför påverka andra klienter som använder dem; granska befintliga definitioner.
+2. Granska och kör `SUPABASE_LIVE_POANG.sql`.
+   Den är nu anpassad till det verifierade schemat: Super Admin eller Admin i
+   `badminton_group_admins` får hantera poäng för gruppens aktiva spel. Den kräver
+   ingen `badminton_sessions.user_id`. Anonyma Live-besökare får bara läsa poäng
+   via giltig visningskod. Direkt åtkomst till poängtabellen är stängd för klienter.
+   Skriptet skapar tabell och fyra behörighetskontrollerade funktioner i en
+   transaktion. Kör hela filen, inte enskilda utdrag.
 
 Inga SQL-skript har körts mot din databas som del av denna ändring.
 

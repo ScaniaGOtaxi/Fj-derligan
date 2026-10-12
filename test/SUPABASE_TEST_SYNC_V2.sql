@@ -10,7 +10,7 @@ alter table public.badminton_players
 -- Keep the existing RPC intact. Enrich only a successfully authorized Live response.
 create or replace function public.get_badminton_live_view_v2(
  p_session_id uuid, p_viewer_token text
-) returns jsonb language plpgsql security definer set search_path=public as $$
+) returns jsonb language plpgsql security definer set search_path='' as $$
 declare live jsonb; enriched jsonb; session_group uuid;
 begin
  live:=to_jsonb(public.get_badminton_live_view(p_session_id,p_viewer_token));
@@ -28,12 +28,19 @@ begin
  from jsonb_array_elements(live->'players') with ordinality as entries(item,ordinal)
  left join lateral (
   select p.id,p.country_code,p.second_country_code,p.player_gender
-  from public.badminton_players p
-  where p.group_id=session_group and p.name=item->>'name'
+  from public.badminton_rounds r
+  join public.badminton_round_players rp on rp.round_id=r.id
+  join public.badminton_players p on p.id=rp.player_id
+  where r.session_id=p_session_id and r.round_number=(live->>'current_round')::integer
+   and p.group_id=session_group and p.name=item->>'name'
+   and rp.court_number is not distinct from (item->>'court')::integer
+   and rp.team_number is not distinct from (item->>'team')::integer
+   and rp.activity is not distinct from item->>'activity'
   order by p.id limit 1
  ) player on true;
  return jsonb_set(live,'{players}',enriched);
 end $$;
 revoke all on function public.get_badminton_live_view_v2(uuid,text) from public;
 grant execute on function public.get_badminton_live_view_v2(uuid,text) to anon,authenticated;
+notify pgrst, 'reload schema';
 commit;
