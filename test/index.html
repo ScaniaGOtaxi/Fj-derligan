@@ -947,7 +947,9 @@ window.badmintonPlayerImage=function(name,team,side,position){
   const ch=new BroadcastChannel('badminton-test-v2-live-round-v20');
   ch.onmessage=e=>acceptLiveRound(e.data);
  }catch(_){}
- let busy=false,previous='';
+ let busy=false,previous='',livePollTimer=null,livePollDelay=2000;
+ function scheduleLivePoll(){clearTimeout(livePollTimer);livePollTimer=null;if(!document.hidden&&navigator.onLine)livePollTimer=setTimeout(()=>{livePollTimer=null;void refresh();},livePollDelay);}
+ function updateLiveScores(liveScores){document.querySelectorAll('#viewerCourts .viewerCourt').forEach((card,i)=>{let board=card.querySelector('.viewerLiveScore');if(!liveScores?.enabled){board?.remove();return;}if(!board){board=document.createElement('div');board.className='viewerLiveScore';board.style.cssText='text-align:center;font-size:32px;font-weight:800;padding:8px';card.append(board);}const val=liveScores.scores?.[i+1]||{red:0,blue:0};const text='🔴 '+(Number(val.red)||0)+' – '+(Number(val.blue)||0)+' 🔵';if(board.textContent!==text)board.textContent=text;});}
  function flagCode(p){
    const raw=p.country_code||p.countryCode||p.nationality_code||p.flag_code||p.iso2||p.nationality||p.country||'';
    const value=String(raw).trim().toUpperCase();
@@ -958,7 +960,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
   }
  function nameLabel(stage,p,position){if(!p)return;const label=document.createElement('div');label.className='viewerName '+position;for(const code of [flagCode(p),p.second_country_code].filter(Boolean)){if(/^[A-Z]{2}$/.test(code)){const img=document.createElement('img');img.className='viewerFlag';img.dataset.country=code;img.src=window.badmintonFlagUrl(code);img.alt='Flagga '+code;img.onerror=()=>window.badmintonFlagFallback(img);label.append(img);}}const span=document.createElement('span');span.textContent=p.name||'–';label.append(span);stage.append(label);}
  async function refresh(){
-  if(busy||document.hidden)return;busy=true;
+  if(busy||document.hidden||!navigator.onLine)return;clearTimeout(livePollTimer);livePollTimer=null;busy=true;let succeeded=false;
   try{
    const response=await fetch(base+'/rest/v1/rpc/get_badminton_live_view_v2',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({p_session_id:session,p_viewer_token:token}),cache:'no-store'});
    if(!response.ok){const err=await response.json().catch(()=>({}));throw Error(err.message||'Visningslänken fungerar inte längre.');}
@@ -973,7 +975,8 @@ window.badmintonPlayerImage=function(name,team,side,position){
      data.court_count=localLiveRound.court_count;
    }
    status.textContent='🟢 Ansluten – '+(data.session_name||'Live')+scoreError;
-   const fingerprint=JSON.stringify({data,liveScores});if(fingerprint===previous)return;previous=fingerprint;
+   succeeded=!scoreError;
+   const fingerprint=JSON.stringify(data);if(fingerprint===previous){updateLiveScores(liveScores);return;}previous=fingerprint;
    round.textContent='🏸 Runda '+data.current_round;
    courts.replaceChildren();rest.replaceChildren();
    // Reflect completed round status when included in the Live RPC response.
@@ -1004,9 +1007,16 @@ window.badmintonPlayerImage=function(name,team,side,position){
    }
    const resting=players.filter(p=>p.activity==='rest').map(p=>p.name);
    rest.textContent=resting.length?'Vilar: '+resting.join(', '):'';
-  }catch(e){status.textContent='⚠️ '+e.message;}finally{busy=false;}
+   updateLiveScores(liveScores);
+  }catch(e){status.textContent='⚠️ '+e.message;}finally{busy=false;livePollDelay=succeeded?2000:Math.min(30000,livePollDelay*2);scheduleLivePoll();}
  }
- void refresh();setInterval(refresh,1000);
+ const resumeLive=()=>{clearTimeout(livePollTimer);livePollTimer=null;if(!document.hidden&&navigator.onLine){livePollDelay=2000;void refresh();}};
+ document.addEventListener('visibilitychange',resumeLive);
+ window.addEventListener('online',resumeLive);
+ window.addEventListener('offline',()=>{clearTimeout(livePollTimer);livePollTimer=null;status.textContent='⚠️ Ingen internetanslutning – väntar på nätverk.';});
+ window.addEventListener('pagehide',()=>{clearTimeout(livePollTimer);livePollTimer=null;});
+ window.addEventListener('pageshow',resumeLive);
+ void refresh();
 })();
 </script>
 
@@ -1131,7 +1141,7 @@ async function restoreCloudBinding(){
  }catch(e){sessionStatus.textContent='⚠️ '+e.message+' Använd Återuppta senaste spel.';}
 }
 async function restoreAuth(){
- if(bmRecoveryMode)return;
+ if(bmRecoveryMode||document.documentElement.classList.contains('viewer-mode'))return;
  try{
   const saved=JSON.parse(bmStorage.getItem(AUTH_KEY)||'null');if(!saved?.refresh_token)return;
   refreshToken=saved.refresh_token;accessToken=saved.access_token;tokenExpiresAt=Number(saved.expires_at)||0;
@@ -1266,7 +1276,6 @@ importBtn.addEventListener('click',async()=>{
   bmStorage.setItem('badmintonV13ActiveGroupId',id);
   importedGroupId=id;
   importedPlayerIds=new Map(data.map(x=>[x.name,x.id]));
-  if(typeof renderPlayerPool==='function')renderPlayerPool();
   if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
   say('✅ '+pool.length+' spelare från '+groupSelect.selectedOptions[0].text+' är inlästa. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
   document.getElementById('setupView').scrollIntoView({behavior:'smooth'});
@@ -2805,7 +2814,7 @@ function getPlayerPool(){
   return p;
  }catch(e){return []}
 }
-function savePlayerPool(p){bmStorage.setItem('badmintonPlayerPool',JSON.stringify(p))}
+function savePlayerPool(p){const value=JSON.stringify(p);if(bmStorage.getItem('badmintonPlayerPool')!==value)bmStorage.setItem('badmintonPlayerPool',value)}
 function renderPlayerPool(){
  const p=getPlayerPool(), box=document.getElementById('playerPool');
  if(!box)return;
@@ -3196,10 +3205,9 @@ function toggleFullSchedule(){
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 getPlayerPool(); // kör eventuell migrering av äldre sparade namn
 makeInputs();
-refreshPlayerListUI();
 applyZoom();
 window.addEventListener('DOMContentLoaded',refreshPlayerListUI);
-window.addEventListener('pageshow',refreshPlayerListUI);
+window.addEventListener('pageshow',event=>{if(event.persisted)refreshPlayerListUI();});
 window.addEventListener('focus',updateSelectedCount);
 </script>
 <div id="gameView">
@@ -3231,7 +3239,7 @@ window.addEventListener('focus',updateSelectedCount);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=test-sync-v4-20261012').catch(console.error);
+    navigator.serviceWorker.register('./service-worker.js?v=test-performance-v1-20261012').catch(console.error);
   });
 }
 </script>
@@ -4153,7 +4161,17 @@ window.badmintonConfirmActiveGame=function(name){
      stage.appendChild(el);
    });
  }
- let scoreQueue=Promise.resolve(),scoreRevision=0;
+ let scoreRevision=0,scoreSaveTimer=null,scoreWriting=false,scoreWritingKey=null;
+ const pendingScores=new Map();
+ async function flushScores(){
+  clearTimeout(scoreSaveTimer);scoreSaveTimer=null;if(scoreWriting)return;scoreWriting=true;
+  try{while(pendingScores.size){const [key,payload]=pendingScores.entries().next().value;pendingScores.delete(key);scoreWritingKey=key;
+   try{await window.badmintonCloudRequest('/rest/v1/rpc/set_badminton_live_scores',{method:'POST',body:JSON.stringify(payload),keepalive:true});
+    if(!pendingScores.size)window.badmintonSyncStatus('scores','✅ Poäng sparade i Supabase.');
+   }catch(e){window.badmintonSyncStatus('scores','❌ Poäng kunde inte sparas: '+e.message);}
+  }}finally{scoreWriting=false;scoreWritingKey=null;}
+ }
+ window.addEventListener('pagehide',()=>{void flushScores();});
  function publishScores(){
   scoreRevision++;
   const session=window.badmintonScoreSession?.();if(!session)return;
@@ -4161,11 +4179,13 @@ window.badmintonConfirmActiveGame=function(name){
   const values={};(schedule[currentRoundIndex]?.courts||[]).forEach((c,i)=>{const pair=scores[matchKey(i)]||[0,0];values[i+1]={red:pair[0],blue:pair[1]};});
   const payload={p_session_id:session,p_round_number:round,p_enabled:enabled,p_scores:values};
   window.badmintonSyncStatus('scores','⏳ Sparar poäng …');
-  scoreQueue=scoreQueue.catch(()=>{}).then(()=>window.badmintonCloudRequest('/rest/v1/rpc/set_badminton_live_scores',{method:'POST',body:JSON.stringify(payload)})).then(()=>window.badmintonSyncStatus('scores','✅ Poäng sparade i Supabase.')).catch(e=>window.badmintonSyncStatus('scores','❌ Poäng kunde inte sparas: '+e.message));
+  pendingScores.set(session+':'+round,payload);
+  clearTimeout(scoreSaveTimer);scoreSaveTimer=setTimeout(()=>{void flushScores();},150);
  }
  window.badmintonLoadScores=async function(){
   const session=window.badmintonScoreSession?.();if(!session)return;
   const round=currentRoundIndex,revision=scoreRevision;
+  if(pendingScores.has(session+':'+(round+1))||scoreWritingKey===session+':'+(round+1))return;
   try{const rows=await window.badmintonCloudRequest('/rest/v1/rpc/get_badminton_admin_scores',{method:'POST',body:JSON.stringify({p_session_id:session,p_round_number:round+1})});
    if(session!==window.badmintonScoreSession?.()||round!==currentRoundIndex||revision!==scoreRevision)return;
    if(!Array.isArray(rows))throw Error('Oväntat poängsvar');

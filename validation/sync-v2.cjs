@@ -83,8 +83,17 @@ console.log('PASS session resume, two in-game flags, actual local QR generation'
 await page.evaluate(()=>{badmintonScoreSettings();const c=document.getElementById('bmMenuScore');c.checked=true;c.dispatchEvent(new Event('change'));document.querySelector('.bmScoreActions [data-team="0"][data-delta="1"]').click();});await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('Poäng sparade'));
 await page.waitForTimeout(100);assert.equal(scoreValues[1]['1'].red,1);assert(scoreEnabled);
 console.log('PASS score RPC writes correct session/round/court');
+const burstBefore=calls.filter(c=>c.path.endsWith('set_badminton_live_scores')).length;
+const readBefore=calls.filter(c=>c.path.endsWith('get_badminton_admin_scores')).length;
+await page.evaluate(async()=>{for(let i=0;i<10;i++)document.querySelector('.bmScoreActions [data-team="0"][data-delta="1"]').click();await badmintonLoadScores();});
+assert.equal(calls.filter(c=>c.path.endsWith('get_badminton_admin_scores')).length,readBefore);
+await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('Poäng sparade'));
+assert.equal(scoreValues[1]['1'].red,11);
+assert.equal(calls.filter(c=>c.path.endsWith('set_badminton_live_scores')).length-burstBefore,1);
+console.log('PASS ten rapid score increments persist as one write with final score 11');
+
 const vcontext=await browser.newContext();await vcontext.route('https://frkhzwutziysnjibaxfa.supabase.co/**',routeHandler);const viewer=await vcontext.newPage();await viewer.goto('http://127.0.0.1:8003/test/#live='+session+'&token='+'a'.repeat(64),{waitUntil:'networkidle'});
-assert.equal(await viewer.locator('.viewerName').first().locator('img').count(),2);assert((await viewer.locator('.viewerLiveScore').textContent()).includes('1 – 0'));
+assert.equal(await viewer.locator('.viewerName').first().locator('img').count(),2);assert((await viewer.locator('.viewerLiveScore').textContent()).includes('11 – 0'));
 assert((await viewer.locator('.genderAthlete').first().getAttribute('src')).includes('spelare_man_'));
 members[0].player_gender='kvinna';members[0].second_country_code='SE';scoreValues[1]['1'].red=3;await viewer.waitForFunction(()=>document.querySelector('.viewerLiveScore')?.textContent.includes('3 – 0'));assert((await viewer.locator('.genderAthlete').first().getAttribute('src')).includes('spelare_kvinna_'));
 console.log('PASS independent Live browser shows two flags, server gender and updated scores');

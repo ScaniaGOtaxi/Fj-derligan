@@ -16,6 +16,7 @@
     load(group,rows){groupId=group;members=new Map(rows.map(p=>[p.name,{id:p.id,...normalize(p)}]));repaint();},
     reset(){groupId=null;members.clear();},
     update(name,patch){const p=members.get(name);if(!p){if(patch.country_code)setLocalCountry(name,patch.country_code);if(patch.player_gender)setLocalGender(name,patch.player_gender);if('second_country_code' in patch){const local=JSON.parse(bmStorage.getItem('badmintonSecondCountry')||'{}');local[name]=patch.second_country_code;bmStorage.setItem('badmintonSecondCountry',JSON.stringify(local));}repaint();return;}
+      if(Object.entries(patch).every(([key,value])=>p[key]===value))return;
       Object.assign(p,patch);const values=normalize(p);const key=groupId+':'+p.id;const version=(pending.get(key)||0)+1;pending.set(key,version);window.badmintonSyncStatus('profiles','⏳ Sparar spelarinställningar …');
       window.badmintonSaveProfile(groupId,p.id,values).then(()=>{if(pending.get(key)===version)window.badmintonSyncStatus('profiles','✅ Spelarinställningar sparade i Supabase.');}).catch(e=>{if(pending.get(key)===version)window.badmintonSyncStatus('profiles','❌ Inställningar finns endast lokalt: '+e.message);});repaint();
     }
