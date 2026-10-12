@@ -27,6 +27,32 @@
   window.badmintonSetGender=(name,gender)=>window.badmintonProfiles.update(name,{player_gender:gender});
   window.badmintonSetSecondCountry=(name,country)=>window.badmintonProfiles.update(name,{second_country_code:country||null});
   window.badmintonFlagsHTML=name=>[window.badmintonCountryOf(name),window.badmintonSecondCountryOf(name)].filter(code=>/^[A-Z]{2}$/.test(code||'')).map(code=>'<img alt="Flagga '+code+'" data-country="'+code+'" onerror="window.badmintonFlagFallback(this)" src="'+window.badmintonFlagUrl(code)+'">').join('');
+  window.badmintonCreateFlagPicker=(name,number)=>{
+    const optional=number===2;
+    const wrap=document.createElement('div');wrap.className='nationPicker';
+    const heading=document.createElement('span');heading.textContent=optional?'Flagga 2 (valfri)':'Flagga 1';
+    const search=document.createElement('input');search.type='search';search.className='nationSearch';search.placeholder='Sök land eller landskod…';search.autocomplete='off';search.setAttribute('aria-label','Sök flagga '+number+' för '+name);
+    const select=document.createElement('select');select.className=optional?'playerSecondNationality':'playerNationality';select.setAttribute('aria-label','Flagga '+number+' för '+name);
+    const hint=document.createElement('span');hint.setAttribute('role','status');hint.style.cssText='font-size:12px;color:#c6d7e7';
+    const preview=document.createElement('div');preview.className='nationFlagPreview';
+    const countries=window.BADMINTON_COUNTRIES||[];
+    const get=()=>optional?window.badmintonSecondCountryOf(name):window.badmintonCountryOf(name);
+    const normalize=value=>String(value||'').trim().toLocaleLowerCase('sv').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    function filtered(){const q=normalize(search.value);const exact=countries.filter(c=>normalize(c[0])===q||normalize(c[3])===q);return q&&exact.length?exact:countries.filter(c=>!q||c.some(value=>normalize(value).includes(q)));}
+    function showPreview(){preview.replaceChildren();const code=get();if(!code){preview.textContent='Ingen andra flagga';return;}const entry=countries.find(c=>c[0]===code);const img=document.createElement('img');img.alt='Flagga '+number+' för '+(entry?.[1]||code);img.dataset.country=code;img.src=window.badmintonFlagUrl(code);img.onerror=()=>window.badmintonFlagFallback(img);const caption=document.createElement('span');caption.textContent=entry?.[1]||code;preview.append(img,caption);}
+    function render(){const matches=filtered(),saved=get(),query=search.value.trim();select.replaceChildren();
+      const prompt=new Option(matches.length?'Välj ett land…':'Inga länder hittades','__choose__');prompt.disabled=true;select.add(prompt);
+      if(optional)select.add(new Option('Ingen andra flagga',''));
+      matches.forEach(c=>select.add(new Option(c[1]+' ('+c[3]+')',c[0])));
+      select.value=matches.some(c=>c[0]===saved)?saved:optional&&!saved&&!query?'':'__choose__';
+      hint.textContent=query?(matches.length?matches.length+' träff'+(matches.length===1?'':'ar')+' – välj i listan för att spara.':'Inga träffar. Prova landets namn eller landskod.'):'Välj ett land i listan för att spara.';
+    }
+    function commit(value){if(value==='__choose__')return;if(optional)window.badmintonSetSecondCountry(name,value);else if(value)window.badmintonSetCountry(name,value);search.value='';render();showPreview();}
+    search.addEventListener('input',render);
+    search.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();const matches=filtered();if(search.value.trim()&&matches.length===1)commit(matches[0][0]);else select.focus();}});
+    select.addEventListener('change',()=>commit(select.value));
+    render();showPreview();wrap.append(heading,search,select,hint,preview);return wrap;
+  };
   const original=window.badmintonPlayerImage;
   window.badmintonPlayerImage=function(name,team,side,position,serverGender){
     if(serverGender===undefined)return original(name,team,side,position);

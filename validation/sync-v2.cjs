@@ -35,6 +35,25 @@ await page.evaluate(()=>document.getElementById('cloudLoadGroups').click());awai
 await page.evaluate(g=>{const s=document.getElementById('cloudGroupSelect');s.value=g;s.dispatchEvent(new Event('change'));document.getElementById('cloudImportRotation').click();},group);await page.waitForFunction(()=>document.getElementById('cloudStatus').textContent.includes('inlästa'));
 assert.deepEqual(await page.evaluate(()=>({country:badmintonCountryOf('Anna'),second:badmintonSecondCountryOf('Anna'),gender:badmintonGenderOf('Anna')})),{country:'PL',second:'SE',gender:'kvinna'});
 assert.equal(await page.locator('.playerSecondNationality').count(),4);
+await page.evaluate(()=>badmintonV14ShowTab('settings'));
+for(const number of [1,2]){
+ const search=page.getByRole('searchbox',{name:'Sök flagga '+number+' för Anna',exact:true});
+ const select=page.getByRole('combobox',{name:'Flagga '+number+' för Anna',exact:true});
+ const before=calls.length;
+ await search.fill('IN');
+ assert.deepEqual(await select.locator('option').evaluateAll(opts=>opts.filter(o=>!o.disabled&&o.value).map(o=>o.value)),['IN']);
+ assert.equal(await select.inputValue(),'__choose__');
+ await search.fill('inget-land-xyz');assert.equal(await select.locator('option:disabled').textContent(),'Inga länder hittades');
+ await search.fill('');assert.equal(await select.inputValue(),number===1?'PL':'SE');
+ assert.equal(calls.length,before,'Typing must not save or change a flag');
+ await search.fill('Australia');await search.press('Enter');
+ assert.equal(await search.inputValue(),'');assert.equal(await select.inputValue(),'AU');
+}
+await page.getByRole('combobox',{name:'Flagga 2 för Anna',exact:true}).selectOption('');
+assert.equal(await page.evaluate(()=>badmintonSecondCountryOf('Anna')),null);
+await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('✅'));
+console.log('PASS both flag searches: exact ISO code, no results, clearing, no autosave while typing, Enter confirmation and removal of second flag');
+
 await page.evaluate(()=>{badmintonSetCountry('Anna','NO');badmintonSetSecondCountry('Anna','PL');badmintonSetGender('Anna','man');setPlayerMode(0,'onlySingles');});await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('✅'));
 await page.waitForTimeout(100);assert.equal(members[0].country_code,'NO');assert.equal(members[0].second_country_code,'PL');assert.equal(members[0].player_gender,'man');assert.equal(members[0].player_mode,'onlySingles');
 console.log('PASS import and serialized profile PATCH (country, second flag, gender, mode)');
