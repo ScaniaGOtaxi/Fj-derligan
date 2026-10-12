@@ -1861,86 +1861,111 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 </div>
 
 <div id="helpPanel" class="card helpPanel">
-<h2>❓ Hjälp och användarguide – Badminton App v2.0</h2>
-<p>Här hittar du en snabbstart och tydliga instruktioner för spel, avslutade rundor, Live &amp; QR, statistik och administration. Molnfunktioner kräver internet och rätt behörighet.</p>
-<div class="helpMode"><b>🚀 Snabbstart – från grupp till spel</b><br>
-1. Gå till <b>Admin</b> och logga in med e-post och lösenord.<br>
-2. Öppna <b>Spelinställningar → Välj grupp</b>. Tryck <b>Hämta grupper</b> och välj grupp.<br>
-3. Under <b>Hantera spelare</b>: tryck <b>Hämta gruppens spelare till rotationsschemat</b> vid behov. Markera dagens deltagare i spelarlistan.<br>
-4. Välj <b>antal banor</b> och <b>antal rundor</b>.<br>
-5. Tryck <b>Skapa nytt rotationsschema</b> och öppna <b>Badminton Rotation – Spel</b>. Där visas 3D-banor anpassade för singel och dubbel.<br>
-6. Tryck <b>✓ Klar</b> när rundan är färdig. <b>Hela spelrutan blir röd</b> som kvitto på att den är spelad. Tryck sedan <b>Nästa runda</b>.</div>
-<h3>🔐 1. Admin – inloggning och kontosäkerhet</h3>
-<p><b>Logga in som Admin:</b> ange registrerad e-postadress och lösenord. Inloggningsstatus visar kontots behörighet och, när den finns tillgänglig, e-postadressen. <b>Logga ut</b> avslutar sessionen. <b>Admin</b> hanterar tilldelade grupper; <b>Super Admin</b> kan även hantera grupper och behörigheter.</p>
-<p><b>Glömt lösenord?</b> Använd <b>Skicka återställningslänk</b> under <b>Lösenord och kontosäkerhet</b>. Följ länken som skickas till kontots e-postadress. För återställning krävs att Supabase Auth är rätt konfigurerat och att appens publicerade HTTPS-adress är tillåten. <b>Ändra lösenord (inloggad)</b> låter en inloggad användare välja ett nytt lösenord.</p>
-<p><b>F5 / uppdatera sidan:</b> appen försöker återställa giltig inloggning och lokalt sparat läge. Om sessionen har gått ut måste du logga in igen.</p>
-<h3>⚙️ 2. Spelinställningar – välj grupp</h3>
-<p><b>Hämta grupper:</b> läser in grupper som kontot får se. <b>Välj grupp:</b> bestämmer vilken grupp spelare, spel och molnstatistik tillhör. Gruppöversikten visar tillgängliga grupper. <b>Återuppta tidigare spel</b> försöker återgå till ett tidigare sparat pass; det skapar inte ett nytt schema.</p>
-<h3>👥 3. Hantera spelare – enkel spelarlista</h3>
-<p><b>Automatiska steg:</b> När du väljer grupp öppnas Återuppta tidigare spel. Välj ett tidigare spel eller fortsätt till Hantera spelare. Alla spelare visas direkt utan knappen Visa spelare. Efter att du markerat deltagare kan du gå vidare till Rotation och Skapa spelschema. Du kan alltid scrolla tillbaka och ändra dina val.</p>
-<p><b>Hämta gruppens spelare till rotationsschemat:</b> överför gruppens spelare till rotationslistan. Gör detta när du har valt en grupp eller när spelarna inte syns. <b>Lägg till:</b> skriv ett namn och tryck på den gröna knappen. <b>Visa/Dölj spelare</b> fäller ut eller ihop listan.</p>
-<p><b>Markera spelare:</b> kryssa i dem som ska spela idag. <b>Markera alla</b> väljer samtliga och <b>Avmarkera alla</b> tömmer urvalet. Siffran vid spelarlistan visar antalet valda. Du behöver minst tre valda spelare för att skapa ett schema. Den separata högerspalten ”Dagens spelare” är borttagen; välj direkt i listan.</p>
-<p><b>Spelarlägen:</b> <b>Normal</b> kan få singel eller dubbel; <b>Mer singel</b> prioriterar singel; <b>Endast singel</b> får inte dubbel. En spelares läge kan påverka hur många banor som går att fylla. <b>Radera spelare</b> tar bort en spelare från aktuell spelarlista – kontrollera noga innan du bekräftar. <b>Fler spelarverktyg</b> visar extra Supabase- och importfunktioner.</p>
-<h3>🌍 4. Nationalitet och flaggor</h3>
-<p><b>Standard:</b> nya spelare får Sverige 🇸🇪 som nationalitet om inget annat väljs. I spelarlistan kan du ändra nationalitet med rullistan vid respektive spelare. Valet visas som en <b>liten flagga bredvid spelarens namn</b> på 3D-banan – inte som landskoden SE eller SWE.</p>
-<p><b>Ändra flagga:</b> öppna <b>Spelinställningar → Hantera spelare</b>, visa spelarlistan, skriv ett land i sökfältet. Om bara ett land matchar sparas det direkt; annars väljer du landet i listan. Flaggan följer spelarens namn vid nästa visning och när rotationen ändras. Landväljaren har en sökbar lista med landsnamn på svenska och engelska samt landskoder. Sök exempelvis på Australien, Australia eller AUS. Nationalitetsvalet sparas lokalt i webbläsaren och är ännu inte synkroniserat med Supabase.</p>
-<div class="helpMode"><b>Vilka länder kan väljas?</b> Öppna nationalitetsväljaren och sök efter landets svenska eller engelska namn eller landskod. Om flaggan inte visas, kontrollera internetanslutningen och uppdatera sidan.</div>
-<h3>🏸 5. Skapa rotationsschema</h3>
-<p>Välj <b>1–3 banor</b> och <b>6, 7, 8, 10 eller 12 rundor</b> (10 är standard). Tryck <b>Skapa nytt rotationsschema</b> när spelarna är markerade. Ett nytt schema försöker fördela medspelare, motståndare och vila jämnt; exakt rättvis fördelning kan inte alltid garanteras.</p>
-<div class="helpMode"><b>Exempel med 3 banor:</b><br>8 spelare kan spela en dubbel och två singlar.<br>10 spelare kan spela två dubblar och en singel.<br>12 spelare kan spela tre dubblar.<br>Det faktiska utfallet beror på spelarurval, spelarlägen och schemageneratorns begränsningar. Om färre banor visas, kontrollera hur många spelare som är markerade och deras spelarlägen.</div>
-<h3>🏟️ 6. Badminton Rotation – Spel och 3D-banor</h3>
-<p>Spelvyn visar <b>aktuell runda</b>, <b>banor</b>, lag, motståndare och eventuella vilande spelare. Använd <b>Nästa runda</b> och <b>Föregående runda</b> för att bläddra utan att skapa om schemat. <b>Start/Inställningar</b> återgår till inställningarna och ska behålla rotationen. <b>Återgå till spelet</b> öppnar ett befintligt schema.</p>
-<p><b>3D-visning:</b> en singelmatch visar <b>två spelare</b> (en på varje sida av nätet). En dubbelmatch visar <b>fyra spelare</b> (två i varje lag). Röda tröjor visar ena sidan och blå tröjor den andra. Namn och flaggor läggs ovanpå banbilden av appen och ska visas <b>en gång per aktiv spelare</b>. De ska ändras när du går till nästa eller föregående runda. Spelarna har olika bilder för man och kvinna och olika spelställningar för att göra dubbelspel mer naturligt. Blå spelare visas med ryggen mot åskådaren och röda spelare på motsatt sida. Banan och nätet är gemensamma bakgrundsbilder.</p>
-
-<p><b>Timer:</b> välj speltid och tryck <b>Start</b>. <b>Nollställ</b> återställer tiden. Ljudsignal kan bero på webbläsarens ljudinställningar. Helskärm och liggande läge ger mer plats.</p>
-<div class="helpMode"><b>🔴 Avslutade rundor – färgmarkering</b><br>
-• <b>Vanlig spelruta:</b> rundan är inte markerad som klar.<br>
-• <b>Röd spelruta:</b> rundan har markerats som spelad med <b>✓ Klar</b>.<br>
-• Du behöver ingen extra text ”Rundan är spelad” – färgen visar statusen.<br>
-• <b>Nästa runda</b> och <b>Föregående runda</b> visar respektive rundas egen status. En ny, ospelad runda har vanlig färg.<br>
-• Färgen ändrar inte spelarnas lag, namn eller placering.</div>
-<h3>📱 7. Live &amp; QR – följ spelet på mobil eller dator</h3>
-<p><b>Vad är Live &amp; QR?</b> En visningssida för deltagare och åskådare. Den visar aktuell runda, banor, spelare, namn och flaggor utan att tittaren behöver logga in som Admin.</p>
-<div class="helpMode"><b>📲 Dela Live-visningen</b><br>
-1. Starta eller återuppta ett aktivt spel som är kopplat till Supabase.<br>
-2. Öppna fliken <b>Live &amp; QR</b> och välj <b>Skapa visningslänk</b> om en länk saknas.<br>
-3. Visa <b>QR-koden</b> så att andra kan skanna den, eller tryck <b>Kopiera länk</b> och skicka adressen.<br>
-4. Öppna länken i mobilens eller datorns webbläsare. Tittaren ser spelet men kan inte styra rundorna.</div>
-<div class="helpMode"><b>🔄 Så uppdateras Live &amp; QR</b><br>
-• När Admin byter runda ska Live-sidan visa samma rundnummer och nya spelare efter synkronisering.<br>
-• När Admin trycker <b>✓ Klar</b> ska den avslutade rundans <b>spelruta bli röd även i Live &amp; QR</b>.<br>
-• En ny, ospelad runda visas med vanlig färg. Tidigare spelade rundor behåller sin status.<br>
-• På mobil är Live-rutorna anpassade till en mindre skärm. Vrid gärna mobilen till liggande läge för större banbilder.<br>
-• Synkronisering mellan olika enheter sker via Supabase och kräver internet.</div>
-<div class="helpMode"><b>⚠️ Om Live &amp; QR inte visar rätt runda eller färg</b><br>
-1. Kontrollera att båda sidorna hör till <b>samma aktiva spel</b> och att Live-länken inte är gammal.<br>
-2. Vänta en kort stund och uppdatera Live-sidan.<br>
-3. Kontrollera internet och att GitHub Pages har publicerat senaste versionen.<br>
-4. Om röd färg saknas trots att rundan är klar: kontrollera att Supabase skickar <code>round_completed</code> och att rundans status har sparats.<br>
-5. En lokal <code>file:///</code>-adress är inte en delbar mobiladress; använd appens publicerade <b>HTTPS-länk</b>.</div>
-<h3>📊 8. Statistik och rapporter</h3>
-<p><b>Lokal statistik:</b> visar exempelvis antal matcher, singel, dubbel, vila och fördelning mellan spelare. Växla mellan <b>Totalt</b> och <b>Idag</b>. <b>Uppdatera statistik</b> läser om resultaten. <b>Exportera PDF</b>, <b>Exportera CSV</b> och <b>Dela rapport</b> används för att spara eller dela statistik. <b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse.</p>
-<p><b>Gruppstatistik (Supabase):</b> välj grupp och använd <b>Visa gruppstatistik (Supabase)</b>. Lokal statistik och molnstatistik kan skilja sig eftersom de hämtas från olika lagringsplatser.</p>
-<h3>🔑 9. Behörigheter – endast Super Admin</h3>
-<p><b>Skapa grupp:</b> registrera en ny grupp. <b>Skapa/bjud in ny Admin:</b> ange e-postadress; faktisk e-postinbjudan kräver att motsvarande serverfunktion för Supabase är installerad. <b>Hämta Admin-konton</b> uppdaterar listan över befintliga administratörer.</p>
-<p><b>Gruppöversikt → Uppdatera gruppöversikt:</b> visar alla grupper med tillhörande spelare och tilldelade administratörer. För varje grupp kan Super Admin <b>Radera spelare</b>, <b>Tilldela Admin</b>, <b>Ta bort Admin</b> och <b>Radera grupp</b>. Att ta bort en Admin från en grupp tar bort gruppbehörigheten, inte användarens inloggningskonto.</p>
-<p><b>Radera hela gruppen:</b> gruppens spelare, sparade sessioner, rundor och Admin-tilldelningar kan raderas permanent efter dubbel bekräftelse där gruppnamnet skrivs in. Kräver att SQL-funktionen <code>delete_badminton_group_cascade</code> har installerats i Supabase och att kontot är Super Admin. Detta kan inte ångras. Knappen för ”Radera tom grupp” har tagits bort för att undvika dubbla funktioner.</p>
-<h3>💾 10. Sparning, installation och återupptagning</h3>
-<p>Appen använder webbläsarens lokala lagring för bland annat vissa namn, rotationer, aktuell runda och visningsinställningar. Supabase lagrar inloggning och molndata. <b>F5</b> försöker återställa läget, men privat läge, rensad webbläsardata eller byte av enhet kan göra att lokala uppgifter saknas. På mobil kan du i webbläsarens meny välja <b>Lägg till på startskärmen</b> eller <b>Installera app</b> om webbläsaren och publiceringen stöder det.</p>
-<h3>🛠️ 11. Felsökning</h3>
-<div class="helpMode"><b>Det går inte att logga in:</b> kontrollera e-post, lösenord, internetanslutning och att kontot har Admin-behörighet. Prova lösenordsåterställning vid behov.</div>
-<div class="helpMode"><b>Inga grupper syns:</b> logga in, tryck <b>Hämta grupper</b> och kontrollera att ditt konto har tilldelats en grupp.</div>
-<div class="helpMode"><b>Spelare saknas:</b> välj rätt grupp, tryck <b>Hämta gruppens spelare till rotationsschemat</b> och markera deltagarna.</div>
-<div class="helpMode"><b>Spelschemat startar inte:</b> kontrollera att minst tre spelare är markerade, att importen gjorts och att antal banor/rundor är valt.</div>
-<div class="helpMode"><b>Tre banor är valda men färre visas:</b> kontrollera antal valda spelare och inställningarna Normal/Mer singel/Endast singel. För få spelare kan göra att banorna inte fylls.</div>
-<div class="helpMode"><b>Fel antal spelare på 3D-banan:</b> kontrollera om banan är märkt Singel eller Dubbel. Singel ska visa två spelare och dubbel fyra. Kontrollera också att du använder den senaste HTML-versionen.</div>
-<div class="helpMode"><b>Dubbel namnskylt eller fel flagga:</b> prova att uppdatera sidan och kontrollera nationalitetsvalet i spelarlistan. Om den gamla texten syns bakom namnet kan webbläsaren ha sparat en äldre banbild; töm webbplatsens cache eller installera den nya versionen.</div>
-<div class="helpMode"><b>Radera grupp fungerar inte:</b> kontrollera att du är Super Admin, att gruppnamnet bekräftats exakt och att Supabase-SQL för full gruppradering har installerats. Om ett databasfel visas behöver det åtgärdas i Supabase.</div>
-<div class="helpMode"><b>Live &amp; QR uppdateras inte:</b> se steg-för-steg-felsökningen i avsnitt 7. Kontrollera rätt session, publicerad HTTPS-länk och Supabase-synkronisering.</div>
-<h3>🖥️ 12. Visning och textstorlek</h3>
-<p>Spelarnamnen anpassas efter skärmens storlek. Knapparna A+ och A− samt separat återställning av textstorlek finns inte längre. Använd webbläsarens zoom eller helskärm om du behöver en större visning. Rubrikerna Bana 1, Bana 2 och Bana 3 ändras inte separat.</p>
+<h2>❓ Hjälp och användarguide</h2>
+<p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
+<h3>🚀 1. Snabbstart</h3>
+<ol>
+<li>Öppna <b>⌂ Admin</b> och logga in med ditt administratörskonto.</li>
+<li>Gå till <b>Spelinställningar</b>, tryck <b>Hämta grupper</b> och välj grupp.</li>
+<li>Tryck <b>Hämta gruppens spelare till rotationsschemat</b>. Vid import är ingen spelare markerad. Kryssa i dagens deltagare eller välj <b>Markera alla</b>.</li>
+<li>Välj 1–3 banor och antal rundor. Det behövs 3–12 markerade spelare.</li>
+<li>Tryck <b>Skapa spelschema</b>. Om gruppen redan har ett aktivt spel får du välja att behålla det eller avsluta det och skapa ett nytt.</li>
+<li>I spelvyn: starta timern vid behov och tryck <b>Klar</b> när rundan är spelad. Använd <b>Nästa runda</b> för att fortsätta.</li>
+</ol>
+<h3>🔐 2. Inloggning och lösenord</h3>
+<p><b>Admin</b> hanterar sina tilldelade grupper. <b>Super Admin</b> hanterar alla grupper och gruppbehörigheter. En vanlig deltagare behöver ingen Admin-inloggning för att öppna en giltig Live-länk.</p>
+<p><b>Logga ut</b> avslutar appens inloggning och rensar dess sparade inloggnings- och spelläge. Vid omladdning försöker appen återställa en giltig inloggning. Logga in igen om återställningen misslyckas.</p>
+<p><b>Glömt lösenord:</b> ange din e-postadress i Admin-fliken och tryck <b>Skicka återställningslänk</b>. Kontrollera inkorgen och skräpposten. Öppna länken, skriv samma nya lösenord i båda fälten, minst 8 tecken, och välj <b>Spara nytt lösenord</b>. Gå därefter till vanlig inloggning. En utgången länk kräver en ny begäran. Vid för många försök behöver du vänta.</p>
+<p><b>Ändra lösenord när du är inloggad:</b> öppna <b>Lösenord och kontosäkerhet → Ändra lösenord (inloggad)</b>, fyll i två lika lösenord och spara. Återställningsmejl kräver att appens HTTPS-adress är tillåten i Supabase. Dela aldrig lösenord eller hela återställningslänken med andra.</p>
+<h3>⚙️ 3. Grupper och återupptagning</h3>
+<p><b>Hämta grupper</b> uppdaterar gruppvalet. Admin ser de grupper databasen ger kontot åtkomst till. Välj rätt grupp innan du hämtar spelare, skapar spel eller visar molnstatistik.</p>
+<p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
+<p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
+<h3>👥 4. Spelarlistan</h3>
+<p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
+<p><b>＋ Lägg till</b> vid den lokala spelarlistan skapar bara en lokal spelare. För att spara en ny spelare i gruppens databas, använd <b>Lägg till spelare</b> bland gruppens molnverktyg och hämta sedan gruppens spelare igen. Ett molnschema kräver importerade gruppspelare.</p>
+<p><b>Papperskorgen i rotationslistan</b> tar bort spelaren lokalt efter bekräftelse. Den raderar inte spelaren ur databasen. Permanent borttagning ur gruppen finns i Super Admins gruppöversikt.</p>
+<p><b>Kön</b> väljer manlig eller kvinnlig spelarfigur. Kön, flaggor och spelpreferens sparas i molnet för importerade gruppspelare. Vänta på <b>Spelarinställningar sparade i Supabase</b>. Om ett fel visas är ändringen inte bekräftad i molnet. På en annan enhet behöver du hämta gruppens spelare eller återuppta spelet för att läsa in inställningarna.</p>
+<h3>🌍 5. Två flaggor och landsökning</h3>
+<p><b>Flagga 1</b> är den huvudsakliga flaggan; Sverige används när inget land finns sparat. <b>Flagga 2</b> är valfri. Båda visas bredvid namnet i spelvyn och Live.</p>
+<p>Skriv ett svenskt eller engelskt landsnamn, eller en landskod, exempelvis <b>Danmark</b>, <b>Denmark</b> eller <b>DNK</b>. Träffarna visas direkt under sökfältet med flagga och landsnamn. <b>Tryck på ett land för att välja och spara.</b> Att bara skriva ändrar inte flaggan. Enter väljer landet om sökningen har exakt en träff. När sökfältet är tomt kan du också använda rullistan.</p>
+<p>För att ta bort den andra flaggan: rensa sökningen och välj <b>Ingen andra flagga</b>. Om inga länder hittas, prova en annan stavning eller landskod. Rensning av sökfältet behåller ditt sparade flaggval. Om en flaggbild inte kan laddas försöker appen visa en reservbild eller landskod.</p>
+<h3>🎯 6. Spelpreferenser och informationsknappen</h3>
+<ul>
+<li><b>Normal:</b> spelaren kan spela både dubbel och singel.</li>
+<li><b>Mer singel:</b> appen försöker ge spelaren singel oftare, men dubbel kan fortfarande förekomma.</li>
+<li><b>Endast singel:</b> spelaren placeras aldrig i dubbel och kan få vila när singel inte kan ordnas.</li>
+</ul>
+<p>Den gröna <b>ⓘ-knappen</b> är centrerad under valet. Den öppnar en popup med alla tre beskrivningar och markerar det valda alternativet. Popupen öppnas också när du ändrar preferens. Stäng den med <b>Stäng</b>, Escape eller genom att trycka utanför rutan.</p>
+<h3>🏸 7. Rotationsschema och banor</h3>
+<p>Välj <b>1–3 banor</b> och <b>6, 7, 8, 10 eller 12 rundor</b>. Schemat försöker fördela medspelare, motståndare, singel och vila. Antalet spelare och preferenser påverkar hur många banor som kan fyllas; fördelningen är inte garanterat helt jämn.</p>
+<p><b>Singel</b> visar två spelare, <b>Dubbel</b> fyra. Rött och blått skiljer lagen åt. Namn, flaggor och figurer följer rundans placeringar. Vilande spelare visas separat.</p>
+<p><b>Nästa runda</b> och <b>Föregående runda</b> bläddrar i samma schema. <b>Start/Inställningar</b> går tillbaka till inställningarna. Om <b>Visa hela schemat</b> visas kan du använda den för en översikt över rundorna.</p>
+<h3>⏱️ 8. Timer, inställningar och helskärm</h3>
+<p><b>Start</b> startar nedräkningen och blir <b>Paus</b>. <b>Nollställ</b> återställer vald matchtid. Vid rundbyte återställs timern. När tiden tar slut markeras rundan som klar och ljudsignalen spelas om den är aktiverad.</p>
+<p>Kugghjulet i spelvyn öppnar de centrerade inställningarna:</p>
+<ul>
+<li><b>Visa poängräkning:</b> visar eller döljer poängtavlorna.</li>
+<li><b>Matchtid:</b> välj 5, 10, 15 eller 20 minuter; ändringen återställer timern.</li>
+<li><b>Ljudsignal:</b> slår på eller av ljudet vid avslutad tid. Enheten och webbläsaren måste tillåta ljud.</li>
+<li><b>Auto start nästa runda:</b> byter automatiskt till nästa runda när tiden är slut. Den nya rundans timer startas inte automatiskt.</li>
+</ul>
+<p>Reglagen visar <b>PÅ</b> i grönt med knappen till höger och <b>AV</b> i rött med knappen till vänster. Stäng inställningarna med kryssknappen eller Escape.</p>
+<p><b>Helskärm</b> ger banorna mer plats. Tryck igen eller använd Escape för att lämna helskärm. Använd webbläsarens zoom för större text. På mobilen kan liggande läge ge bättre överblick. Håll spelvyn aktiv när timern används; webbläsaren kan begränsa timers i bakgrunden.</p>
+<h3>✅ 9. Färdiga rundor</h3>
+<p><b>Klar</b> markerar rundan som spelad. Spelrutorna blir röda i både Admin- och Live-vyn efter molnsynk. Röda spelrutor betyder färdig runda, inte ett annat lag. Rundorna har varsin färgstatus. Lokal statistik räknas en gång när rundan först markeras klar.</p>
+<p>Vid tillfälligt fel försöker appen skicka rundbyte och färdigmarkering igen. Kontrollera statusmeddelandet: en lokal ändring är inte säkert sparad förrän molnet har bekräftat den.</p>
+<h3>🔢 10. Poängräkning</h3>
+<p>Aktivera <b>Visa poängräkning</b>. Använd <b>+</b> och <b>−</b> för respektive lag. Poängen kan inte bli negativa. Minimeringsknappen visar en mindre poängtavla; tryck igen för att öppna den.</p>
+<p>Poäng sparas separat för varje spel, runda och bana. Snabba tryck samlas till färre sparningar utan att slutpoängen tappas. Vänta på <b>Poäng sparade i Supabase</b> innan du stänger sidan. Byte tillbaka till en runda hämtar dess poäng. Poängen visas skrivskyddat i Live när poängräkningen är aktiverad.</p>
+<p>Poäng ändrar inte automatiskt rundans färdigstatus eller avgör vinnare i statistikrapporten. Använd <b>Klar</b> när matchen är färdig.</p>
+<h3>📱 11. Live &amp; QR och delning</h3>
+<ol>
+<li>Skapa eller återuppta gruppens aktiva molnspel.</li>
+<li>Öppna <b>Live &amp; QR</b> och välj <b>Skapa ny visningslänk</b>.</li>
+<li>Låt deltagarna skanna QR-koden eller använd <b>Kopiera länk</b>, <b>WhatsApp</b> eller mobilens delningsfunktion.</li>
+<li>Öppna länken på en annan enhet. Ingen Admin-inloggning behövs.</li>
+</ol>
+<p><b>Kontrollera QR/länk</b> verifierar den befintliga länken mot molnet. <b>Visa befintlig QR</b> visar länken som finns i den öppna fliken. Den sparas inte mellan sidomladdningar. En <b>ny visningslänk ersätter den gamla</b>; dela den nya länken med deltagarna. När spelet avslutas blir dess visningslänk ogiltig.</p>
+<p>Live visar runda, banor, två flaggor, spelarfigurer, vilande spelare, färdigmarkering och aktiverad poängräkning. Åskådaren kan välja helskärm men kan inte ändra spelare, runda eller poäng.</p>
+<p>En synlig Live-sida uppdateras ungefär varannan sekund plus nätverkets svarstid. Dold flik eller offline-läge pausar uppdateringen; den återupptas när sidan blir synlig eller nätverket återkommer. Vid serverfel väntar appen längre mellan försöken.</p>
+<h3>📊 12. Statistik och rapporter</h3>
+<p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
+<p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Visa gruppstatistik (Supabase)</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
+<h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
+<p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
+<p><b>Admin</b> arbetar i tilldelade grupper: hämtar och lägger till gruppspelare, ändrar deras inställningar, skapar och återupptar spel, styr rundor, räknar poäng, delar Live och ser gruppstatistik. Admin kan inte använda appens verktyg för gruppskapande, administratörsinbjudningar, tilldelningar eller full gruppradering.</p>
+<p><b>Super Admin</b> har även dessa verktyg:</p>
+<ul>
+<li><b>Skapa grupp</b> registrerar en ny grupp.</li>
+<li><b>Bjud in Admin</b> skickar en inbjudan till angiven e-postadress, när serverns inbjudningsfunktion är installerad.</li>
+<li><b>Hämta Admin-konton</b> visar administratörer och deras gruppkopplingar.</li>
+<li><b>Tilldela Admin</b> och <b>Ta bort Admin</b> ändrar gruppbehörighet. Borttagning från gruppen raderar inte användarkontot.</li>
+<li><b>Uppdatera gruppöversikt</b> visar grupper, spelare och tilldelade administratörer.</li>
+<li><b>Radera spelare</b> i gruppöversikten tar bort spelaren ur databasen och kan påverka spelhistoriken.</li>
+<li><b>Radera grupp</b> raderar gruppen och dess innehåll permanent. Det krävs först en bekräftelse och sedan exakt gruppnamn. Åtgärden kan inte ångras.</li>
+</ul>
+<p>Flera konton kan vara Super Admin. Appen har inget verktyg för att ge eller ta bort den rollen, radera administratörers inloggningskonton eller läsa och ändra andra personers lösenord. Rollen Super Admin i appen ger inte automatiskt åtkomst till Supabase Dashboard.</p>
+<h3>💾 14. Sparning, offline och installation</h3>
+<p>Visningsinställningar, lokala spelare och en kopia av rotationen lagras i webbläsaren. Gruppspelare, deras inställningar, molnspel och poäng lagras i Supabase. Rensad webbplatsdata, privat läge eller byte av enhet kan göra att lokala uppgifter saknas.</p>
+<p>Efter ett besök kan appens sida och cachade bilder fungera offline. Molnsparning, inloggning, återställningsmejl och Live-synk kräver internet. Externa flaggbilder kan saknas offline. Vid fel, behåll sidan öppen och kontrollera sparstatus när nätverket återkommer.</p>
+<p>På mobilen kan webbläsaren erbjuda <b>Lägg till på startskärmen</b> eller <b>Installera app</b>. Möjligheten beror på webbläsaren. Testsidan och den vanliga appen har separata lokala inställningar.</p>
+<h3>🛠️ 15. Felsökning</h3>
+<ul>
+<li><b>Inloggningen misslyckas:</b> kontrollera e-post, lösenord, internet och att kontot är Admin eller Super Admin. Begär återställningslänk vid behov.</li>
+<li><b>Inga grupper syns:</b> välj Hämta grupper. Be Super Admin kontrollera gruppens administratörstilldelning.</li>
+<li><b>Spelare saknas eller inställningar skiljer sig:</b> välj rätt grupp och hämta gruppens spelare på nytt. Kontrollera att den andra enhetens ändring har sparats.</li>
+<li><b>Flaggsökningen ger inga träffar:</b> prova svensk eller engelsk stavning eller landskod. Tryck på en träff för att välja.</li>
+<li><b>Spelschemat skapas inte:</b> importera gruppspelarna och markera 3–12 deltagare. Kontrollera också om ett aktivt spel redan finns.</li>
+<li><b>Färre banor än väntat:</b> kontrollera deltagarantal och spelpreferenser, särskilt Endast singel.</li>
+<li><b>Live visar fel runda, poäng eller färg:</b> kontrollera att länken gäller samma aktiva spel, att Admins ändring är sparad och att internet fungerar. Visa Live-fliken och vänta några sekunder.</li>
+<li><b>QR-länken är ogiltig:</b> använd Kontrollera QR/länk. Skapa och dela en ny länk om den gamla ersatts.</li>
+<li><b>Molnkopplingen saknas efter omladdning:</b> logga in och använd Återuppta senaste spel för rätt grupp.</li>
+<li><b>Databasfel eller nekad behörighet:</b> spara felmeddelandet och kontakta den som ansvarar för appens Supabase-konfiguration. Skicka inga lösenord eller hela länkar som innehåller inloggningskoder.</li>
+<li><b>Äldre gränssnitt visas:</b> ladda om med Ctrl+F5 på dator. Att rensa webbplatsdata tar också bort lokalt sparade inställningar och inloggning.</li>
+</ul>
 <h3>ℹ️ Om appen</h3>
-<p><b>Badminton App v2.0</b> – rotation, 3D-banor för singel/dubbel, nationalitetsflaggor, grupphantering, livevisning och statistik. <b>Skapad av Piotr Zdeb +=RYB@=+</b>.</p>
+<p><b>Badminton App v2.0</b> – rotation, banvisning, två flaggor, grupphantering, Live, poäng och statistik. <b>Skapad av Piotr Zdeb +=RYB@=+</b>.</p>
 </div>
 
 
