@@ -2706,7 +2706,51 @@ function exportStatisticsPDF(){
 }
 </style>
 
+
+<style id="mobile-tablet-compatibility">
+#v14-settings #playerPool{grid-template-columns:repeat(2,minmax(0,1fr))}
+#v14-settings #setupView{width:100%;min-width:0;box-sizing:border-box}
+#v14-settings .playerChoice{min-width:0;box-sizing:border-box;max-width:100%}
+#v14-settings .playerChoice .nationPicker{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:759px){
+ #v14-settings #playerPool{grid-template-columns:minmax(0,1fr)}
+ #v14-settings .playerChoice{font-size:16px!important;gap:10px;padding:12px}
+ #v14-settings .playerChoice .playerName{min-width:0;font-size:16px!important}
+ #v14-settings .playerChoice input[type=checkbox]{width:24px;height:24px;flex:0 0 24px}
+ #v14-settings .playerChoice>.nationPicker{flex:1 0 100%;width:100%}
+ #v14-settings .playerChoice .nationSearch,#v14-settings .playerChoice .playerNationality,#v14-settings .playerChoice .playerSecondNationality{font-size:16px!important;min-height:44px!important;width:100%;box-sizing:border-box}
+ #v14-settings .playerChoice .nationPicker>span{flex:none}
+ #v14-settings .playerModeControls{flex:1;min-width:0}
+ #v14-settings .playerChoice .deletePlayerBtn,#v14-settings .playerChoice .modeInfoBtn{min-width:44px!important;min-height:44px!important;font-size:18px!important}
+ #cloudTestPanel input[type=email],#cloudTestPanel input[type=password],.fix26-row input{font-size:16px!important;min-width:0;box-sizing:border-box}
+ #v14-settings .v24Primary{min-width:0!important;max-width:100%;box-sizing:border-box}
+ .bmStatsControls{align-items:stretch}.bmStatsControls select{min-width:0;width:100%;box-sizing:border-box;font-size:16px}
+}
+@media(hover:none) and (pointer:coarse){#v14Nav button,.bmStatsTabs button{min-height:44px}}
+</style>
 </body>
+
+<style id="mobile-tablet-compatibility">
+#v14-settings #playerPool{grid-template-columns:repeat(2,minmax(0,1fr))}
+#v14-settings #setupView{width:100%;min-width:0;box-sizing:border-box}
+#v14-settings .playerChoice{min-width:0;box-sizing:border-box;max-width:100%}
+#v14-settings .playerChoice .nationPicker{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:759px){
+ #v14-settings #playerPool{grid-template-columns:minmax(0,1fr)}
+ #v14-settings .playerChoice{font-size:16px!important;gap:10px;padding:12px}
+ #v14-settings .playerChoice .playerName{min-width:0;font-size:16px!important}
+ #v14-settings .playerChoice input[type=checkbox]{width:24px;height:24px;flex:0 0 24px}
+ #v14-settings .playerChoice>.nationPicker{flex:1 0 100%;width:100%}
+ #v14-settings .playerChoice .nationSearch,#v14-settings .playerChoice .playerNationality,#v14-settings .playerChoice .playerSecondNationality{font-size:16px!important;min-height:44px!important;width:100%;box-sizing:border-box}
+ #v14-settings .playerChoice .nationPicker>span{flex:none}
+ #v14-settings .playerModeControls{flex:1;min-width:0}
+ #v14-settings .playerChoice .deletePlayerBtn,#v14-settings .playerChoice .modeInfoBtn{min-width:44px!important;min-height:44px!important;font-size:18px!important}
+ #cloudTestPanel input[type=email],#cloudTestPanel input[type=password],.fix26-row input{font-size:16px!important;min-width:0;box-sizing:border-box}
+ #v14-settings .v24Primary{min-width:0!important;max-width:100%;box-sizing:border-box}
+ .bmStatsControls{align-items:stretch}.bmStatsControls select{min-width:0;width:100%;box-sizing:border-box;font-size:16px}
+}
+@media(hover:none) and (pointer:coarse){#v14Nav button,.bmStatsTabs button{min-height:44px}}
+</style>
 </body></html>`;
 
   const blob=new Blob([report],{type:'text/html;charset=utf-8'});
@@ -4218,7 +4262,7 @@ window.badmintonConfirmActiveGame=function(name){
  window.badmintonScoreRefresh=render;
  window.badmintonScoreSettings=function(){
    const existing=document.getElementById('bmSettingsMenu');
-   if(existing){existing.remove();document.getElementById('bmScoreSettingsBtn')?.setAttribute('aria-expanded','false');return}
+   if(existing){if(existing.bmClose)existing.bmClose();else existing.remove();return}
    const btn=document.getElementById('bmScoreSettingsBtn');
    const menu=document.createElement('div');
    menu.id='bmSettingsMenu';
@@ -4231,7 +4275,7 @@ window.badmintonConfirmActiveGame=function(name){
    '<label class="bmSettingsRow"><span>Ljudsignal</span><input type="checkbox" id="bmMenuSound"></label>'+
    '<label class="bmSettingsRow"><span>Auto start nästa runda</span><input type="checkbox" id="bmMenuAuto"></label>';
    const game=document.getElementById('gameView');
-   game.appendChild(menu);
+   document.body.appendChild(menu);
    btn?.setAttribute('aria-expanded','true');
    const score=menu.querySelector('#bmMenuScore');
    score.checked=enabled;
@@ -4248,6 +4292,7 @@ window.badmintonConfirmActiveGame=function(name){
    auto.addEventListener('change',()=>bmStorage.setItem('badminton-v20-auto-next',String(auto.checked)));
    const close=()=>{menu.remove();btn?.setAttribute('aria-expanded','false');document.removeEventListener('keydown',onKey)};
    const onKey=e=>{if(e.key==='Escape')close()};
+   menu.bmClose=close;
    menu.querySelector('.bmSettingsClose').addEventListener('click',close);
    document.addEventListener('keydown',onKey);
    menu.querySelector('.bmSettingsClose').focus();
@@ -4329,20 +4374,20 @@ window.badmintonConfirmActiveGame=function(name){
 <style id="bm-unified-settings-v20">
 #gameView{position:relative}
 #gameView #bmScoreSettingsBtn{background:#172536;color:#fff;border:1px solid #607489;border-radius:9px;font-size:21px;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
-#gameView .bmSettingsMenu{position:absolute;right:12px;top:62px;z-index:20050;width:min(340px,calc(100vw - 24px));max-height:min(80dvh,480px);overflow:auto;box-sizing:border-box;background:#162536;color:#fff;border:1px solid #61778b;border-radius:12px;padding:13px 15px;box-shadow:0 14px 42px #000b;font-size:15px}
-#gameView .bmSettingsHeading{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #405365;padding-bottom:9px;margin-bottom:7px}
-#gameView .bmSettingsClose{background:transparent;color:#fff;border:0;font-size:26px;min-height:40px;min-width:40px;cursor:pointer}
-#gameView .bmSettingsRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0;min-height:42px;font-size:14px}
-#gameView .bmSettingsRow input[type=checkbox]{appearance:none;-webkit-appearance:none;box-sizing:border-box;flex:0 0 78px;width:78px;height:44px;min-width:78px;margin:0;padding:0;border-radius:24px;background:#a52d37;border:2px solid #ff939b;position:relative;cursor:pointer;box-shadow:inset 0 2px 5px #0005;transition:background .2s,border-color .2s}
-#gameView .bmSettingsRow input[type=checkbox]::before{content:"AV";position:absolute;right:8px;top:0;line-height:40px;color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px}
-#gameView .bmSettingsRow input[type=checkbox]::after{content:"";position:absolute;top:4px;left:4px;width:32px;height:32px;border-radius:50%;background:#fff;box-shadow:0 2px 5px #0007;transition:transform .2s}
-#gameView .bmSettingsRow input[type=checkbox]:checked{background:#087c46;border-color:#65efab}
-#gameView .bmSettingsRow input[type=checkbox]:checked::before{content:"PÅ";left:8px;right:auto}
-#gameView .bmSettingsRow input[type=checkbox]:checked::after{transform:translateX(34px)}
-#gameView .bmSettingsRow input[type=checkbox]:focus-visible{outline:3px solid #ffe082;outline-offset:3px}
-@media(prefers-reduced-motion:reduce){#gameView .bmSettingsRow input[type=checkbox],#gameView .bmSettingsRow input[type=checkbox]::after{transition:none}}
-#gameView .bmSettingsRow select{background:#102131;color:white;border:1px solid #53677b;border-radius:9px;padding:8px;font-size:14px;min-height:40px}
-@media(max-width:720px){#gameView .bmSettingsMenu{right:6px;top:55px;width:min(310px,calc(100vw - 12px));padding:10px}#gameView .bmSettingsRow{font-size:13px}}
+.bmSettingsMenu{position:absolute;right:12px;top:62px;z-index:20050;width:min(340px,calc(100vw - 24px));max-height:min(80dvh,480px);overflow:auto;box-sizing:border-box;background:#162536;color:#fff;border:1px solid #61778b;border-radius:12px;padding:13px 15px;box-shadow:0 14px 42px #000b;font-size:15px}
+.bmSettingsHeading{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #405365;padding-bottom:9px;margin-bottom:7px}
+.bmSettingsClose{background:transparent;color:#fff;border:0;font-size:26px;min-height:40px;min-width:40px;cursor:pointer}
+.bmSettingsRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0;min-height:42px;font-size:14px}
+.bmSettingsRow input[type=checkbox]{appearance:none;-webkit-appearance:none;box-sizing:border-box;flex:0 0 78px;width:78px;height:44px;min-width:78px;margin:0;padding:0;border-radius:24px;background:#a52d37;border:2px solid #ff939b;position:relative;cursor:pointer;box-shadow:inset 0 2px 5px #0005;transition:background .2s,border-color .2s}
+.bmSettingsRow input[type=checkbox]::before{content:"AV";position:absolute;right:8px;top:0;line-height:40px;color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px}
+.bmSettingsRow input[type=checkbox]::after{content:"";position:absolute;top:4px;left:4px;width:32px;height:32px;border-radius:50%;background:#fff;box-shadow:0 2px 5px #0007;transition:transform .2s}
+.bmSettingsRow input[type=checkbox]:checked{background:#087c46;border-color:#65efab}
+.bmSettingsRow input[type=checkbox]:checked::before{content:"PÅ";left:8px;right:auto}
+.bmSettingsRow input[type=checkbox]:checked::after{transform:translateX(34px)}
+.bmSettingsRow input[type=checkbox]:focus-visible{outline:3px solid #ffe082;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.bmSettingsRow input[type=checkbox],.bmSettingsRow input[type=checkbox]::after{transition:none}}
+.bmSettingsRow select{background:#102131;color:white;border:1px solid #53677b;border-radius:9px;padding:8px;font-size:14px;min-height:40px}
+@media(max-width:720px){.bmSettingsMenu{right:6px;top:55px;width:min(310px,calc(100vw - 12px));padding:10px}.bmSettingsRow{font-size:13px}}
 </style>
 <script id="bm-centered-confirm-restore">
 window.bmCenteredConfirm=function(title,message,acceptLabel){return new Promise(resolve=>{
@@ -4374,7 +4419,7 @@ window.bmCenteredConfirm=function(title,message,acceptLabel){return new Promise(
 .bmConfirmActions button{min-height:44px;min-width:100px;cursor:pointer}
 .bmPopupX{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.12);color:white;border:0;font-size:24px;cursor:pointer}
 /* Samma centrering för inställningsfönstret på dator, surfplatta och telefon. */
-#gameView .bmSettingsMenu{position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(420px,calc(100vw - 32px))!important;max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;z-index:2147483640!important;box-sizing:border-box!important;border-radius:18px!important;box-shadow:0 0 0 100vmax rgba(5,12,25,.72),0 18px 65px rgba(0,0,0,.65)!important}
+.bmSettingsMenu{position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(420px,calc(100vw - 32px))!important;max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;z-index:2147483640!important;box-sizing:border-box!important;border-radius:18px!important;box-shadow:0 0 0 100vmax rgba(5,12,25,.72),0 18px 65px rgba(0,0,0,.65)!important}
 @media(max-width:480px){.bmConfirmDialog{padding:18px!important}.bmConfirmActions{flex-direction:column-reverse}.bmConfirmActions button{width:100%}}
 </style>
 <script id="bm-unified-popup-helpers">
@@ -4407,5 +4452,27 @@ window.bmCenteredConfirm=function(title,message,acceptLabel){return new Promise(
  window.bmCenteredAlert=message=>popup('Information',message,'alert');
 })();
 </script>
+
+<style id="mobile-tablet-compatibility">
+#v14-settings #playerPool{grid-template-columns:repeat(2,minmax(0,1fr))}
+#v14-settings #setupView{width:100%;min-width:0;box-sizing:border-box}
+#v14-settings .playerChoice{min-width:0;box-sizing:border-box;max-width:100%}
+#v14-settings .playerChoice .nationPicker{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:759px){
+ #v14-settings #playerPool{grid-template-columns:minmax(0,1fr)}
+ #v14-settings .playerChoice{font-size:16px!important;gap:10px;padding:12px}
+ #v14-settings .playerChoice .playerName{min-width:0;font-size:16px!important}
+ #v14-settings .playerChoice input[type=checkbox]{width:24px;height:24px;flex:0 0 24px}
+ #v14-settings .playerChoice>.nationPicker{flex:1 0 100%;width:100%}
+ #v14-settings .playerChoice .nationSearch,#v14-settings .playerChoice .playerNationality,#v14-settings .playerChoice .playerSecondNationality{font-size:16px!important;min-height:44px!important;width:100%;box-sizing:border-box}
+ #v14-settings .playerChoice .nationPicker>span{flex:none}
+ #v14-settings .playerModeControls{flex:1;min-width:0}
+ #v14-settings .playerChoice .deletePlayerBtn,#v14-settings .playerChoice .modeInfoBtn{min-width:44px!important;min-height:44px!important;font-size:18px!important}
+ #cloudTestPanel input[type=email],#cloudTestPanel input[type=password],.fix26-row input{font-size:16px!important;min-width:0;box-sizing:border-box}
+ #v14-settings .v24Primary{min-width:0!important;max-width:100%;box-sizing:border-box}
+ .bmStatsControls{align-items:stretch}.bmStatsControls select{min-width:0;width:100%;box-sizing:border-box;font-size:16px}
+}
+@media(hover:none) and (pointer:coarse){#v14Nav button,.bmStatsTabs button{min-height:44px}}
+</style>
 </body>
 </html>
