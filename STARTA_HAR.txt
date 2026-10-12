@@ -1,0 +1,24 @@
+LOKALT TEST – FJÄDERLIGAN
+
+Den här kopian innehåller de tydligare På/Av-reglagen och den reparerade service workern.
+
+1. Packa upp ZIP-filen.
+2. Installera Python 3 från https://www.python.org/downloads/ om det inte redan finns.
+3. Öppna Terminal/PowerShell i den uppackade projektmappen (där index.html finns).
+4. Starta servern:
+   Windows: py -3 -m http.server 8000 --bind 127.0.0.1
+   macOS/Linux: python3 -m http.server 8000 --bind 127.0.0.1
+5. Öppna http://localhost:8000 i webbläsaren. Öppna inte index.html direkt.
+6. Logga in i Admin med ditt befintliga konto, välj grupp och hämta gruppens spelare.
+7. Skapa eller återuppta ett spel. Öppna kugghjulet i spelvyn.
+8. Prova Visa poängräkning, Ljudsignal och Auto start nästa runda:
+   AV: rött, vit knapp till vänster. PÅ: grönt, vit knapp till höger.
+9. Stoppa servern med Ctrl+C i terminalen.
+
+Viktigt: Detta är en lokal kopia av gränssnittet. Molnfunktionerna använder fortfarande
+samma Supabase-databas som den publicerade appen. Skapade spel och ändringar kan därför
+synas där. Använd en testgrupp om du vill hålla testdata separat.
+Inloggning från GitHub Pages följer inte med; logga in på nytt lokalt.
+Internet behövs för Supabase, flaggbilder och QR-biblioteket.
+Om en äldre lokal kopia syns: ta bort webbplatsdata för localhost:8000 och ladda om.
+Detta raderar även lokalt sparade spelare/inställningar på den adressen.

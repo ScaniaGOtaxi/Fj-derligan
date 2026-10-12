@@ -4247,10 +4247,14 @@ window.badmintonConfirmActiveGame=function(name){
 #gameView .bmSettingsHeading{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #405365;padding-bottom:9px;margin-bottom:7px}
 #gameView .bmSettingsClose{background:transparent;color:#fff;border:0;font-size:26px;min-height:40px;min-width:40px;cursor:pointer}
 #gameView .bmSettingsRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0;min-height:42px;font-size:14px}
-#gameView .bmSettingsRow input[type=checkbox]{appearance:none;-webkit-appearance:none;width:51px;height:29px;min-width:51px;border-radius:30px;background:#55616e;border:1px solid #8594a4;position:relative;cursor:pointer;transition:background .15s}
-#gameView .bmSettingsRow input[type=checkbox]::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:white;transition:transform .15s}
-#gameView .bmSettingsRow input[type=checkbox]:checked{background:#18a35b}
-#gameView .bmSettingsRow input[type=checkbox]:checked::after{transform:translateX(21px)}
+#gameView .bmSettingsRow input[type=checkbox]{appearance:none;-webkit-appearance:none;box-sizing:border-box;flex:0 0 78px;width:78px;height:44px;min-width:78px;margin:0;padding:0;border-radius:24px;background:#a52d37;border:2px solid #ff939b;position:relative;cursor:pointer;box-shadow:inset 0 2px 5px #0005;transition:background .2s,border-color .2s}
+#gameView .bmSettingsRow input[type=checkbox]::before{content:"AV";position:absolute;right:8px;top:0;line-height:40px;color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px}
+#gameView .bmSettingsRow input[type=checkbox]::after{content:"";position:absolute;top:4px;left:4px;width:32px;height:32px;border-radius:50%;background:#fff;box-shadow:0 2px 5px #0007;transition:transform .2s}
+#gameView .bmSettingsRow input[type=checkbox]:checked{background:#087c46;border-color:#65efab}
+#gameView .bmSettingsRow input[type=checkbox]:checked::before{content:"PÅ";left:8px;right:auto}
+#gameView .bmSettingsRow input[type=checkbox]:checked::after{transform:translateX(34px)}
+#gameView .bmSettingsRow input[type=checkbox]:focus-visible{outline:3px solid #ffe082;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){#gameView .bmSettingsRow input[type=checkbox],#gameView .bmSettingsRow input[type=checkbox]::after{transition:none}}
 #gameView .bmSettingsRow select{background:#102131;color:white;border:1px solid #53677b;border-radius:9px;padding:8px;font-size:14px;min-height:40px}
 @media(max-width:720px){#gameView .bmSettingsMenu{right:6px;top:55px;width:min(310px,calc(100vw - 12px));padding:10px}#gameView .bmSettingsRow{font-size:13px}}
 </style>
