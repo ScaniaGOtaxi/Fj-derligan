@@ -731,6 +731,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 </script>
 <script src="sync-v2.js"></script>
 <script src="player-motion.js"></script>
+<script src="shuttle-motion.js"></script>
 <script src="results-v1.js"></script>
 <script src="statistics-ui.js"></script>
 
@@ -1904,7 +1905,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li><b>Visa poängräkning:</b> visar eller döljer poängtavlorna.</li>
 <li><b>Matchtid:</b> välj 5, 10, 15 eller 20 minuter; ändringen återställer timern.</li>
 <li><b>Ljudsignal:</b> slår på eller av ljudet vid avslutad tid. Enheten och webbläsaren måste tillåta ljud.</li>
-<li><b>Rörliga spelare:</b> ger figurerna en liten, lugn rörelse. Kan slås av. Rörelsen pausas i dolda flikar och stängs av när enheten använder minskad rörelse. I Live finns även en egen rörelseknapp.</li>
+<li><b>Rörliga spelare:</b> ger figurerna en liten, lugn rörelse och visar en fjäderboll som flyger över nätet. Bollens rörelse är visuell och påverkar inte poäng eller matchresultat. Kan slås av. Rörelsen pausas i dolda flikar och stängs av när enheten använder minskad rörelse. I Live finns även en egen rörelseknapp.</li>
 <li><b>Auto start nästa runda:</b> byter automatiskt till nästa runda när tiden är slut. Den nya rundans timer startas inte automatiskt.</li>
 </ul>
 <p>Reglagen visar <b>PÅ</b> i grönt med knappen till höger och <b>AV</b> i rött med knappen till vänster. Stäng inställningarna med kryssknappen eller Escape.</p>
@@ -2742,6 +2743,16 @@ html.bmMotionOff .genderAthlete{animation:none!important;translate:0 0}
 @media(prefers-reduced-motion:reduce){#gameView .genderAthlete,#badmintonViewer .genderAthlete{animation:none!important;translate:0 0}}
 #viewerHead{flex-wrap:wrap}
 </style>
+
+<style id="shuttle-flight">
+@keyframes badmintonShuttleFlight{0%,100%{transform:translate(-12%,0)}25%,75%{transform:translate(0,9%)}50%{transform:translate(12%,36%)}}
+@keyframes badmintonShuttleTurn{0%,100%{rotate:155deg}45%,55%{rotate:-25deg}}
+.threeDStage>.bmShuttleFlight,.viewerStage>.bmShuttleFlight{position:absolute;inset:0;z-index:10005;pointer-events:none;animation:badmintonShuttleFlight 3.6s ease-in-out infinite}
+.bmShuttleFlight>.bmShuttle{position:absolute;left:calc(50% - 9px);top:28%;width:clamp(14px,3%,24px);height:auto;filter:drop-shadow(0 1px 2px #0009);animation:badmintonShuttleTurn 3.6s ease-in-out infinite}
+html.bmMotionPaused .bmShuttleFlight,html.bmMotionPaused .bmShuttle{animation-play-state:paused!important}
+html.bmMotionOff .bmShuttleFlight{display:none}
+@media(prefers-reduced-motion:reduce){.bmShuttleFlight{display:none}}
+</style>
 </body>
 
 <style id="mobile-tablet-compatibility">
@@ -2776,6 +2787,16 @@ html.bmMotionPaused .genderAthlete{animation-play-state:paused!important}
 html.bmMotionOff .genderAthlete{animation:none!important;translate:0 0}
 @media(prefers-reduced-motion:reduce){#gameView .genderAthlete,#badmintonViewer .genderAthlete{animation:none!important;translate:0 0}}
 #viewerHead{flex-wrap:wrap}
+</style>
+
+<style id="shuttle-flight">
+@keyframes badmintonShuttleFlight{0%,100%{transform:translate(-12%,0)}25%,75%{transform:translate(0,9%)}50%{transform:translate(12%,36%)}}
+@keyframes badmintonShuttleTurn{0%,100%{rotate:155deg}45%,55%{rotate:-25deg}}
+.threeDStage>.bmShuttleFlight,.viewerStage>.bmShuttleFlight{position:absolute;inset:0;z-index:10005;pointer-events:none;animation:badmintonShuttleFlight 3.6s ease-in-out infinite}
+.bmShuttleFlight>.bmShuttle{position:absolute;left:calc(50% - 9px);top:28%;width:clamp(14px,3%,24px);height:auto;filter:drop-shadow(0 1px 2px #0009);animation:badmintonShuttleTurn 3.6s ease-in-out infinite}
+html.bmMotionPaused .bmShuttleFlight,html.bmMotionPaused .bmShuttle{animation-play-state:paused!important}
+html.bmMotionOff .bmShuttleFlight{display:none}
+@media(prefers-reduced-motion:reduce){.bmShuttleFlight{display:none}}
 </style>
 </body></html>`;
 
@@ -3330,7 +3351,7 @@ window.addEventListener('focus',updateSelectedCount);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=test-motion-v1-20261012').catch(console.error);
+    navigator.serviceWorker.register('./service-worker.js?v=test-shuttle-v1-20261012').catch(console.error);
   });
 }
 </script>
@@ -4514,6 +4535,16 @@ html.bmMotionPaused .genderAthlete{animation-play-state:paused!important}
 html.bmMotionOff .genderAthlete{animation:none!important;translate:0 0}
 @media(prefers-reduced-motion:reduce){#gameView .genderAthlete,#badmintonViewer .genderAthlete{animation:none!important;translate:0 0}}
 #viewerHead{flex-wrap:wrap}
+</style>
+
+<style id="shuttle-flight">
+@keyframes badmintonShuttleFlight{0%,100%{transform:translate(-12%,0)}25%,75%{transform:translate(0,9%)}50%{transform:translate(12%,36%)}}
+@keyframes badmintonShuttleTurn{0%,100%{rotate:155deg}45%,55%{rotate:-25deg}}
+.threeDStage>.bmShuttleFlight,.viewerStage>.bmShuttleFlight{position:absolute;inset:0;z-index:10005;pointer-events:none;animation:badmintonShuttleFlight 3.6s ease-in-out infinite}
+.bmShuttleFlight>.bmShuttle{position:absolute;left:calc(50% - 9px);top:28%;width:clamp(14px,3%,24px);height:auto;filter:drop-shadow(0 1px 2px #0009);animation:badmintonShuttleTurn 3.6s ease-in-out infinite}
+html.bmMotionPaused .bmShuttleFlight,html.bmMotionPaused .bmShuttle{animation-play-state:paused!important}
+html.bmMotionOff .bmShuttleFlight{display:none}
+@media(prefers-reduced-motion:reduce){.bmShuttleFlight{display:none}}
 </style>
 </body>
 </html>
