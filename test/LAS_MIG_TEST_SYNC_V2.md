@@ -69,3 +69,21 @@ Testet använder Chromium i `/usr/bin/chromium` och endast lokal testsida plus
 simulerade Supabase-svar. Det använder inga riktiga konton och skriver ingen
 produktionsdata. Det verifierar import/sparning, nekad sparning, två flaggor,
 QR-kod, poäng, separat Live-webbläsare, tillfälliga serverfel, reload och offline.
+
+## Resultatstatistik
+
+Kör hela `SUPABASE_RESULTAT_STATISTIK.sql` i Supabase SQL Editor för att installera
+resultatstatistikens nya läsfunktion. Den läser historik för Admins tilldelade
+grupper eller Super Admin och ändrar inga spel- eller poängrader.
+
+Öppna Statistik → Visa gruppstatistik (Supabase). Under Resultat och poäng finns
+vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och
+vinstprocent. Endast Klar-rundor med sparade poäng räknas; 0–0 och saknade poäng
+räknas inte som resultat. I dubbel delar lagkamraterna samma resultat och lagpoäng.
+Visa matchresultat visar underlaget. Resultat CSV och utskrift/PDF exporterar den
+nya molnstatistiken. De gamla lokala exporterna avser fortfarande deltagande.
+
+Om funktionen saknas visas ett fel för resultatdelen; deltagarstatistiken fungerar
+fortfarande. Resultat beräknas från aktuell sparad historik vid hämtning, så en
+korrigerad poäng uppdaterar statistiken vid nästa hämtning. Raderad spelhistorik
+kan inte längre räknas.

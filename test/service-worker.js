@@ -1,5 +1,5 @@
-const CACHE = 'badminton-test-performance-v1-20261012';
-const FILES = ['./', './index.html', './sync-v2.js', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
+const CACHE = 'badminton-test-results-v1-20261012';
+const FILES = ['./', './index.html', './sync-v2.js', './results-v1.js', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });

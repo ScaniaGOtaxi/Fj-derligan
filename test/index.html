@@ -730,6 +730,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 };
 </script>
 <script src="sync-v2.js"></script>
+<script src="results-v1.js"></script>
 
 
 <style id="court-visible-fill-fix-20261010">
@@ -1608,6 +1609,8 @@ cloudStatsBtn.addEventListener('click',async()=>{
   const rounds=await fetchByIds('badminton_rounds','id,status','session_id',sessions.map(s=>s.id));
   const completed=rounds.filter(r=>r.status==='completed');
   const positions=await fetchByIds('badminton_round_players','round_id,player_id,activity','round_id',completed.map(r=>r.id));
+  let resultData=null,resultError='';
+  try{const matches=await request('/rest/v1/rpc/get_badminton_result_statistics',{method:'POST',body:JSON.stringify({p_group_id:groupId})});if(!Array.isArray(matches))throw Error('Oväntat resultatsvar');resultData=window.badmintonResults.calculate(matches,members);}catch(e){resultError=e.message;}
   if(groupSelect.value!==groupId)throw Error('Du har bytt grupp. Klicka på statistik igen.');
   const perPlayer=new Map(members.map(m=>[m.id,{name:m.name,single:0,double:0,rest:0}]));
   let singles=0,doubles=0,rests=0;
@@ -1634,6 +1637,18 @@ cloudStatsBtn.addEventListener('click',async()=>{
   }
   table.append(tbody);wrap.append(table);cloudStats.append(wrap);
   statsText(cloudStats,'p','Endast rundor markerade Klar räknas. Singel och dubbel visar spelarens deltaganden, inte antalet matcher.');
+  statsText(cloudStats,'h3','🏆 Resultat och poäng');
+  if(resultData){
+   statsText(cloudStats,'p',resultData.matches.length+' resultatmatcher · '+resultData.unscored+' matcher utan poäng/resultat'+(resultData.invalid?' · '+resultData.invalid+' matcher med ofullständig spelarplacering':''));
+   const resultsWrap=document.createElement('div');resultsWrap.style.overflowX='auto';const resultsTable=document.createElement('table');resultsTable.className='statsTable';resultsTable.setAttribute('aria-label','Resultatstatistik');
+   const resultsHead=document.createElement('thead'),headRow=document.createElement('tr');['Spelare','Resultatmatcher','Vinster','Förluster','Oavgjorda','Gjorda poäng','Insläppta poäng','Poängskillnad','Vinst %'].forEach(title=>statsText(headRow,'th',title));resultsHead.append(headRow);resultsTable.append(resultsHead);
+   const resultsBody=document.createElement('tbody');resultData.players.forEach(player=>{const row=document.createElement('tr');[player.name,player.played,player.wins,player.losses,player.draws,player.for,player.against,player.difference,player.winPercent+' %'].forEach(value=>statsText(row,'td',String(value)));resultsBody.append(row);});resultsTable.append(resultsBody);resultsWrap.append(resultsTable);cloudStats.append(resultsWrap);
+   statsText(cloudStats,'p','Endast Klar-rundor med sparade poäng räknas. Saknade poäng och 0–0 räknas inte som resultat. Lika poäng över 0 räknas som oavgjort. I dubbel får båda spelarna samma lagresultat och lagpoäng. Avstängd visning av poäng raderar inte tidigare resultat.');
+   const history=document.createElement('details');const historyTitle=document.createElement('summary');historyTitle.textContent='Visa matchresultat';history.append(historyTitle);const historyWrap=document.createElement('div');historyWrap.style.overflowX='auto';const historyTable=document.createElement('table');historyTable.className='statsTable';const historyHead=document.createElement('thead'),historyHeadRow=document.createElement('tr');['Spel','Runda','Bana','Rött lag','Blått lag','Poäng','Resultat'].forEach(title=>statsText(historyHeadRow,'th',title));historyHead.append(historyHeadRow);historyTable.append(historyHead);const historyBody=document.createElement('tbody');resultData.matches.forEach(match=>{const row=document.createElement('tr');const redNames=match.players.filter(p=>p.team===1).map(p=>p.name).join(' & '),blueNames=match.players.filter(p=>p.team===2).map(p=>p.name).join(' & ');[match.session_name||'Spel',match.round_number,match.court_number,redNames,blueNames,match.red+' – '+match.blue,match.red===match.blue?'Oavgjort':match.red>match.blue?'Rött vann':'Blått vann'].forEach(value=>statsText(row,'td',String(value)));historyBody.append(row);});historyTable.append(historyBody);historyWrap.append(historyTable);history.append(historyWrap);cloudStats.append(history);
+   const actions=document.createElement('div');actions.className='topTools';const exportCSV=document.createElement('button');exportCSV.type='button';exportCSV.textContent='Exportera resultat CSV';exportCSV.onclick=()=>{const url=URL.createObjectURL(new Blob([window.badmintonResults.csv(resultData)],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download='badminton-resultat.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+   const exportPDF=document.createElement('button');exportPDF.type='button';exportPDF.textContent='Skriv ut resultat / PDF';exportPDF.onclick=()=>{const page=window.open('','_blank');if(!page){window.bmCenteredAlert('Tillåt popupfönster för att öppna resultatrapporten.');return;}page.document.write(window.badmintonResults.report(resultData,groupSelect.selectedOptions[0].text));page.document.close();page.focus();page.print();};actions.append(exportCSV,exportPDF);cloudStats.append(actions);
+  }else statsText(cloudStats,'p','Resultatstatistiken kunde inte hämtas: '+resultError+'. Deltagarstatistiken ovan är fortfarande tillgänglig.');
+
  }catch(e){cloudStats.replaceChildren();statsText(cloudStats,'p','❌ Kunde inte hämta gruppstatistik: '+e.message);}
  finally{cloudStatsBtn.disabled=false;}
 });
@@ -1918,7 +1933,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <h3>🔢 10. Poängräkning</h3>
 <p>Aktivera <b>Visa poängräkning</b>. Använd <b>+</b> och <b>−</b> för respektive lag. Poängen kan inte bli negativa. Minimeringsknappen visar en mindre poängtavla; tryck igen för att öppna den.</p>
 <p>Poäng sparas separat för varje spel, runda och bana. Snabba tryck samlas till färre sparningar utan att slutpoängen tappas. Vänta på <b>Poäng sparade i Supabase</b> innan du stänger sidan. Byte tillbaka till en runda hämtar dess poäng. Poängen visas skrivskyddat i Live när poängräkningen är aktiverad.</p>
-<p>Poäng ändrar inte automatiskt rundans färdigstatus eller avgör vinnare i statistikrapporten. Använd <b>Klar</b> när matchen är färdig.</p>
+<p>Poäng ändrar inte automatiskt rundans färdigstatus. Använd <b>Klar</b> när matchen är färdig; sparade poäng räknas därefter i gruppens resultatstatistik.</p>
 <h3>📱 11. Live &amp; QR och delning</h3>
 <ol>
 <li>Skapa eller återuppta gruppens aktiva molnspel.</li>
@@ -1932,6 +1947,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <h3>📊 12. Statistik och rapporter</h3>
 <p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
 <p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Visa gruppstatistik (Supabase)</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
+<p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. <b>Visa matchresultat</b> visar vilka lag som möttes, rundan, banan, poängen och vilket lag som vann. Uppdatera med <b>Visa gruppstatistik (Supabase)</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
 <h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
 <p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
 <p><b>Admin</b> arbetar i tilldelade grupper: hämtar och lägger till gruppspelare, ändrar deras inställningar, skapar och återupptar spel, styr rundor, räknar poäng, delar Live och ser gruppstatistik. Admin kan inte använda appens verktyg för gruppskapande, administratörsinbjudningar, tilldelningar eller full gruppradering.</p>
@@ -3264,7 +3280,7 @@ window.addEventListener('focus',updateSelectedCount);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=test-performance-v1-20261012').catch(console.error);
+    navigator.serviceWorker.register('./service-worker.js?v=test-results-v1-20261012').catch(console.error);
   });
 }
 </script>
