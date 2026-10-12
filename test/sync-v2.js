@@ -35,6 +35,7 @@
     const select=document.createElement('select');select.className=optional?'playerSecondNationality':'playerNationality';select.setAttribute('aria-label','Flagga '+number+' för '+name);
     const hint=document.createElement('span');hint.setAttribute('role','status');hint.style.cssText='font-size:12px;color:#c6d7e7';
     const preview=document.createElement('div');preview.className='nationFlagPreview';
+    const results=document.createElement('div');results.setAttribute('role','group');results.setAttribute('aria-label','Sökresultat flagga '+number+' för '+name);results.style.cssText='max-height:240px;overflow-y:auto;display:none;border:1px solid #607489;border-radius:9px;background:#102131';
     const countries=window.BADMINTON_COUNTRIES||[];
     const get=()=>optional?window.badmintonSecondCountryOf(name):window.badmintonCountryOf(name);
     const normalize=value=>String(value||'').trim().toLocaleLowerCase('sv').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -45,13 +46,18 @@
       if(optional)select.add(new Option('Ingen andra flagga',''));
       matches.forEach(c=>select.add(new Option(c[1]+' ('+c[3]+')',c[0])));
       select.value=matches.some(c=>c[0]===saved)?saved:optional&&!saved&&!query?'':'__choose__';
-      hint.textContent=query?(matches.length?matches.length+' träff'+(matches.length===1?'':'ar')+' – välj i listan för att spara.':'Inga träffar. Prova landets namn eller landskod.'):'Välj ett land i listan för att spara.';
+      hint.textContent=query?(matches.length?matches.length+' träff'+(matches.length===1?'':'ar')+' – tryck på landet för att spara.':'Inga träffar. Prova landets namn eller landskod.'):'Välj ett land i listan för att spara.';
+      results.replaceChildren();results.style.display=query&&matches.length?'block':'none';select.style.display=query?'none':'';
+      if(query)matches.forEach(country=>{const button=document.createElement('button');button.type='button';button.style.cssText='display:flex;align-items:center;gap:10px;width:100%;min-height:44px;text-align:left;padding:9px 12px;border:0;border-bottom:1px solid #405365;border-radius:0;background:#102131;color:white;cursor:pointer';
+        const flag=document.createElement('img');flag.width=28;flag.height=19;flag.alt='';flag.dataset.country=country[0];flag.src=window.badmintonFlagUrl(country[0]);flag.onerror=()=>window.badmintonFlagFallback(flag);
+        const text=document.createElement('span');text.textContent=country[1]+' ('+country[3]+')';button.append(flag,text);button.addEventListener('click',()=>commit(country[0]));results.append(button);
+      });
     }
     function commit(value){if(value==='__choose__')return;if(optional)window.badmintonSetSecondCountry(name,value);else if(value)window.badmintonSetCountry(name,value);search.value='';render();showPreview();}
     search.addEventListener('input',render);
-    search.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();const matches=filtered();if(search.value.trim()&&matches.length===1)commit(matches[0][0]);else select.focus();}});
+    search.addEventListener('keydown',event=>{if(event.key==='Escape'){search.value='';render();return;}if(event.key==='ArrowDown'&&search.value.trim()){event.preventDefault();results.querySelector('button')?.focus();return;}if(event.key==='Enter'){event.preventDefault();const matches=filtered();if(search.value.trim()&&matches.length===1)commit(matches[0][0]);else (results.querySelector('button')||select).focus();}});
     select.addEventListener('change',()=>commit(select.value));
-    render();showPreview();wrap.append(heading,search,select,hint,preview);return wrap;
+    render();showPreview();wrap.append(heading,search,hint,results,select,preview);return wrap;
   };
   const original=window.badmintonPlayerImage;
   window.badmintonPlayerImage=function(name,team,side,position,serverGender){

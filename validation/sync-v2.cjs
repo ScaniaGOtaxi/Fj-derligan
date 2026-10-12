@@ -38,7 +38,7 @@ assert.equal(await page.locator('.playerSecondNationality').count(),4);
 await page.evaluate(()=>badmintonV14ShowTab('settings'));
 for(const number of [1,2]){
  const search=page.getByRole('searchbox',{name:'Sök flagga '+number+' för Anna',exact:true});
- const select=page.getByRole('combobox',{name:'Flagga '+number+' för Anna',exact:true});
+ const select=page.getByRole('combobox',{name:'Flagga '+number+' för Anna',exact:true,includeHidden:true});
  const before=calls.length;
  await search.fill('IN');
  assert.deepEqual(await select.locator('option').evaluateAll(opts=>opts.filter(o=>!o.disabled&&o.value).map(o=>o.value)),['IN']);
@@ -53,6 +53,17 @@ await page.getByRole('combobox',{name:'Flagga 2 för Anna',exact:true}).selectOp
 assert.equal(await page.evaluate(()=>badmintonSecondCountryOf('Anna')),null);
 await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('✅'));
 console.log('PASS both flag searches: exact ISO code, no results, clearing, no autosave while typing, Enter confirmation and removal of second flag');
+for(const number of [1,2]){
+ const search=page.getByRole('searchbox',{name:'Sök flagga '+number+' för Anna',exact:true});
+ await search.fill('dan');const results=page.getByRole('group',{name:'Sökresultat flagga '+number+' för Anna',exact:true});
+ assert(await results.isVisible());assert.equal(await results.getByRole('button').count(),4);
+ await results.getByRole('button',{name:'Danmark (DNK)',exact:true}).click();
+ assert.equal(await search.inputValue(),'');assert(!(await results.isVisible()));
+ assert.equal(await page.evaluate(n=>n===1?badmintonCountryOf('Anna'):badmintonSecondCountryOf('Anna'),number),'DK');
+}
+await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('✅'));
+console.log('PASS visible search results for both flags: dan shows four clickable countries; Denmark selection saves and closes results');
+
 
 await page.evaluate(()=>{badmintonSetCountry('Anna','NO');badmintonSetSecondCountry('Anna','PL');badmintonSetGender('Anna','man');setPlayerMode(0,'onlySingles');});await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('✅'));
 await page.waitForTimeout(100);assert.equal(members[0].country_code,'NO');assert.equal(members[0].second_country_code,'PL');assert.equal(members[0].player_gender,'man');assert.equal(members[0].player_mode,'onlySingles');
