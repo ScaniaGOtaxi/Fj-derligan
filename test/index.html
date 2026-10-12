@@ -2711,6 +2711,7 @@ function exportStatisticsPDF(){
 
 
 <style id="mobile-tablet-compatibility">
+.bmSettingsMenu{margin:0!important}.bmSettingsMenu::backdrop{background:rgba(5,12,25,.72)}
 #v14-settings #playerPool{grid-template-columns:repeat(2,minmax(0,1fr))}
 #v14-settings #setupView{width:100%;min-width:0;box-sizing:border-box}
 #v14-settings .playerChoice{min-width:0;box-sizing:border-box;max-width:100%}
@@ -2756,6 +2757,7 @@ html.bmMotionOff .bmShuttleFlight{display:none}
 </body>
 
 <style id="mobile-tablet-compatibility">
+.bmSettingsMenu{margin:0!important}.bmSettingsMenu::backdrop{background:rgba(5,12,25,.72)}
 #v14-settings #playerPool{grid-template-columns:repeat(2,minmax(0,1fr))}
 #v14-settings #setupView{width:100%;min-width:0;box-sizing:border-box}
 #v14-settings .playerChoice{min-width:0;box-sizing:border-box;max-width:100%}
@@ -4311,7 +4313,7 @@ window.badmintonConfirmActiveGame=function(name){
    const existing=document.getElementById('bmSettingsMenu');
    if(existing){if(existing.bmClose)existing.bmClose();else existing.remove();return}
    const btn=document.getElementById('bmScoreSettingsBtn');
-   const menu=document.createElement('div');
+   const menu=document.createElement('dialog');
    menu.id='bmSettingsMenu';
    menu.className='bmSettingsMenu';
    menu.setAttribute('role','dialog');
@@ -4323,7 +4325,8 @@ window.badmintonConfirmActiveGame=function(name){
    '<label class="bmSettingsRow"><span>Auto start nästa runda</span><input type="checkbox" id="bmMenuAuto"></label>'+
    '<label class="bmSettingsRow"><span>Rörliga spelare</span><input type="checkbox" id="bmMenuMotion"></label>';
    const game=document.getElementById('gameView');
-   document.body.appendChild(menu);
+   (typeof menu.showModal==='function'?document.body:(document.fullscreenElement||document.webkitFullscreenElement||document.body)).appendChild(menu);
+   if(typeof menu.showModal==='function')menu.showModal();else menu.setAttribute('open','');
    btn?.setAttribute('aria-expanded','true');
    const score=menu.querySelector('#bmMenuScore');
    score.checked=enabled;
@@ -4343,6 +4346,8 @@ window.badmintonConfirmActiveGame=function(name){
    const close=()=>{menu.remove();btn?.setAttribute('aria-expanded','false');document.removeEventListener('keydown',onKey)};
    const onKey=e=>{if(e.key==='Escape')close()};
    menu.bmClose=close;
+   menu.addEventListener('cancel',event=>{event.preventDefault();close();});
+   menu.addEventListener('click',event=>{const rect=menu.getBoundingClientRect();if(event.target===menu&&(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom))close();});
    menu.querySelector('.bmSettingsClose').addEventListener('click',close);
    document.addEventListener('keydown',onKey);
    menu.querySelector('.bmSettingsClose').focus();
@@ -4504,6 +4509,7 @@ window.bmCenteredConfirm=function(title,message,acceptLabel){return new Promise(
 </script>
 
 <style id="mobile-tablet-compatibility">
+.bmSettingsMenu{margin:0!important}.bmSettingsMenu::backdrop{background:rgba(5,12,25,.72)}
 #v14-settings #playerPool{grid-template-columns:repeat(2,minmax(0,1fr))}
 #v14-settings #setupView{width:100%;min-width:0;box-sizing:border-box}
 #v14-settings .playerChoice{min-width:0;box-sizing:border-box;max-width:100%}
