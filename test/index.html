@@ -1339,7 +1339,7 @@ importBtn.addEventListener('click',async()=>{
   if(currentShareLink && !(await window.badmintonConfirmNewShareLink()))return;
   shareButton.disabled=true;shareStatus.textContent='Skapar visningslänk …';
   try{
-   const active=await request('/rest/v1/badminton_sessions?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(groupSelect.value)+'&status=eq.active&limit=1');
+   const active=await request('/rest/v1/badminton_sessions?select=id,name&group_id=eq.'+encodeURIComponent(groupSelect.value)+'&status=eq.active&limit=1');
    if(active.length!==1)throw Error('Gruppen har inget aktivt spel.');
    if(lastSessionId && active[0].id!==lastSessionId)throw Error('Det aktiva spelet i Supabase stämmer inte med den öppna rotationen. Kontrollera/återuppta senaste sessionen först.');
    const token=await request('/rest/v1/rpc/create_badminton_viewer_token',{method:'POST',body:JSON.stringify({p_session_id:active[0].id})});
@@ -1542,7 +1542,7 @@ window.badmintonV13PrepareNewGame=async function(){
  const groupId=groupSelect.value;
  cloudNewGameGuardBusy=true;
  try{
-  const active=await request('/rest/v1/badminton_sessions?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(groupId)+'&status=eq.active&limit=1');
+  const active=await request('/rest/v1/badminton_sessions?select=id,name&group_id=eq.'+encodeURIComponent(groupId)+'&status=eq.active&limit=1');
   if(groupSelect.value!==groupId)throw Error('Gruppen har ändrats. Försök igen.');
   if(active.length){
    const name=active[0].name;

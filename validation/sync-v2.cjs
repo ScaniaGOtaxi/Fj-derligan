@@ -6,7 +6,13 @@ const names=['Anna','Bo','Cecilia','David'];const members=names.map((name,i)=>({
 let currentRound=1,scoreEnabled=false,scoreValues={},failRoundOnce=false,failSettings=false,failCompletionOnce=true;const calls=[];
 const rounds=[1,2].map(n=>({id:'r'+n,round_number:n,status:'pending'}));
 const positions=rounds.flatMap(r=>members.map((p,i)=>({round_id:r.id,player_id:p.id,court_number:1,team_number:i<2?1:2,activity:'double'})));
-async function routeHandler(route){const req=route.request();const u=new URL(req.url());let body=[];let status=200;let payload=req.postDataJSON();calls.push({path:u.pathname,method:req.method(),payload,query:u.search});
+async function routeHandler(route){const req=route.request();const u=new URL(req.url());let body=[];let status=200;let payload=req.postDataJSON();
+if(u.pathname.endsWith('badminton_sessions')){
+ const columns=(u.searchParams.get('select')||'').split(',').filter(Boolean);
+ const allowed=['id','name','group_id','court_count','status','current_round_number','created_at'];
+ if(columns.some(c=>!allowed.includes(c)))return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'Invalid session column: '+columns.find(c=>!allowed.includes(c))})});
+}
+calls.push({path:u.pathname,method:req.method(),payload,query:u.search});
 if(u.pathname==='/auth/v1/token')body={access_token:'mock-access',refresh_token:'mock-refresh',expires_in:3600,user:{id:'mock-user'}};
 else if(u.pathname.endsWith('badminton_admins'))body=[{role:'admin'}];
 else if(u.pathname.endsWith('badminton_groups'))body=[{id:group,name:'Testgrupp',created_at:'2026-10-12'}];
@@ -32,6 +38,12 @@ assert.equal(await page.locator('.playerSecondNationality').count(),4);
 await page.evaluate(()=>{badmintonSetCountry('Anna','NO');badmintonSetSecondCountry('Anna','PL');badmintonSetGender('Anna','man');setPlayerMode(0,'onlySingles');});await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('✅'));
 await page.waitForTimeout(100);assert.equal(members[0].country_code,'NO');assert.equal(members[0].second_country_code,'PL');assert.equal(members[0].player_gender,'man');assert.equal(members[0].player_mode,'onlySingles');
 console.log('PASS import and serialized profile PATCH (country, second flag, gender, mode)');
+await page.evaluate(()=>{window.bmPreflightResult=null;window.badmintonV13PrepareNewGame().then(value=>window.bmPreflightResult=value);});
+await page.getByRole('button',{name:'Behåll befintligt spel',exact:true}).click();
+await page.waitForFunction(()=>window.bmPreflightResult===false);
+assert((await page.locator('#cloudSessionStatus').textContent()).includes('Befintligt spel behålls'));
+console.log('PASS new-game preflight queries only valid session columns and cancellation preserves the active game');
+
 failSettings=true;await page.evaluate(()=>badmintonSetCountry('Anna','SE'));await page.waitForFunction(()=>document.getElementById('bmSyncStatus').textContent.includes('Denied for test'));assert.equal(members[0].country_code,'NO');failSettings=false;
 console.log('PASS denied profile save shows failure and does not claim success');
 await page.evaluate(()=>document.getElementById('cloudResumeSession').click());await page.getByRole('button',{name:'Återuppta spel',exact:true}).click();await page.waitForFunction(()=>window.badmintonScoreSession?.());
