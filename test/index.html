@@ -3,6 +3,7 @@
 <head>
 <script>
 const bmStorage={getItem:key=>localStorage.getItem('badminton-test-v2:'+key),setItem:(key,value)=>localStorage.setItem('badminton-test-v2:'+key,value),removeItem:key=>localStorage.removeItem('badminton-test-v2:'+key)};
+const bmRecoveryMode=(()=>{const hash=new URLSearchParams(location.hash.slice(1)),query=new URLSearchParams(location.search);return hash.get('type')==='recovery'||query.get('type')==='recovery'||hash.has('error_description')||query.has('error_description');})();
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1130,6 +1131,7 @@ async function restoreCloudBinding(){
  }catch(e){sessionStatus.textContent='⚠️ '+e.message+' Använd Återuppta senaste spel.';}
 }
 async function restoreAuth(){
+ if(bmRecoveryMode)return;
  try{
   const saved=JSON.parse(bmStorage.getItem(AUTH_KEY)||'null');if(!saved?.refresh_token)return;
   refreshToken=saved.refresh_token;accessToken=saved.access_token;tokenExpiresAt=Number(saved.expires_at)||0;
@@ -3550,7 +3552,7 @@ function add(){
  const email=login.value.trim();if(!/^\S+@\S+\.\S+$/.test(email)){msg.textContent='Ange din e-postadress i inloggningsfältet först.';return}
  if(location.protocol!=='https:'){msg.textContent='Öppna den publicerade HTTPS-versionen av appen för att få en fungerande återställningslänk.';return}
  resetBtn.disabled=true;msg.textContent='Skickar begäran …';
- try{const redirect=location.origin+location.pathname;const r=await fetch(BASE+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email})});if(!r.ok)throw Error('Begäran kunde inte skickas (HTTP '+r.status+').');msg.textContent='Om adressen finns registrerad skickas en återställningslänk. Kontrollera även skräpposten.'}catch(e){msg.textContent='Fel: '+e.message}finally{resetBtn.disabled=false}
+ try{const redirect=location.origin+location.pathname;const r=await fetch(BASE+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email})});if(!r.ok){const error=await r.json().catch(()=>({}));throw Error(r.status===429?'För många försök. Vänta en stund innan du begär en ny länk.':error.msg||error.message||error.error_description||'Begäran kunde inte skickas (HTTP '+r.status+').');}msg.textContent='Om adressen finns registrerad skickas en återställningslänk. Kontrollera även skräpposten.'}catch(e){msg.textContent='Fel: '+e.message}finally{resetBtn.disabled=false}
  };
  changeBtn.onclick=async()=>{
  if(password.value.length<8){msg.textContent='Lösenordet måste ha minst 8 tecken.';return}if(password.value!==confirmPassword.value){msg.textContent='Lösenorden är inte lika.';return}
@@ -3613,7 +3615,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 (function(){
  const fragment=new URLSearchParams(location.hash.slice(1));
  const query=new URLSearchParams(location.search);
- const isRecovery=fragment.get('type')==='recovery'||query.get('type')==='recovery';
+ const isRecovery=bmRecoveryMode;
  if(!isRecovery)return;
  const token=fragment.get('access_token');
  const error=fragment.get('error_description')||query.get('error_description');
