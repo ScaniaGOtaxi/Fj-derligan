@@ -731,6 +731,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 </script>
 <script src="sync-v2.js"></script>
 <script src="results-v1.js"></script>
+<script src="statistics-ui.js"></script>
 
 
 <style id="court-visible-fill-fix-20261010">
@@ -865,6 +866,10 @@ window.badmintonPlayerImage=function(name,team,side,position){
 #shareViewerWhatsApp{background:#23844d;color:#fff}
 #shareViewerNative{grid-column:1/-1}
 @media(max-width:400px){#viewerQr{width:min(100%,270px);padding:12px}.viewerShareActions{grid-template-columns:1fr}#shareViewerNative{grid-column:auto}}
+</style>
+<style>
+.bmStatsControls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.bmStatsCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.bmStatsCard{padding:14px;background:#102131;border:1px solid #405365;border-radius:12px}.bmStatsCard strong{display:block;font-size:26px}.bmStatsTabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.bmStatsTabs [aria-selected=true]{background:#248647}.bmStatsDesktop th button,.bmStatsDesktop td button{background:transparent!important;border:0!important;color:inherit;padding:4px!important;font-size:inherit!important}.bmStatsMobile{display:none}.bmLocalStats{margin:20px 0;padding:12px;border:1px solid #405365;border-radius:12px}.bmLocalStats summary{cursor:pointer;font-size:16px;font-weight:700}
+@media(max-width:650px){.bmStatsCards{grid-template-columns:repeat(2,minmax(0,1fr))}.bmStatsDesktop{display:none}.bmStatsMobile{display:grid;gap:10px}.bmStatsControls select{max-width:100%}.bmStatsMobile .bmStatsCard{line-height:1.8}.bmStatsMobile button{font-size:17px!important}}
 </style>
 </head>
 <body>
@@ -1598,21 +1603,24 @@ async function fetchByIds(table,columns,column,ids){
 }
 cloudStatsBtn.addEventListener('click',async()=>{
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return;}
- const groupId=groupSelect.value;
+ const statsGroup=document.getElementById('bmStatsGroup'),period=document.getElementById('bmStatsPeriod');
+ const groupId=statsGroup?.value||groupSelect.value,selectedPeriod=period?.value||'all';
+ const groupName=(statsGroup||groupSelect).selectedOptions[0]?.text||'Grupp';
  if(!groupId){say('Välj en grupp först.');return;}
  cloudStatsBtn.disabled=true;
  cloudStats.style.display='block';cloudStats.replaceChildren();
  statsText(cloudStats,'p','⏳ Hämtar gruppstatistik från Supabase …');
  try{
-  const sessions=await fetchAll('/rest/v1/badminton_sessions?select=id&group_id=eq.'+encodeURIComponent(groupId));
+  const allSessions=await fetchAll('/rest/v1/badminton_sessions?select=id,name,created_at&group_id=eq.'+encodeURIComponent(groupId));
+  const sessions=window.badmintonStatsUI.filterSessions(allSessions,selectedPeriod);
   const members=await fetchAll('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(groupId)+'&order=name.asc');
   const rounds=await fetchByIds('badminton_rounds','id,status','session_id',sessions.map(s=>s.id));
   const completed=rounds.filter(r=>r.status==='completed');
-  const positions=await fetchByIds('badminton_round_players','round_id,player_id,activity','round_id',completed.map(r=>r.id));
+  const positions=await fetchByIds('badminton_round_players','round_id,player_id,court_number,activity','round_id',completed.map(r=>r.id));
   let resultData=null,resultError='';
-  try{const matches=await request('/rest/v1/rpc/get_badminton_result_statistics',{method:'POST',body:JSON.stringify({p_group_id:groupId})});if(!Array.isArray(matches))throw Error('Oväntat resultatsvar');resultData=window.badmintonResults.calculate(matches,members);}catch(e){resultError=e.message;}
-  if(groupSelect.value!==groupId)throw Error('Du har bytt grupp. Klicka på statistik igen.');
-  const perPlayer=new Map(members.map(m=>[m.id,{name:m.name,single:0,double:0,rest:0}]));
+  try{const matches=await request('/rest/v1/rpc/get_badminton_result_statistics',{method:'POST',body:JSON.stringify({p_group_id:groupId})});if(!Array.isArray(matches))throw Error('Oväntat resultatsvar');resultData=window.badmintonResults.calculate(matches.filter(m=>sessions.some(session=>session.id===m.session_id)),members);}catch(e){resultError=e.message;}
+  if((statsGroup?.value||groupSelect.value)!==groupId||(period?.value||'all')!==selectedPeriod)throw Error('Du har bytt grupp. Klicka på statistik igen.');
+  const perPlayer=new Map(members.map(m=>[m.id,{id:m.id,name:m.name,single:0,double:0,rest:0}]));
   let singles=0,doubles=0,rests=0;
   for(const p of positions){
    const stat=perPlayer.get(p.player_id);if(!stat)continue;
@@ -1620,35 +1628,7 @@ cloudStatsBtn.addEventListener('click',async()=>{
    else if(p.activity==='double'){stat.double++;doubles++;}
    else if(p.activity==='rest'){stat.rest++;rests++;}
   }
-  cloudStats.replaceChildren();
-  statsText(cloudStats,'h3','📊 Gruppstatistik – '+groupSelect.selectedOptions[0].text);
-  statsText(cloudStats,'p','Spelsessioner: '+sessions.length+' | Färdiga rundor: '+completed.length+' | Planerade/ej färdiga: '+(rounds.length-completed.length));
-  statsText(cloudStats,'p','Spelartillfällen – singel: '+singles+' | dubbel: '+doubles+' | vila: '+rests);
-  const wrap=document.createElement('div');wrap.style.overflowX='auto';
-  const table=document.createElement('table');table.className='statsTable';
-  const thead=document.createElement('thead'),head=document.createElement('tr');
-  for(const title of ['Spelare','Singel','Dubbel','Vila','Spelat'])statsText(head,'th',title);
-  thead.append(head);table.append(thead);
-  const tbody=document.createElement('tbody');
-  for(const st of [...perPlayer.values()].sort((a,b)=>a.name.localeCompare(b.name,'sv'))){
-   const tr=document.createElement('tr');
-   for(const value of [st.name,st.single,st.double,st.rest,st.single+st.double])statsText(tr,'td',String(value));
-   tbody.append(tr);
-  }
-  table.append(tbody);wrap.append(table);cloudStats.append(wrap);
-  statsText(cloudStats,'p','Endast rundor markerade Klar räknas. Singel och dubbel visar spelarens deltaganden, inte antalet matcher.');
-  statsText(cloudStats,'h3','🏆 Resultat och poäng');
-  if(resultData){
-   statsText(cloudStats,'p',resultData.matches.length+' resultatmatcher · '+resultData.unscored+' matcher utan poäng/resultat'+(resultData.invalid?' · '+resultData.invalid+' matcher med ofullständig spelarplacering':''));
-   const resultsWrap=document.createElement('div');resultsWrap.style.overflowX='auto';const resultsTable=document.createElement('table');resultsTable.className='statsTable';resultsTable.setAttribute('aria-label','Resultatstatistik');
-   const resultsHead=document.createElement('thead'),headRow=document.createElement('tr');['Spelare','Resultatmatcher','Vinster','Förluster','Oavgjorda','Gjorda poäng','Insläppta poäng','Poängskillnad','Vinst %'].forEach(title=>statsText(headRow,'th',title));resultsHead.append(headRow);resultsTable.append(resultsHead);
-   const resultsBody=document.createElement('tbody');resultData.players.forEach(player=>{const row=document.createElement('tr');[player.name,player.played,player.wins,player.losses,player.draws,player.for,player.against,player.difference,player.winPercent+' %'].forEach(value=>statsText(row,'td',String(value)));resultsBody.append(row);});resultsTable.append(resultsBody);resultsWrap.append(resultsTable);cloudStats.append(resultsWrap);
-   statsText(cloudStats,'p','Endast Klar-rundor med sparade poäng räknas. Saknade poäng och 0–0 räknas inte som resultat. Lika poäng över 0 räknas som oavgjort. I dubbel får båda spelarna samma lagresultat och lagpoäng. Avstängd visning av poäng raderar inte tidigare resultat.');
-   const history=document.createElement('details');const historyTitle=document.createElement('summary');historyTitle.textContent='Visa matchresultat';history.append(historyTitle);const historyWrap=document.createElement('div');historyWrap.style.overflowX='auto';const historyTable=document.createElement('table');historyTable.className='statsTable';const historyHead=document.createElement('thead'),historyHeadRow=document.createElement('tr');['Spel','Runda','Bana','Rött lag','Blått lag','Poäng','Resultat'].forEach(title=>statsText(historyHeadRow,'th',title));historyHead.append(historyHeadRow);historyTable.append(historyHead);const historyBody=document.createElement('tbody');resultData.matches.forEach(match=>{const row=document.createElement('tr');const redNames=match.players.filter(p=>p.team===1).map(p=>p.name).join(' & '),blueNames=match.players.filter(p=>p.team===2).map(p=>p.name).join(' & ');[match.session_name||'Spel',match.round_number,match.court_number,redNames,blueNames,match.red+' – '+match.blue,match.red===match.blue?'Oavgjort':match.red>match.blue?'Rött vann':'Blått vann'].forEach(value=>statsText(row,'td',String(value)));historyBody.append(row);});historyTable.append(historyBody);historyWrap.append(historyTable);history.append(historyWrap);cloudStats.append(history);
-   const actions=document.createElement('div');actions.className='topTools';const exportCSV=document.createElement('button');exportCSV.type='button';exportCSV.textContent='Exportera resultat CSV';exportCSV.onclick=()=>{const url=URL.createObjectURL(new Blob([window.badmintonResults.csv(resultData)],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download='badminton-resultat.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-   const exportPDF=document.createElement('button');exportPDF.type='button';exportPDF.textContent='Skriv ut resultat / PDF';exportPDF.onclick=()=>{const page=window.open('','_blank');if(!page){window.bmCenteredAlert('Tillåt popupfönster för att öppna resultatrapporten.');return;}page.document.write(window.badmintonResults.report(resultData,groupSelect.selectedOptions[0].text));page.document.close();page.focus();page.print();};actions.append(exportCSV,exportPDF);cloudStats.append(actions);
-  }else statsText(cloudStats,'p','Resultatstatistiken kunde inte hämtas: '+resultError+'. Deltagarstatistiken ovan är fortfarande tillgänglig.');
-
+  window.badmintonStatsUI.render({groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
  }catch(e){cloudStats.replaceChildren();statsText(cloudStats,'p','❌ Kunde inte hämta gruppstatistik: '+e.message);}
  finally{cloudStatsBtn.disabled=false;}
 });
@@ -1946,8 +1926,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p>En synlig Live-sida uppdateras ungefär varannan sekund plus nätverkets svarstid. Dold flik eller offline-läge pausar uppdateringen; den återupptas när sidan blir synlig eller nätverket återkommer. Vid serverfel väntar appen längre mellan försöken.</p>
 <h3>📊 12. Statistik och rapporter</h3>
 <p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
-<p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Visa gruppstatistik (Supabase)</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
-<p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. <b>Visa matchresultat</b> visar vilka lag som möttes, rundan, banan, poängen och vilket lag som vann. Uppdatera med <b>Visa gruppstatistik (Supabase)</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
+<p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Uppdatera statistik</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
+<p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Flikarna <b>Resultat</b>, <b>Deltagande</b> och <b>Matchhistorik</b> skiljer resultaten från spelfördelningen. Välj grupp och period och tryck <b>Uppdatera statistik</b>. Tryck på ett spelarnamn för detaljer. På dator kan resultattabellen sorteras via rubrikerna. Exporten gäller vald flik och period. Lokal statistik finns under <b>Statistik på denna enhet</b>. Uppdatera med <b>Uppdatera statistik</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
 <h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
 <p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
 <p><b>Admin</b> arbetar i tilldelade grupper: hämtar och lägger till gruppspelare, ändrar deras inställningar, skapar och återupptar spel, styr rundor, räknar poäng, delar Live och ser gruppstatistik. Admin kan inte använda appens verktyg för gruppskapande, administratörsinbjudningar, tilldelningar eller full gruppradering.</p>
@@ -3280,7 +3260,7 @@ window.addEventListener('focus',updateSelectedCount);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=test-results-v1-20261012').catch(console.error);
+    navigator.serviceWorker.register('./service-worker.js?v=test-dashboard-v1-20261012').catch(console.error);
   });
 }
 </script>
