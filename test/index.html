@@ -730,6 +730,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 };
 </script>
 <script src="sync-v2.js"></script>
+<script src="player-motion.js"></script>
 <script src="results-v1.js"></script>
 <script src="statistics-ui.js"></script>
 
@@ -1903,6 +1904,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li><b>Visa poängräkning:</b> visar eller döljer poängtavlorna.</li>
 <li><b>Matchtid:</b> välj 5, 10, 15 eller 20 minuter; ändringen återställer timern.</li>
 <li><b>Ljudsignal:</b> slår på eller av ljudet vid avslutad tid. Enheten och webbläsaren måste tillåta ljud.</li>
+<li><b>Rörliga spelare:</b> ger figurerna en liten, lugn rörelse. Kan slås av. Rörelsen pausas i dolda flikar och stängs av när enheten använder minskad rörelse. I Live finns även en egen rörelseknapp.</li>
 <li><b>Auto start nästa runda:</b> byter automatiskt till nästa runda när tiden är slut. Den nya rundans timer startas inte automatiskt.</li>
 </ul>
 <p>Reglagen visar <b>PÅ</b> i grönt med knappen till höger och <b>AV</b> i rött med knappen till vänster. Stäng inställningarna med kryssknappen eller Escape.</p>
@@ -2728,6 +2730,18 @@ function exportStatisticsPDF(){
 }
 @media(hover:none) and (pointer:coarse){#v14Nav button,.bmStatsTabs button{min-height:44px}}
 </style>
+
+<style id="light-player-motion">
+@keyframes badmintonIdle{0%,100%{translate:0 0}50%{translate:1px -3px}}
+#gameView.active .genderAthlete,#badmintonViewer .genderAthlete{animation:badmintonIdle 4.8s ease-in-out infinite}
+.genderAthlete.far.right{animation-delay:-1.2s!important;animation-duration:5.4s!important}
+.genderAthlete.near.left{animation-delay:-2.4s!important;animation-duration:5.2s!important}
+.genderAthlete.near.right{animation-delay:-3.5s!important;animation-duration:4.6s!important}
+html.bmMotionPaused .genderAthlete{animation-play-state:paused!important}
+html.bmMotionOff .genderAthlete{animation:none!important;translate:0 0}
+@media(prefers-reduced-motion:reduce){#gameView .genderAthlete,#badmintonViewer .genderAthlete{animation:none!important;translate:0 0}}
+#viewerHead{flex-wrap:wrap}
+</style>
 </body>
 
 <style id="mobile-tablet-compatibility">
@@ -2750,6 +2764,18 @@ function exportStatisticsPDF(){
  .bmStatsControls{align-items:stretch}.bmStatsControls select{min-width:0;width:100%;box-sizing:border-box;font-size:16px}
 }
 @media(hover:none) and (pointer:coarse){#v14Nav button,.bmStatsTabs button{min-height:44px}}
+</style>
+
+<style id="light-player-motion">
+@keyframes badmintonIdle{0%,100%{translate:0 0}50%{translate:1px -3px}}
+#gameView.active .genderAthlete,#badmintonViewer .genderAthlete{animation:badmintonIdle 4.8s ease-in-out infinite}
+.genderAthlete.far.right{animation-delay:-1.2s!important;animation-duration:5.4s!important}
+.genderAthlete.near.left{animation-delay:-2.4s!important;animation-duration:5.2s!important}
+.genderAthlete.near.right{animation-delay:-3.5s!important;animation-duration:4.6s!important}
+html.bmMotionPaused .genderAthlete{animation-play-state:paused!important}
+html.bmMotionOff .genderAthlete{animation:none!important;translate:0 0}
+@media(prefers-reduced-motion:reduce){#gameView .genderAthlete,#badmintonViewer .genderAthlete{animation:none!important;translate:0 0}}
+#viewerHead{flex-wrap:wrap}
 </style>
 </body></html>`;
 
@@ -3304,7 +3330,7 @@ window.addEventListener('focus',updateSelectedCount);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=test-dashboard-v1-20261012').catch(console.error);
+    navigator.serviceWorker.register('./service-worker.js?v=test-motion-v1-20261012').catch(console.error);
   });
 }
 </script>
@@ -4273,7 +4299,8 @@ window.badmintonConfirmActiveGame=function(name){
    '<label class="bmSettingsRow"><span>Visa poängräkning</span><input type="checkbox" id="bmMenuScore"></label>'+
    '<label class="bmSettingsRow"><span>Matchtid (min)</span><select id="bmMenuMinutes"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option></select></label>'+
    '<label class="bmSettingsRow"><span>Ljudsignal</span><input type="checkbox" id="bmMenuSound"></label>'+
-   '<label class="bmSettingsRow"><span>Auto start nästa runda</span><input type="checkbox" id="bmMenuAuto"></label>';
+   '<label class="bmSettingsRow"><span>Auto start nästa runda</span><input type="checkbox" id="bmMenuAuto"></label>'+
+   '<label class="bmSettingsRow"><span>Rörliga spelare</span><input type="checkbox" id="bmMenuMotion"></label>';
    const game=document.getElementById('gameView');
    document.body.appendChild(menu);
    btn?.setAttribute('aria-expanded','true');
@@ -4290,6 +4317,8 @@ window.badmintonConfirmActiveGame=function(name){
    const auto=menu.querySelector('#bmMenuAuto');
    auto.checked=bmStorage.getItem('badminton-v20-auto-next')==='true';
    auto.addEventListener('change',()=>bmStorage.setItem('badminton-v20-auto-next',String(auto.checked)));
+   window.badmintonMotion.refresh();
+   menu.querySelector('#bmMenuMotion').addEventListener('change',event=>window.badmintonMotion.set(event.target.checked));
    const close=()=>{menu.remove();btn?.setAttribute('aria-expanded','false');document.removeEventListener('keydown',onKey)};
    const onKey=e=>{if(e.key==='Escape')close()};
    menu.bmClose=close;
@@ -4473,6 +4502,18 @@ window.bmCenteredConfirm=function(title,message,acceptLabel){return new Promise(
  .bmStatsControls{align-items:stretch}.bmStatsControls select{min-width:0;width:100%;box-sizing:border-box;font-size:16px}
 }
 @media(hover:none) and (pointer:coarse){#v14Nav button,.bmStatsTabs button{min-height:44px}}
+</style>
+
+<style id="light-player-motion">
+@keyframes badmintonIdle{0%,100%{translate:0 0}50%{translate:1px -3px}}
+#gameView.active .genderAthlete,#badmintonViewer .genderAthlete{animation:badmintonIdle 4.8s ease-in-out infinite}
+.genderAthlete.far.right{animation-delay:-1.2s!important;animation-duration:5.4s!important}
+.genderAthlete.near.left{animation-delay:-2.4s!important;animation-duration:5.2s!important}
+.genderAthlete.near.right{animation-delay:-3.5s!important;animation-duration:4.6s!important}
+html.bmMotionPaused .genderAthlete{animation-play-state:paused!important}
+html.bmMotionOff .genderAthlete{animation:none!important;translate:0 0}
+@media(prefers-reduced-motion:reduce){#gameView .genderAthlete,#badmintonViewer .genderAthlete{animation:none!important;translate:0 0}}
+#viewerHead{flex-wrap:wrap}
 </style>
 </body>
 </html>
