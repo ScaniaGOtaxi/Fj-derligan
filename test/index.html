@@ -2823,12 +2823,14 @@ html.bmMotionOff .bmShuttleFlight{display:none}
 <style>html.bmHideFlags #gameView .threeDLabel img,html.bmHideFlags #gameView .threeDLabel .flagTextFallback,html.bmHideFlags #badmintonViewer .viewerFlag,html.bmHideFlags #badmintonViewer .viewerName .flagTextFallback{display:none!important}</style>
 
 <style id="text-only-player-view">
-.bmTextTeam{display:none}
 html.bmTextOnlyPlayers #gameView#gameView .threeDStage>img.genderAthlete,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerStage>img.genderAthlete{display:none!important;animation:none!important}
-html.bmTextOnlyPlayers #gameView .threeDLabel,html.bmTextOnlyPlayers #badmintonViewer .viewerName,html.bmTextOnlyPlayers .bmShuttleFlight{display:none!important}
-html.bmTextOnlyPlayers .bmTextTeam{display:block;position:absolute;left:50%;transform:translate(-50%,-50%);width:80%;box-sizing:border-box;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:10px 12px;border-radius:12px;color:white;background:rgba(5,18,29,.88);font:800 clamp(16px,2.2vw,28px)/1.35 system-ui;z-index:10015;pointer-events:none}
-html.bmTextOnlyPlayers .bmTextRed{top:22%;border:2px solid #ff727b}
-html.bmTextOnlyPlayers .bmTextBlue{top:76%;border:2px solid #6ec5ff}
+html.bmTextOnlyPlayers .bmShuttleFlight{display:none!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel:not(.isEmpty),html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;position:absolute!important;left:3%!important;right:auto!important;top:22%!important;bottom:auto!important;transform:translateY(-50%)!important;width:44%!important;max-width:44%!important;min-width:0!important;box-sizing:border-box!important;text-align:center!important;white-space:normal!important;padding:8px!important;border:2px solid #ff727b!important;border-radius:12px!important;color:white!important;background:rgba(5,18,29,.88)!important;font:800 clamp(14px,2vw,26px)/1.35 system-ui!important;z-index:10015!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel span,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName span{white-space:normal!important;min-width:0!important;width:auto!important;max-width:100%!important;overflow-wrap:anywhere!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos1,html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos3,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName.right{left:auto!important;right:3%!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos2,html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos3,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName.bottom{top:76%!important;border-color:#6ec5ff!important}
+html.bmTextOnlyPlayers #gameView#gameView .courtSingle .threeDLabel:not(.isEmpty),html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerStage.single .viewerName{left:10%!important;right:auto!important;width:80%!important;max-width:80%!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.isEmpty{display:none!important}
 </style>
 </body></html>`;
 
@@ -4593,12 +4595,14 @@ html.bmMotionOff .bmShuttleFlight{display:none}
 <style>html.bmHideFlags #gameView .threeDLabel img,html.bmHideFlags #gameView .threeDLabel .flagTextFallback,html.bmHideFlags #badmintonViewer .viewerFlag,html.bmHideFlags #badmintonViewer .viewerName .flagTextFallback{display:none!important}</style>
 
 <style id="text-only-player-view">
-.bmTextTeam{display:none}
 html.bmTextOnlyPlayers #gameView#gameView .threeDStage>img.genderAthlete,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerStage>img.genderAthlete{display:none!important;animation:none!important}
-html.bmTextOnlyPlayers #gameView .threeDLabel,html.bmTextOnlyPlayers #badmintonViewer .viewerName,html.bmTextOnlyPlayers .bmShuttleFlight{display:none!important}
-html.bmTextOnlyPlayers .bmTextTeam{display:block;position:absolute;left:50%;transform:translate(-50%,-50%);width:80%;box-sizing:border-box;text-align:center;white-space:normal;overflow-wrap:anywhere;padding:10px 12px;border-radius:12px;color:white;background:rgba(5,18,29,.88);font:800 clamp(16px,2.2vw,28px)/1.35 system-ui;z-index:10015;pointer-events:none}
-html.bmTextOnlyPlayers .bmTextRed{top:22%;border:2px solid #ff727b}
-html.bmTextOnlyPlayers .bmTextBlue{top:76%;border:2px solid #6ec5ff}
+html.bmTextOnlyPlayers .bmShuttleFlight{display:none!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel:not(.isEmpty),html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;position:absolute!important;left:3%!important;right:auto!important;top:22%!important;bottom:auto!important;transform:translateY(-50%)!important;width:44%!important;max-width:44%!important;min-width:0!important;box-sizing:border-box!important;text-align:center!important;white-space:normal!important;padding:8px!important;border:2px solid #ff727b!important;border-radius:12px!important;color:white!important;background:rgba(5,18,29,.88)!important;font:800 clamp(14px,2vw,26px)/1.35 system-ui!important;z-index:10015!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel span,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName span{white-space:normal!important;min-width:0!important;width:auto!important;max-width:100%!important;overflow-wrap:anywhere!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos1,html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos3,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName.right{left:auto!important;right:3%!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos2,html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.pos3,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName.bottom{top:76%!important;border-color:#6ec5ff!important}
+html.bmTextOnlyPlayers #gameView#gameView .courtSingle .threeDLabel:not(.isEmpty),html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerStage.single .viewerName{left:10%!important;right:auto!important;width:80%!important;max-width:80%!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDLabel.isEmpty{display:none!important}
 </style>
 </body>
 </html>
