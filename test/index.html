@@ -1133,7 +1133,7 @@ async function loadGroups(quiet=false){
  if(data.some(g=>g.id===selected))groupSelect.value=selected;
  if(!quiet){players.textContent='';groupSelect.dispatchEvent(new Event('change'));}
  resetImport();
- if(!quiet)say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');
+ if(!quiet){say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');window.dispatchEvent(new Event('badminton:groups-loaded'));}
 }
 async function restoreCloudBinding(){
  const saved=JSON.parse(bmStorage.getItem(STATE_KEY)||'null');const binding=saved?.cloud;
@@ -1316,7 +1316,7 @@ importBtn.addEventListener('click',async()=>{
   const sameGroup=bmStorage.getItem('badmintonV13ActiveGroupId')===id;
   const pool=syncGroupPool(id,data);
   say('✅ '+pool.length+' spelare från '+groupSelect.selectedOptions[0].text+' är inlästa. '+pool.filter(x=>x.selected).length+' spelare markerade.'+(sameGroup?' Tidigare urval i gruppen är bevarat.':'')+' Använd Markera alla, Avmarkera alla eller kryssa i själv.');
-  document.getElementById('setupView').scrollIntoView({behavior:'smooth'});
+  window.dispatchEvent(new Event('badminton:players-imported'));
  }catch(e){say('❌ Kunde inte hämta spelare till rotationen: '+e.message)}
  finally{importBtn.disabled=false}
 });
@@ -1917,6 +1917,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
+<p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
 <p><b>Lägg till befintliga spelare</b> öppnar en sökbar lista över samtliga spelarprofiler. Även vanlig Admin får välja spelare från andra grupper, men endast lägga till dem i grupper hen får hantera. Markera spelarna och tryck <b>Lägg till i gruppen</b>. Spelarna behåller sitt ID, sina tidigare grupper och sin historik. Redan tillagda spelare visas som <b>Finns redan i gruppen</b>.</p>
 <p><b>Skapa ny spelare i gruppen</b> sparar en ny profil i databasen och uppdaterar spelarlistan. Sök bland befintliga spelare först för att undvika dubbletter. Personer med samma namn behöver särskiljande namn, exempelvis för- och efternamn. <b>Gruppmedlemskap och dagens spel är separata val:</b> en tillagd spelare är inte automatiskt markerad för dagens rotation.</p>
@@ -3063,7 +3064,7 @@ async function removePlayer(i){
  refreshPlayerListUI();
 }
 function togglePlayer(i,v){const p=getPlayerPool();if(p[i])p[i].selected=v;savePlayerPool(p);updateSelectedCount()}
-function selectAllPlayers(v){const p=getPlayerPool();p.forEach(x=>x.selected=v);savePlayerPool(p);renderPlayerPool()}
+function selectAllPlayers(v){const p=getPlayerPool();p.forEach(x=>x.selected=v);savePlayerPool(p);renderPlayerPool();if(v&&p.length)window.dispatchEvent(new Event("badminton:players-selected-all"))}
 function selectedPlayers(){return getPlayerPool().filter(x=>x.selected).map(x=>({name:x.name,mode:x.mode||'normal'}))}
 function updateSelectedCount(){
  const p=getPlayerPool();
@@ -3860,39 +3861,35 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 <script id="v15AutoSteps">
-/* v2.0: Automatiska steg utan ändring av rotationslogik */
+/* Guided setup: advance after successful actions, keep individual player choices stable. */
 (function(){
-  function el(id){return document.getElementById(id)}
-  function go(target){if(!target)return;target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
-  function stepFor(node){return node?.closest('.v14Card, .v14SectionCard, .v24Pane, .v23Card, .card')||node?.parentElement}
-  function init(){
-    const list=el('playerListArea');if(list){list.style.display='block';}
-    const button=el('showPlayersBtn');if(button)button.style.display='none';
-    const group=el('cloudGroupSelect'), resume=[...document.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent.includes('Återuppta tidigare spel'));
-    const player=el('playerManager'), rotation=el('v14RotationFeedback')?.closest('.v14Card, .card')||el('setupView')?.closest('.v14Card, .card'), create=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='▶ Skapa spelschema')?.closest('.v14Card, .card');
-    function groupNext(){if(!group?.value)return; if(resume){resume.open=true;go(resume)}else go(player)}
-    group?.addEventListener('change',()=>setTimeout(groupNext,160));
-    if(resume){
-      const next=document.createElement('button');next.type='button';next.className='secondary';next.textContent='Fortsätt till Hantera spelare ↓';next.style.cssText='display:block;margin:10px 0 4px';
-      next.addEventListener('click',()=>go(player));resume.append(next);
-    }
-    el('cloudImportRotation')?.addEventListener('click',()=>setTimeout(()=>{if(list)list.style.display='block';go(player)},550));
-    let t;
-    el('playerPool')?.addEventListener('change',e=>{
-      if(e.target?.type!=='checkbox')return;
-      clearTimeout(t);t=setTimeout(()=>go(rotation||el('setupView')),1250);
-    });
-    if(player){
-      const next=document.createElement('button');next.type='button';next.className='secondary';next.textContent='Fortsätt till Rotation ↓';next.style.cssText='margin-top:12px';
-      next.addEventListener('click',()=>go(rotation||el('setupView')));player.append(next);
-    }
-    const setup=el('setupView');if(setup&&create){
-      const next=document.createElement('button');next.type='button';next.className='secondary';next.textContent='Fortsätt till Skapa spelschema ↓';next.style.cssText='display:block;margin:12px 0';next.addEventListener('click',()=>go(create));setup.append(next);
-    }
-    // Håll spelarlistan synlig efter gruppbyte eller omrendering.
-    if(list){new MutationObserver(()=>{if(list.style.display==='none')list.style.display='block'}).observe(list,{attributes:true,attributeFilter:['style']});}
+ function el(id){return document.getElementById(id)}
+ function go(target){
+  if(!target)return;
+  target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+  if(target.matches('button,select,input'))target.focus({preventScroll:true});
+  target.style.scrollMarginTop='16px';
+ }
+ function init(){
+  if(document.documentElement.classList.contains('viewer-mode'))return;
+  const group=el('cloudGroupSelect'),importButton=el('cloudImportRotation'),player=el('playerManager'),list=el('playerListArea'),setup=el('setupView');
+  if(list)list.style.display='block';
+  const show=el('showPlayersBtn');if(show)show.style.display='none';
+  const all=player?.querySelector('button[onclick="selectAllPlayers(true)"]');
+  const create=setup?.querySelector('button[onclick="generate()"]');
+  function label(target,text){if(!target)return;const hint=document.createElement('p');hint.className='v14Intro';hint.textContent=text;hint.style.cssText='margin:8px 0;font-weight:700;color:#7ee787';target.before(hint);}
+  label(group,'2. Välj spelgrupp');label(importButton,'3. Hämta gruppens spelare');label(list,'4. Markera dagens spelare');label(setup,'5. Välj banor och rundor – skapa rotationsschema');
+  window.addEventListener('badminton:groups-loaded',()=>go(group));
+  group?.addEventListener('change',()=>{if(group.value)go(importButton)});
+  window.addEventListener('badminton:players-imported',()=>{if(list)list.style.display='block';go(all||player)});
+  window.addEventListener('badminton:players-selected-all',()=>go(setup));
+  if(player&&setup){
+   const next=document.createElement('button');next.type='button';next.id='bmPlayersNext';next.className='secondary';next.textContent='Klar med spelarval – fortsätt ↓';next.style.cssText='margin-top:12px;min-height:44px';next.addEventListener('click',()=>go(setup));list?.after(next);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,350));else setTimeout(init,350);
+  if(create)create.title='5. Skapa rotationsschema med dagens markerade spelare';
+  if(list)new MutationObserver(()=>{if(list.style.display==='none')list.style.display='block'}).observe(list,{attributes:true,attributeFilter:['style']});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
 <script>
