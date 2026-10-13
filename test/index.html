@@ -1127,10 +1127,11 @@ async function loadGroups(quiet=false){
  if(!quiet)say('Hämtar grupper …');
  const data=await request('/rest/v1/badminton_groups?select=id,name,created_at&order=created_at.desc');
  groups.textContent='Grupper i Supabase ('+data.length+'):\n'+data.map(x=>'• '+x.name).join('\n');
- const selected=groupSelect.value||bmStorage.getItem(GROUP_KEY)||'';
+ const selected=quiet?(groupSelect.value||bmStorage.getItem(GROUP_KEY)||''):'';
  groupSelect.replaceChildren(new Option('Välj grupp',''));
  data.forEach(g=>groupSelect.add(new Option(g.name,g.id)));
  if(data.some(g=>g.id===selected))groupSelect.value=selected;
+ if(!quiet){players.textContent='';groupSelect.dispatchEvent(new Event('change'));}
  resetImport();
  if(!quiet)say('✅ Databasanslutningen fungerar. Grupperna är hämtade.');
 }
@@ -1912,7 +1913,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Ändra lösenord när du är inloggad:</b> öppna <b>Lösenord och kontosäkerhet → Ändra lösenord (inloggad)</b>, fyll i två lika lösenord och spara. Återställningsmejl kräver att appens HTTPS-adress är tillåten i Supabase. Dela aldrig lösenord eller hela återställningslänken med andra.</p>
 <h3>⚙️ 3. Grupper och återupptagning</h3>
 <p><b>Byt gruppnamn</b>: Super Admin väljer en grupp i Spelinställningar, trycker på knappen och sparar ett nytt namn med högst 80 tecken. Gruppens spelare, behörigheter och historik behålls. Namnbytet gäller den gemensamma databasen och syns även i ordinarie app. Vid databasfel visas ett felmeddelande.</p>
-<p><b>Hämta grupper</b> uppdaterar gruppvalet. Admin ser de grupper databasen ger kontot åtkomst till. Välj rätt grupp innan du hämtar spelare, skapar spel eller visar molnstatistik.</p>
+<p><b>Hämta grupper</b> laddar grupperna och visar <b>Välj grupp</b> i gruppvalet. Välj därefter den grupp du vill arbeta med. Admin ser de grupper databasen ger kontot åtkomst till. Välj rätt grupp innan du hämtar spelare, skapar spel eller visar molnstatistik.</p>
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
