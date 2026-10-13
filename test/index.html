@@ -4343,8 +4343,11 @@ window.badmintonConfirmActiveGame=function(name){
   try{const rows=await window.badmintonCloudRequest('/rest/v1/rpc/get_badminton_admin_scores',{method:'POST',body:JSON.stringify({p_session_id:session,p_round_number:round+1})});
    if(session!==window.badmintonScoreSession?.()||round!==currentRoundIndex||revision!==scoreRevision)return;
    if(!Array.isArray(rows))throw Error('Oväntat poängsvar');
-   enabled=rows.some(r=>r.enabled);bmStorage.setItem(enabledKey,String(enabled));
-   rows.forEach(r=>{const key=matchKey(Number(r.court_number)-1);if(key)scores[key]=[Number(r.red)||0,Number(r.blue)||0];});save();render();
+   if(bmStorage.getItem(enabledKey)===null&&rows.length){enabled=rows.some(r=>r.enabled);bmStorage.setItem(enabledKey,String(enabled));}
+   (schedule[round]?.courts||[]).forEach((court,i)=>{const key=matchKey(i);if(key)scores[key]=[0,0];});
+   const visibilityNeedsSave=(enabled&&rows.length!==(schedule[round]?.courts||[]).length)||rows.some(r=>!!r.enabled!==enabled);
+   const checkbox=document.getElementById('bmMenuScore');if(checkbox)checkbox.checked=enabled;
+   rows.forEach(r=>{const key=matchKey(Number(r.court_number)-1);if(key)scores[key]=[Number(r.red)||0,Number(r.blue)||0];});save();render();if(visibilityNeedsSave)publishScores();
   }catch(e){window.badmintonSyncStatus('scores','❌ Poäng kunde inte hämtas: '+e.message);}
  };
  window.addEventListener('badminton:round-changed',()=>window.badmintonLoadScores());

@@ -99,6 +99,15 @@ members[0].player_gender='kvinna';members[0].second_country_code='SE';scoreValue
 console.log('PASS independent Live browser shows two flags, server gender and updated scores');
 failRoundOnce=true;await page.evaluate(()=>nextRound());await page.waitForFunction(()=>document.getElementById('cloudSessionStatus').textContent.includes('Liverunda 2 synkroniserad'));assert.equal(currentRound,2);
 console.log('PASS round synchronization retries after a simulated 503');
+await page.waitForFunction(()=>document.querySelectorAll('.bmScoreLayer').length===1&&[...document.querySelectorAll('.bmScoreValue')].every(e=>e.textContent==='0'));
+await page.waitForTimeout(250);assert.equal(scoreValues[2]['1'].red,0);assert(scoreEnabled);
+assert.equal(await page.evaluate(()=>bmStorage.getItem('badminton-v20-score-enabled')),'true');
+await viewer.waitForFunction(()=>document.getElementById('viewerRound').textContent.includes('2')&&document.querySelector('.viewerLiveScore')?.textContent.includes('0 – 0'));
+await page.evaluate(()=>prevRound());await page.waitForFunction(()=>document.querySelector('.bmScoreValue')?.textContent==='3');
+assert.equal(await page.locator('.bmScoreLayer').count(),1);
+await page.evaluate(()=>nextRound());await page.waitForFunction(()=>document.querySelector('.bmScoreValue')?.textContent==='0');
+console.log('PASS enabled scoreboard remains visible across blank round and back; per-round scores and Live visibility preserved');
+
 await page.evaluate(()=>markRoundDone());await page.waitForFunction(()=>document.getElementById('cloudSessionStatus').textContent.includes('Runda 2 markerad'));assert.equal(rounds[1].status,'completed');console.log('PASS completion synchronization retries after a simulated 503');
 await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.getElementById('cloudSessionStatus').textContent.includes('Molnkopplingen återställd'));assert.equal(await page.evaluate(()=>badmintonScoreSession()),session);
 assert.equal(await page.evaluate(()=>localStorage.getItem('badmintonV14AuthSession')),null);
