@@ -8,26 +8,51 @@
  const detail=document.createElement('p');detail.style.cssText='margin:0 0 8px;font-size:14px;color:#c6d7e7';
  const apply=document.createElement('button');apply.id='bmApplyRoundTip';apply.type='button';apply.className='secondary';apply.style.minHeight='44px';
  box.append(text,detail,apply);summary.closest('.topTools').after(box);
- let recommended=null;
+ let recommended=null,lastSignature=null;
  function update(){
-  const players=selectedPlayers(),n=players.length,c=Number(courts.value);recommended=null;apply.hidden=true;
+  const players=selectedPlayers(),n=players.length,c=Number(courts.value);
+  const signature=JSON.stringify([players,c]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=true;
   if(n<3||n>12){text.textContent='Rundtips: markera 3–12 deltagare för dagens spel.';detail.textContent='Tipset uppdateras när du ändrar deltagare eller antal banor.';return;}
-  if(players.some(p=>p.mode!=='normal')){text.textContent='Rundtips: Mer singel eller Endast singel är valt.';detail.textContent='Ett tips om alla dubbelpartners kräver att alla har Normal. Spelarpreferenser kan begränsa vilka som kan spela tillsammans.';return;}
-  let singles=c===3?Math.max(0,Math.min(c,Math.ceil((4*c-n)/2))):0;
-  singles=Math.min(singles,Math.floor(n/2));
-  const doubles=Math.min(c-singles,Math.floor((n-2*singles)/4));
-  singles+=Math.min(c-doubles-singles,Math.floor((n-4*doubles-2*singles)/2));
-  const resting=n-4*doubles-2*singles;
-  const pairs=n*(n-1)/2;
-  if(doubles){
-   recommended=Math.max(n-1,Math.ceil(pairs/(2*doubles)));
-   text.textContent='Tips: '+recommended+' rundor för '+n+' spelare på '+c+' '+(c===1?'bana':'banor')+'. Målet är att alla ska vara lagkamrat med alla minst en gång.';
-   detail.textContent=pairs+' möjliga dubbelpar. Normalupplägg per runda: '+doubles+' dubbelmatch'+(doubles===1?'':'er')+(singles?' + '+singles+' singelmatch'+(singles===1?'':'er'):'')+'; '+resting+' vilar. Antalet är ett beräknat minimum. Appen försöker variera lagkamrater, motståndare och vila; alla par garanteras inte bara genom att välja detta antal rundor.';
-  }else{
-   recommended=Math.max(n%2?n:n-1,Math.ceil(pairs/singles));
-   text.textContent='Tips: '+recommended+' rundor för '+n+' spelare på '+c+' '+(c===1?'bana':'banor')+'. Upplägget blir singel – målet är att alla möter alla minst en gång.';
-   detail.textContent=pairs+' möjliga singelmöten; '+singles+' singelmatch'+(singles===1?'':'er')+' och '+resting+' vilande per runda. Beräknat minimum; rotationsschemat garanterar inte alla möten.';
+  const wanted=new Set(),onlySingles=players.filter(p=>p.mode==='onlySingles').length,moreSingles=players.filter(p=>p.mode==='moreSingles').length;
+  const horizon=Math.max(24,n*(n-1));
+  const key=(kind,a,b)=>kind+':'+pairKey(a,b);
+  let best=null;
+  for(let trial=1;trial<=3;trial++){
+   let seed=trial*7919+n*101+c*17;
+   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+   const plan=badmintonPlanSchedule(players,horizon,c,random);
+   const hasDouble=plan.some(r=>r.courts.some(c=>c.type==='Dubbel'));
+   wanted.clear();
+   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const a=players[i],b=players[j];
+    if(hasDouble&&a.mode!=='onlySingles'&&b.mode!=='onlySingles')wanted.add(key('dubbel',a.name,b.name));
+    if(!hasDouble||a.mode!=='normal'||b.mode!=='normal')wanted.add(key('singel',a.name,b.name));
+   }
+   const seen=new Set(),played=new Set();let covered=0,lastImprovement=0;
+   for(let i=0;i<plan.length;i++){
+    const before=covered,playedBefore=played.size;
+    for(const court of plan[i].courts){
+     court.players.forEach(name=>played.add(name));
+     const names=court.players;
+     if(court.type==='Dubbel'){seen.add(key('dubbel',names[0],names[1]));seen.add(key('dubbel',names[2],names[3]));}
+     else if(names.length===2)seen.add(key('singel',names[0],names[1]));
+    }
+    covered=[...wanted].filter(k=>seen.has(k)).length;
+    if(covered>before||played.size>playedBefore)lastImprovement=i+1;
+    if(covered===wanted.size&&played.size===n)break;
+   }
+   const candidate={rounds:Math.max(1,lastImprovement),covered,total:wanted.size,plan,hasDouble};
+   if(!best||candidate.covered>best.covered||(candidate.covered===best.covered&&candidate.rounds<best.rounds))best=candidate;
   }
+  recommended=best.rounds;
+  const sample=best.plan.slice(0,recommended);
+  const doubles=sample.reduce((sum,r)=>sum+r.courts.filter(c=>c.type==='Dubbel').length,0);
+  const singles=sample.reduce((sum,r)=>sum+r.courts.filter(c=>c.type==='Singel').length,0);
+  const rests=sample.reduce((sum,r)=>sum+r.rest.length,0);
+  text.textContent='Tips från schemalogiken: '+recommended+' rundor för '+n+' spelare på '+c+' '+(c===1?'bana':'banor')+'.';
+  detail.textContent='Valda preferenser: '+(n-onlySingles-moreSingles)+' Normal, '+moreSingles+' Mer singel, '+onlySingles+' Endast singel. Provrotationen innehåller '+doubles+' dubbelmatcher, '+singles+' singelmatcher och '+rests+' vilotillfällen. '+
+   (best.covered===best.total?'Provrotationen täcker alla '+best.total+' efterfrågade par/möten.':'Provrotationen täcker '+best.covered+' av '+best.total+' efterfrågade par/möten; fler rundor gav ingen ytterligare täckning i provet.')+
+   ' Målet är alla dubbelpartners bland spelare som får spela dubbel, samt olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Endast singel placeras aldrig i dubbel; Mer singel prioriteras för singel. Tipset bygger på tre provrotationer med samma logik som schemat. Det är en uppskattning, inte ett garanterat minimiantal; det skapade schemat kan skilja sig.';
   apply.hidden=false;apply.textContent='Välj '+recommended+' rundor';
  }
  apply.addEventListener('click',()=>{
