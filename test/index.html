@@ -1922,7 +1922,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
-<p><b>Rundtips</b> vid Dagens spelare räknar fram ett minsta riktmärke utifrån markerade deltagare och antal banor när alla har Normal. Tryck Välj föreslaget antal rundor för att använda tipset. För 7 spelare på 2 banor föreslås 11 rundor: en dubbel, en singel och en vilande per runda. Målet är alla dubbelpartners minst en gång; rotationsalgoritmen garanterar inte att varje par blir med. Med enbart singelupplägg gäller tipset i stället alla motståndare.</p>
+<p><b>Rundtips</b> vid Dagens spelare använder tre provrotationer med samma schemalogik och valda spelarpreferenser. Normal får både dubbel och singel, Mer singel prioriteras för singel och Endast singel används aldrig i dubbel. Tipset visar rundantal, dubbel-/singelmatcher, vilotillfällen och hur många efterfrågade par eller möten provet täcker. Målet är alla dubbelpartners bland spelare som får spela dubbel och olika singelmotståndare för singelpreferenser; vid rent singelspel alla motståndare. Förslaget är en uppskattning och det skapade schemat kan skilja sig. Tryck Välj föreslaget antal rundor för att använda tipset.</p>
 <p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
 <p><b>Lägg till befintliga spelare</b> öppnar en sökbar lista över samtliga spelarprofiler. Även vanlig Admin får välja spelare från andra grupper, men endast lägga till dem i grupper hen får hantera. Markera spelarna och tryck <b>Lägg till i gruppen</b>. Spelarna behåller sitt ID, sina tidigare grupper och sin historik. Redan tillagda spelare visas som <b>Finns redan i gruppen</b>.</p>
@@ -3156,19 +3156,14 @@ function shuffle(a){
 }
 function pairKey(a,b){return [a,b].sort().join('|||')}
 function inc(map,key,n=1){map[key]=(map[key]||0)+n}
-function buildSchedule(){
- const players=selectedPlayers();
- if(players.length<3 || players.length>12){
-   window.bmCenteredAlert('Välj mellan 3 och 12 spelare för dagens spel.'); return false;
- }
- const R=+document.getElementById('rounds').value;
- const wantedCourts=+document.getElementById('courts').value;
+function badmintonPlanSchedule(players,R,wantedCourts,random=Math.random){
+ const mix=a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;};
  const partner={}, opponent={}, rests={}, singles={};
  players.forEach(p=>{rests[p.name]=0;singles[p.name]=0});
- schedule=[];
+ const planned=[];
 
  for(let r=0;r<R;r++){
-   let available=shuffle(players);
+   let available=mix(players);
    let courts=[], used=new Set();
 
    // 1) Reserve singles for "Endast singel"; pair with best available opponent.
@@ -3230,7 +3225,7 @@ function buildSchedule(){
      const rem=available.filter(p=>!used.has(p.name) && p.mode!=='onlySingles');
      if(rem.length>=4){
        let best=null,bestScore=Infinity;
-       const sample=shuffle(rem).slice(0,Math.min(rem.length,8));
+       const sample=mix(rem).slice(0,Math.min(rem.length,8));
        for(let a=0;a<sample.length;a++)for(let b=a+1;b<sample.length;b++)for(let c=b+1;c<sample.length;c++)for(let d=c+1;d<sample.length;d++){
          const four=[sample[a],sample[b],sample[c],sample[d]];
          const layouts=[[[0,1],[2,3]],[[0,2],[1,3]],[[0,3],[1,2]]];
@@ -3256,8 +3251,19 @@ function buildSchedule(){
 
    const rest=players.filter(p=>!used.has(p.name)).map(p=>p.name);
    rest.forEach(n=>rests[n]++);
-   schedule.push({courts,rest});
+   planned.push({courts,rest});
  }
+ return planned;
+}
+
+function buildSchedule(){
+ const players=selectedPlayers();
+ if(players.length<3 || players.length>12){
+   window.bmCenteredAlert('Välj mellan 3 och 12 spelare för dagens spel.'); return false;
+ }
+ const R=+document.getElementById('rounds').value;
+ const wantedCourts=+document.getElementById('courts').value;
+ schedule=badmintonPlanSchedule(players,R,wantedCourts);
  return true;
 }
 
