@@ -1922,6 +1922,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
+<p><b>Rundtips</b> vid Dagens spelare räknar fram ett minsta riktmärke utifrån markerade deltagare och antal banor när alla har Normal. Tryck Välj föreslaget antal rundor för att använda tipset. För 7 spelare på 2 banor föreslås 11 rundor: en dubbel, en singel och en vilande per runda. Målet är alla dubbelpartners minst en gång; rotationsalgoritmen garanterar inte att varje par blir med. Med enbart singelupplägg gäller tipset i stället alla motståndare.</p>
 <p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
 <p><b>Lägg till befintliga spelare</b> öppnar en sökbar lista över samtliga spelarprofiler. Även vanlig Admin får välja spelare från andra grupper, men endast lägga till dem i grupper hen får hantera. Markera spelarna och tryck <b>Lägg till i gruppen</b>. Spelarna behåller sitt ID, sina tidigare grupper och sin historik. Redan tillagda spelare visas som <b>Finns redan i gruppen</b>.</p>
@@ -3074,6 +3075,7 @@ function togglePlayer(i,v){const p=getPlayerPool();if(p[i])p[i].selected=v;saveP
 function selectAllPlayers(v){const p=getPlayerPool();p.forEach(x=>x.selected=v);savePlayerPool(p);renderPlayerPool();if(v&&p.length)window.dispatchEvent(new Event("badminton:players-selected-all"))}
 function selectedPlayers(){return getPlayerPool().filter(x=>x.selected).map(x=>({name:x.name,mode:x.mode||'normal'}))}
 function updateSelectedCount(){
+ window.dispatchEvent(new Event("badminton:player-selection-updated"));
  const p=getPlayerPool();
  const selected=p.filter(x=>x.selected).length;
  const old=document.getElementById('selectedCount');
@@ -4663,5 +4665,6 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 @media(max-width:600px){html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel:not(.isEmpty),html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName{flex-wrap:wrap!important}html.bmTextOnlyPlayers #gameView#gameView .threeDLabel span,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName span{flex:0 1 auto!important}}
 </style>
 <script src="group-rename.js"></script>
+<script src="round-tips.js"></script>
 </body>
 </html>
