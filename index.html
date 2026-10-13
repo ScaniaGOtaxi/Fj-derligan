@@ -730,7 +730,6 @@ window.badmintonPlayerImage=function(name,team,side,position){
 };
 </script>
 <script src="sync-v2.js"></script>
-<script src="flag-visibility.js" data-storage-prefix=""></script>
 <script src="player-motion.js"></script>
 <script src="shuttle-motion.js"></script>
 <script src="results-v1.js"></script>
@@ -1904,7 +1903,6 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <ul>
 <li><b>Visa poängräkning:</b> visar eller döljer poängtavlorna.</li>
 <li><b>Matchtid:</b> välj 5, 10, 15 eller 20 minuter; ändringen återställer timern.</li>
-<li><b>Visa flaggor:</b> visar eller döljer båda flaggorna i spelvyn. Sparade flaggval och flaggväljarna ändras inte. Inställningen sparas på denna enhet och används även för Live på samma appadress.</li>
 <li><b>Ljudsignal:</b> slår på eller av ljudet vid avslutad tid. Enheten och webbläsaren måste tillåta ljud.</li>
 <li><b>Rörliga spelare:</b> ger figurerna en liten, lugn rörelse och visar en fjäderboll som flyger över nätet. Bollens rörelse är visuell och påverkar inte poäng eller matchresultat. Kan slås av. Rörelsen pausas i dolda flikar och stängs av när enheten använder minskad rörelse. I Live finns även en egen rörelseknapp.</li>
 <li><b>Auto start nästa runda:</b> byter automatiskt till nästa runda när tiden är slut. Den nya rundans timer startas inte automatiskt.</li>
@@ -2757,7 +2755,6 @@ html.bmMotionPaused .bmShuttleFlight,html.bmMotionPaused .bmShuttle{animation-pl
 html.bmMotionOff .bmShuttleFlight{display:none}
 @media(prefers-reduced-motion:reduce){.bmShuttleFlight{display:none}}
 </style>
-<style>html.bmHideFlags #gameView .threeDLabel img,html.bmHideFlags #gameView .threeDLabel .flagTextFallback,html.bmHideFlags #badmintonViewer .viewerFlag,html.bmHideFlags #badmintonViewer .viewerName .flagTextFallback{display:none!important}</style>
 </body>
 
 <style id="mobile-tablet-compatibility">
@@ -2806,7 +2803,6 @@ html.bmMotionPaused .bmShuttleFlight,html.bmMotionPaused .bmShuttle{animation-pl
 html.bmMotionOff .bmShuttleFlight{display:none}
 @media(prefers-reduced-motion:reduce){.bmShuttleFlight{display:none}}
 </style>
-<style>html.bmHideFlags #gameView .threeDLabel img,html.bmHideFlags #gameView .threeDLabel .flagTextFallback,html.bmHideFlags #badmintonViewer .viewerFlag,html.bmHideFlags #badmintonViewer .viewerName .flagTextFallback{display:none!important}</style>
 </body></html>`;
 
   const blob=new Blob([report],{type:'text/html;charset=utf-8'});
@@ -4330,8 +4326,7 @@ window.badmintonConfirmActiveGame=function(name){
    '<label class="bmSettingsRow"><span>Matchtid (min)</span><select id="bmMenuMinutes"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option></select></label>'+
    '<label class="bmSettingsRow"><span>Ljudsignal</span><input type="checkbox" id="bmMenuSound"></label>'+
    '<label class="bmSettingsRow"><span>Auto start nästa runda</span><input type="checkbox" id="bmMenuAuto"></label>'+
-   '<label class="bmSettingsRow"><span>Rörliga spelare</span><input type="checkbox" id="bmMenuMotion"></label>'+
-   '<label class="bmSettingsRow"><span>Visa flaggor</span><input type="checkbox" id="bmMenuFlags"></label>';
+   '<label class="bmSettingsRow"><span>Rörliga spelare</span><input type="checkbox" id="bmMenuMotion"></label>';
    const game=document.getElementById('gameView');
    (typeof menu.showModal==='function'?document.body:(document.fullscreenElement||document.webkitFullscreenElement||document.body)).appendChild(menu);
    if(typeof menu.showModal==='function')menu.showModal();else menu.setAttribute('open','');
@@ -4349,8 +4344,6 @@ window.badmintonConfirmActiveGame=function(name){
    const auto=menu.querySelector('#bmMenuAuto');
    auto.checked=bmStorage.getItem('badminton-v20-auto-next')==='true';
    auto.addEventListener('change',()=>bmStorage.setItem('badminton-v20-auto-next',String(auto.checked)));
-   const flags=menu.querySelector('#bmMenuFlags');flags.checked=window.badmintonFlagVisibility.enabled();
-   flags.addEventListener('change',()=>window.badmintonFlagVisibility.set(flags.checked));
    window.badmintonMotion.refresh();
    menu.querySelector('#bmMenuMotion').addEventListener('change',event=>window.badmintonMotion.set(event.target.checked));
    const close=()=>{menu.remove();btn?.setAttribute('aria-expanded','false');document.removeEventListener('keydown',onKey)};
@@ -4564,6 +4557,5 @@ html.bmMotionPaused .bmShuttleFlight,html.bmMotionPaused .bmShuttle{animation-pl
 html.bmMotionOff .bmShuttleFlight{display:none}
 @media(prefers-reduced-motion:reduce){.bmShuttleFlight{display:none}}
 </style>
-<style>html.bmHideFlags #gameView .threeDLabel img,html.bmHideFlags #gameView .threeDLabel .flagTextFallback,html.bmHideFlags #badmintonViewer .viewerFlag,html.bmHideFlags #badmintonViewer .viewerName .flagTextFallback{display:none!important}</style>
 </body>
 </html>
