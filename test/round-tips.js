@@ -4,14 +4,17 @@
  const summary=document.getElementById('playerSummary');
  if(!courts||!rounds||!summary||document.documentElement.classList.contains('viewer-mode'))return;
  const box=document.createElement('div');box.id='bmRoundTip';box.style.cssText='padding:12px;margin:12px 0;border:1px solid #54718b;border-radius:12px;background:#152535;line-height:1.5';
- const text=document.createElement('p');text.id='bmRoundTipText';text.setAttribute('role','status');text.style.margin='0 0 8px';
- const detail=document.createElement('p');detail.style.cssText='margin:0 0 8px;font-size:14px;color:#c6d7e7';
+ const text=document.createElement('p');text.id='bmRoundTipText';text.setAttribute('role','status');text.style.cssText='margin:0 0 10px;white-space:pre-line;line-height:1.6';
+ const detail=document.createElement('p');detail.id='bmRoundTipInfo';detail.hidden=true;detail.style.cssText='margin:0 0 8px;font-size:14px;color:#c6d7e7';
  const apply=document.createElement('button');apply.id='bmApplyRoundTip';apply.type='button';apply.className='secondary';apply.style.minHeight='44px';
- box.append(text,detail,apply);summary.closest('.topTools').after(box);
+ const info=document.createElement('button');info.id='bmRoundTipInfoButton';info.type='button';info.className='secondary';info.textContent='ⓘ Info';info.style.minHeight='44px';info.setAttribute('aria-expanded','false');info.setAttribute('aria-controls',detail.id);
+ const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px';actions.append(apply,info);
+ info.addEventListener('click',()=>{detail.hidden=!detail.hidden;info.setAttribute('aria-expanded',String(!detail.hidden));});
+ box.append(text,actions,detail);summary.closest('.topTools').after(box);
  let recommended=null,lastSignature=null;
  function update(){
   const players=selectedPlayers(),n=players.length,c=Number(courts.value);
-  const signature=JSON.stringify([players,c]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=true;
+  const signature=JSON.stringify([players,c]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=true;detail.hidden=true;info.setAttribute('aria-expanded','false');
   if(n<3||n>12){text.textContent='Rundtips: markera 3–12 deltagare för dagens spel.';detail.textContent='Tipset uppdateras när du ändrar deltagare eller antal banor.';return;}
   const wanted=new Set(),onlySingles=players.filter(p=>p.mode==='onlySingles').length,moreSingles=players.filter(p=>p.mode==='moreSingles').length;
   const horizon=Math.max(24,n*(n-1));
@@ -49,7 +52,7 @@
   const doubles=sample.reduce((sum,r)=>sum+r.courts.filter(c=>c.type==='Dubbel').length,0);
   const singles=sample.reduce((sum,r)=>sum+r.courts.filter(c=>c.type==='Singel').length,0);
   const rests=sample.reduce((sum,r)=>sum+r.rest.length,0);
-  text.textContent='Tips från schemalogiken: '+recommended+' rundor för '+n+' spelare på '+c+' '+(c===1?'bana':'banor')+'.';
+  text.textContent='Banor: '+c+' · Spelare: '+n+'\nNormal: '+(n-onlySingles-moreSingles)+' · Mer singel: '+moreSingles+' · Endast singel: '+onlySingles+'\nFörslag: '+recommended+' rundor';
   detail.textContent='Valda preferenser: '+(n-onlySingles-moreSingles)+' Normal, '+moreSingles+' Mer singel, '+onlySingles+' Endast singel. Provrotationen innehåller '+doubles+' dubbelmatcher, '+singles+' singelmatcher och '+rests+' vilotillfällen. '+
    (best.covered===best.total?'Provrotationen täcker alla '+best.total+' efterfrågade par/möten.':'Provrotationen täcker '+best.covered+' av '+best.total+' efterfrågade par/möten; fler rundor gav ingen ytterligare täckning i provet.')+
    ' Målet är alla dubbelpartners bland spelare som får spela dubbel, samt olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Endast singel placeras aldrig i dubbel; Mer singel prioriteras för singel. Tipset bygger på tre provrotationer med samma logik som schemat. Det är en uppskattning, inte ett garanterat minimiantal; det skapade schemat kan skilja sig.';
