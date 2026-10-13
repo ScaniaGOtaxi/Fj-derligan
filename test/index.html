@@ -730,6 +730,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 };
 </script>
 <script src="sync-v2.js"></script>
+<script src="group-players.js"></script>
 <script src="flag-visibility.js" data-storage-prefix="badminton-test-v2:"></script>
 <script src="player-visibility.js"></script>
 <script src="player-motion.js"></script>
@@ -1141,7 +1142,7 @@ async function restoreCloudBinding(){
   if(sessions.length!==1)throw Error('Det sparade spelet är inte längre aktivt.');
   const rounds=await request('/rest/v1/badminton_rounds?select=id,round_number,status&session_id=eq.'+encodeURIComponent(binding.sessionId)+'&order=round_number.asc');
   if(rounds.length!==saved.rounds.length)throw Error('Lokalt spel stämmer inte med molnsessionen.');
-  const members=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(binding.groupId));
+  const members=await fetchGroupMembers(binding.groupId);
   window.badmintonProfiles.load(binding.groupId,members);importedGroupId=binding.groupId;importedPlayerIds=new Map(members.map(p=>[p.name,p.id]));
   lastSessionId=binding.sessionId;lastSessionGroupId=binding.groupId;cloudRoundIds=new Map(rounds.map(r=>[r.round_number,r.id]));
   rounds.filter(r=>r.status==='completed').forEach(r=>completedRounds.add(r.round_number-1));
@@ -1187,15 +1188,48 @@ async function request(path, options={}){
  let response;
  try{response=await fetch(base+path,{...options,headers,cache:'no-store'});}catch(e){throw Error('Nätverksfel: '+e.message+'. Öppna gärna HTML-filen via en HTTPS-webbplats om webbläsaren blockerar lokala filer.');}
  const body=await response.text();let result;try{result=JSON.parse(body)}catch{result=body}
- if(!response.ok)throw Error((result&&typeof result==='object'&&(result.msg||result.message||result.error_description||result.error))||'HTTP '+response.status);
+ if(!response.ok){const error=Error((result&&typeof result==='object'&&(result.msg||result.message||result.error_description||result.error))||'HTTP '+response.status);error.code=result?.code;throw error;}
  return result;
 }
+let groupMembershipAvailable=null;
+const missingMembershipFunction=error=>error.code==='PGRST202';
+async function fetchGroupMembers(id){
+ if(groupMembershipAvailable!==false){
+  try{const rows=await request('/rest/v1/rpc/get_badminton_group_players',{method:'POST',body:JSON.stringify({p_group_id:id})});
+   if(!Array.isArray(rows))throw Error('Oväntat svar från gruppens spelarregister');
+   groupMembershipAvailable=true;return rows;
+  }catch(e){if(!missingMembershipFunction(e))throw e;groupMembershipAvailable=false;}
+ }
+ return request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
+}
+function syncGroupPool(id,data){
+ if(groupSelect.value!==id)return;
+ if(bmStorage.getItem('badmintonV13OriginalPoolBackup')===null)
+  bmStorage.setItem('badmintonV13OriginalPoolBackup',bmStorage.getItem('badmintonPlayerPool')||'[]');
+ const old=JSON.parse(bmStorage.getItem('badmintonPlayerPool')||'[]');
+ const sameGroup=bmStorage.getItem('badmintonV13ActiveGroupId')===id;
+ const selectedIds=new Set(sameGroup?old.filter(x=>x.selected&&x.groupId===id).map(x=>x.id):[]);
+ const pool=data.map(x=>({id:x.id,groupId:id,name:x.name,selected:selectedIds.has(x.id),mode:x.player_mode||'normal'}));
+ window.badmintonProfiles.load(id,data);
+ bmStorage.setItem('badmintonPlayerPool',JSON.stringify(pool));
+ bmStorage.setItem('badmintonV13ActiveGroupId',id);
+ importedGroupId=id;importedPlayerIds=new Map(data.map(x=>[x.name,x.id]));
+ if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
+ return pool;
+}
+window.badmintonGroupPlayers.configure({
+ request,
+ context:()=>({groupId:groupSelect.value,groupName:groupSelect.selectedOptions[0]?.textContent||'',loggedIn:!!accessToken}),
+ refresh:async id=>{const rows=await fetchGroupMembers(id);syncGroupPool(id,rows);return rows;}
+});
 const profileQueues=new Map();
 window.badmintonSaveProfile=function(groupId,playerId,values){
  if(!accessToken)return Promise.reject(Error('Logga in för att spara spelarinställningar.'));
  const queueKey=groupId+':'+playerId;
  const next=(profileQueues.get(queueKey)||Promise.resolve()).catch(()=>{}).then(async()=>{
-  const rows=await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(values)});
+  const rows=groupMembershipAvailable===true
+   ?await request('/rest/v1/rpc/update_badminton_group_player',{method:'POST',body:JSON.stringify({p_group_id:groupId,p_player_id:playerId,p_values:values})})
+   :await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(playerId)+'&group_id=eq.'+encodeURIComponent(groupId),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(values)});
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Inställningen sparades inte. Kontrollera databasbehörighet.');
  });
  profileQueues.set(queueKey,next);
@@ -1261,7 +1295,9 @@ restoreAuth();
 async function loadPlayers(){
  const id=groupSelect.value;if(!id){say('Välj en grupp först.');return}
  say('Hämtar spelare …');
- try{const data=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
+ try{const data=await fetchGroupMembers(id);
+ if(groupSelect.value!==id)return;
+ syncGroupPool(id,data);
  players.textContent='Spelare i '+groupSelect.selectedOptions[0].text+' ('+data.length+'):\n'+(data.map(x=>'• '+x.name).join('\n')||'Inga spelare ännu.');say('✅ Spelarlistan är hämtad.');}
  catch(e){say('❌ Kunde inte hämta spelare: '+e.message)}
 }
@@ -1271,23 +1307,13 @@ importBtn.addEventListener('click',async()=>{
  const id=groupSelect.value;if(!id){say('Välj grupp först.');return}
  importBtn.disabled=true;say('Hämtar spelare till rotationen …');
  try{
-  const data=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(id)+'&order=name.asc');
+  const data=await fetchGroupMembers(id);
   if(groupSelect.value!==id){say('Gruppen ändrades. Försök igen.');return}
   if(!Array.isArray(data))throw Error('Oväntat svar från databasen');
   if(!data.length){say('Gruppen saknar spelare. Lägg till spelare först.');return}
-  // Spara originalets lokala spelarregister en gång, utan att ändra Supabase.
-  if(bmStorage.getItem('badmintonV13OriginalPoolBackup')===null)
-   bmStorage.setItem('badmintonV13OriginalPoolBackup',bmStorage.getItem('badmintonPlayerPool')||'[]');
-  const old=JSON.parse(bmStorage.getItem('badmintonPlayerPool')||'[]');
-  const modes=new Map(old.map(x=>[String(x.name).toLocaleLowerCase('sv'),x.mode||'normal']));
-  window.badmintonProfiles.load(id,data);
-  const pool=data.map(x=>({id:x.id,groupId:id,name:x.name,selected:false,mode:x.player_mode||'normal'}));
-  bmStorage.setItem('badmintonPlayerPool',JSON.stringify(pool));
-  bmStorage.setItem('badmintonV13ActiveGroupId',id);
-  importedGroupId=id;
-  importedPlayerIds=new Map(data.map(x=>[x.name,x.id]));
-  if(typeof refreshPlayerListUI==='function')refreshPlayerListUI();
-  say('✅ '+pool.length+' spelare från '+groupSelect.selectedOptions[0].text+' är inlästa. Ingen är markerad. Använd Markera alla, Avmarkera alla eller kryssa i själv.');
+  const sameGroup=bmStorage.getItem('badmintonV13ActiveGroupId')===id;
+  const pool=syncGroupPool(id,data);
+  say('✅ '+pool.length+' spelare från '+groupSelect.selectedOptions[0].text+' är inlästa. '+pool.filter(x=>x.selected).length+' spelare markerade.'+(sameGroup?' Tidigare urval i gruppen är bevarat.':'')+' Använd Markera alla, Avmarkera alla eller kryssa i själv.');
   document.getElementById('setupView').scrollIntoView({behavior:'smooth'});
  }catch(e){say('❌ Kunde inte hämta spelare till rotationen: '+e.message)}
  finally{importBtn.disabled=false}
@@ -1407,7 +1433,10 @@ window.addEventListener('badminton:rotation-created', async (event)=>{
    round.rest.forEach(name=>positions.push({round_id:roundId,player_id:importedPlayerIds.get(name),court_number:null,team_number:null,activity:'rest'}));
   });
   // I singel ska team_number vara 1 eller 2; övriga former stöds i denna version endast med 2 eller 4 spelare per bana.
-  if(positions.length)await request('/rest/v1/badminton_round_players',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(positions)});
+  if(positions.length){
+   if(groupMembershipAvailable===true)await request('/rest/v1/rpc/save_badminton_group_round_players',{method:'POST',body:JSON.stringify({p_session_id:createdSession,p_positions:positions})});
+   else await request('/rest/v1/badminton_round_players',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(positions)});
+  }
   if(serial!==rotationSerial)throw Error('En ny rotation har skapats under sparningen');
   lastSessionId=createdSession;lastSessionGroupId=id;cloudRoundIds=ids;persistGame();window.badmintonLoadScores?.();
    liveRoundWanted=1;
@@ -1519,7 +1548,7 @@ document.getElementById('cloudResumeSession').addEventListener('click',async()=>
   const rounds=await request('/rest/v1/badminton_rounds?select=id,round_number,status&session_id=eq.'+encodeURIComponent(session.id)+'&order=round_number.asc');
   if(!rounds.length)throw Error('Sessionen saknar sparade rundor.');
   const positions=await request('/rest/v1/badminton_round_players?select=round_id,player_id,court_number,team_number,activity&round_id=in.('+rounds.map(r=>r.id).join(',')+')');
-  const members=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(groupId));
+  const members=await fetchGroupMembers(groupId);
   window.badmintonProfiles.load(groupId,members);
   const nameById=new Map(members.map(x=>[x.id,x.name]));
   const restored=rounds.map(r=>{
@@ -1617,7 +1646,7 @@ cloudStatsBtn.addEventListener('click',async()=>{
  try{
   const allSessions=await fetchAll('/rest/v1/badminton_sessions?select=id,name,created_at&group_id=eq.'+encodeURIComponent(groupId));
   const sessions=window.badmintonStatsUI.filterSessions(allSessions,selectedPeriod);
-  const members=await fetchAll('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(groupId)+'&order=name.asc');
+  const members=await fetchGroupMembers(groupId);
   const rounds=await fetchByIds('badminton_rounds','id,status','session_id',sessions.map(s=>s.id));
   const completed=rounds.filter(r=>r.status==='completed');
   const positions=await fetchByIds('badminton_round_players','round_id,player_id,court_number,activity','round_id',completed.map(r=>r.id));
@@ -1741,15 +1770,17 @@ async function renderGroupOverview(){
    finally{removeGroup.disabled=false;}
   },true);card.append(removeGroup);overviewTable.append(card);
   try{
-   const members=await request('/rest/v1/badminton_players?select=id,name,country_code,second_country_code,player_gender,player_mode&group_id=eq.'+encodeURIComponent(g.id)+'&order=name.asc');
+   const members=await fetchGroupMembers(g.id);
    playerList.replaceChildren();
    if(!members.length)playerList.textContent='Inga spelare i gruppen.';
    for(const m of members){
     const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #345';
     const name=document.createElement('span');name.textContent=m.name;
-    const del=overviewButton('Radera spelare',async()=>{
-     if(!(await window.bmCenteredConfirm('Bekräfta','Radera '+m.name+' från '+g.name+'? Detta kan påverka sparad spelhistorik.','Bekräfta')))return;
-     try{await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(m.id)+'&group_id=eq.'+encodeURIComponent(g.id),{method:'DELETE',headers:{Prefer:'return=representation'}}).then(rows=>{if(!Array.isArray(rows)||!rows.length)throw Error('Ingen spelare raderades. Kontrollera databasbehörigheter.');});line.remove();overviewStatus.textContent='✅ Spelaren har raderats.';}
+    const shared=m.home_group_id&&m.home_group_id!==g.id;
+    const del=overviewButton(shared?'Ta bort gruppkoppling':'Radera spelare',async()=>{
+     if(!(await window.bmCenteredConfirm('Bekräfta',shared?'Ta bort '+m.name+' från '+g.name+'? Profilen och andra grupper behålls.':'Radera '+m.name+' från '+g.name+'? Detta kan påverka sparad spelhistorik.','Bekräfta')))return;
+     try{if(shared)await request('/rest/v1/rpc/remove_badminton_shared_group_player',{method:'POST',body:JSON.stringify({p_group_id:g.id,p_player_id:m.id})});
+     else await request('/rest/v1/badminton_players?id=eq.'+encodeURIComponent(m.id)+'&group_id=eq.'+encodeURIComponent(g.id),{method:'DELETE',headers:{Prefer:'return=representation'}}).then(rows=>{if(!Array.isArray(rows)||!rows.length)throw Error('Ingen spelare raderades. Kontrollera databasbehörigheter.');});line.remove();overviewStatus.textContent=shared?'✅ Gruppkopplingen är borttagen. Spelarprofilen finns kvar.':'✅ Spelaren har raderats.';}
      catch(e){overviewStatus.textContent='❌ Kunde inte radera spelare: '+e.message;}
     },true);
     line.append(name,del);playerList.append(line);
@@ -1806,8 +1837,10 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
  const id=groupSelect.value,inp=document.getElementById('cloudNewPlayer'),name=inp.value.trim();
  if(!id){say('Välj en grupp först.');return}if(!name){say('Skriv spelarens namn.');return}
  const btn=document.getElementById('cloudAddPlayer');btn.disabled=true;say('Sparar spelare …');
- try{await request('/rest/v1/badminton_players',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({group_id:id,name})});inp.value='';await loadPlayers();say('✅ Spelaren ”'+name+'” har sparats i '+groupSelect.selectedOptions[0].text+'.');}
- catch(e){say('❌ Kunde inte spara spelare: '+e.message)}finally{btn.disabled=false}
+ try{
+  await window.badmintonGroupPlayers.create(id,name);
+  if(groupSelect.value===id){inp.value='';await loadPlayers();say('✅ Spelaren ”'+name+'” är sparad i gruppen. Markera spelaren om hen ska spela idag.');}
+ }catch(e){say('❌ Kunde inte spara spelare: '+e.message)}finally{btn.disabled=false}
 });
 })();
 </script>
@@ -1866,7 +1899,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <ol>
 <li>Öppna <b>⌂ Admin</b> och logga in med ditt administratörskonto.</li>
 <li>Gå till <b>Spelinställningar</b>, tryck <b>Hämta grupper</b> och välj grupp.</li>
-<li>Tryck <b>Hämta gruppens spelare till rotationsschemat</b>. Vid import är ingen spelare markerad. Kryssa i dagens deltagare eller välj <b>Markera alla</b>.</li>
+<li>Tryck <b>Hämta gruppens spelare till rotationsschemat</b>. Vid första importen är ingen spelare markerad. Ny hämtning av samma grupp bevarar urvalet. Kryssa i dagens deltagare eller välj <b>Markera alla</b>.</li>
 <li>Välj 1–3 banor och antal rundor. Det behövs 3–12 markerade spelare.</li>
 <li>Tryck <b>Skapa spelschema</b>. Om gruppen redan har ett aktivt spel får du välja att behålla det eller avsluta det och skapa ett nytt.</li>
 <li>I spelvyn: starta timern vid behov och tryck <b>Klar</b> när rundan är spelad. Använd <b>Nästa runda</b> för att fortsätta.</li>
@@ -1882,8 +1915,10 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
-<p><b>＋ Lägg till</b> vid den lokala spelarlistan skapar bara en lokal spelare. För att spara en ny spelare i gruppens databas, använd <b>Lägg till spelare</b> bland gruppens molnverktyg och hämta sedan gruppens spelare igen. Ett molnschema kräver importerade gruppspelare.</p>
-<p><b>Papperskorgen i rotationslistan</b> tar bort spelaren lokalt efter bekräftelse. Den raderar inte spelaren ur databasen. Permanent borttagning ur gruppen finns i Super Admins gruppöversikt.</p>
+<p><b>Lägg till befintliga spelare</b> öppnar en sökbar lista över samtliga spelarprofiler. Även vanlig Admin får välja spelare från andra grupper, men endast lägga till dem i grupper hen får hantera. Markera spelarna och tryck <b>Lägg till i gruppen</b>. Spelarna behåller sitt ID, sina tidigare grupper och sin historik. Redan tillagda spelare visas som <b>Finns redan i gruppen</b>.</p>
+<p><b>Skapa ny spelare i gruppen</b> sparar en ny profil i databasen och uppdaterar spelarlistan. Sök bland befintliga spelare först för att undvika dubbletter. Personer med samma namn behöver särskiljande namn, exempelvis för- och efternamn. <b>Gruppmedlemskap och dagens spel är separata val:</b> en tillagd spelare är inte automatiskt markerad för dagens rotation.</p>
+<p>Namn, flaggor, kön och spelpreferens tillhör samma profil i alla grupper. Ändrade profilinställningar gäller därför även i spelarens övriga grupper. Befintliga separata profiler med samma namn slås inte ihop automatiskt.</p>
+<p><b>Papperskorgen i rotationslistan</b> tar bort spelaren lokalt efter bekräftelse. Den raderar inte spelaren ur databasen. I Super Admins gruppöversikt tar <b>Ta bort gruppkoppling</b> bort en extra grupptillhörighet och behåller profilen och historiken. Det går inte medan spelaren används i ett aktivt spel. En profil i sin ursprungsgrupp kan inte raderas så länge den används i andra grupper.</p>
 <p><b>Kön</b> väljer manlig eller kvinnlig spelarfigur. Kön, flaggor och spelpreferens sparas i molnet för importerade gruppspelare. Vänta på <b>Spelarinställningar sparade i Supabase</b>. Om ett fel visas är ändringen inte bekräftad i molnet. På en annan enhet behöver du hämta gruppens spelare eller återuppta spelet för att läsa in inställningarna.</p>
 <h3>🌍 5. Två flaggor och landsökning</h3>
 <p><b>Flagga 1</b> är den huvudsakliga flaggan; Sverige används när inget land finns sparat. <b>Flagga 2</b> är valfri. Båda visas bredvid namnet i spelvyn och Live.</p>
@@ -3635,7 +3670,7 @@ const rotation=card('settings');const note=document.createElement('p');note.id='
  if(pool){new MutationObserver(refreshToday).observe(pool,{childList:true,subtree:true,attributes:true,attributeFilter:['checked','class']});pool.addEventListener('change',refreshToday);refreshToday();}
  // Behåll äldre molnkontroller under avancerade verktyg; undvik dubbla inmatningsfält.
  const oldAddRow=document.getElementById('cloudNewPlayer')?.closest('.cloudRow');
- if(oldAddRow){advanced.prepend(oldAddRow);const caption=document.createElement('p');caption.textContent='Supabase-spelare och import';advanced.prepend(caption);}
+ if(oldAddRow){left.prepend(oldAddRow);document.getElementById('cloudAddPlayer').textContent='Skapa ny spelare i gruppen';document.getElementById('cloudNewPlayer').setAttribute('aria-label','Namn på ny spelare i gruppen');}
  left.append(advanced);
  // FIX 28: Import krävs av Supabase-vakten innan spelet får skapas.
  // Visa därför importknappen i huvudflödet i stället för att gömma den.
@@ -3645,7 +3680,7 @@ const rotation=card('settings');const note=document.createElement('p');note.id='
    importNotice.className='v24Notice';
    importNotice.style.marginBottom='12px';
    const importText=document.createElement('div');
-   importText.textContent='Första gången du väljer en grupp: hämta gruppens spelare här, markera sedan dagens deltagare.';
+   importText.textContent='Gruppens spelare hämtas när du väljer grupp. Här kan du uppdatera listan. Markera sedan dagens deltagare.';
    importNotice.append(importText,requiredImport);
    left.prepend(importNotice);
  }
