@@ -3,6 +3,8 @@
 <head>
 <script>
 const bmStorage={getItem:key=>localStorage.getItem('badminton-test-v2:'+key),setItem:(key,value)=>localStorage.setItem('badminton-test-v2:'+key,value),removeItem:key=>localStorage.removeItem('badminton-test-v2:'+key)};
+const bmSkipSplash=(()=>{try{return sessionStorage.getItem('badminton-test-v2:splashSeen')==='1'}catch{return false}})();
+if(bmSkipSplash)document.documentElement.classList.add('bmSkipSplash');
 const bmRecoveryMode=(()=>{const hash=new URLSearchParams(location.hash.slice(1)),query=new URLSearchParams(location.search);return hash.get('type')==='recovery'||query.get('type')==='recovery'||hash.has('error_description')||query.has('error_description');})();
 </script>
 <meta charset="utf-8">
@@ -420,6 +422,7 @@ select{min-width:130px}
 /* Splash v2.0 */
 #appSplash{position:fixed;inset:0;z-index:99999;background:#101418;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;transition:opacity .35s ease}
 #appSplash.splashOut{opacity:0;pointer-events:none}
+html.bmSkipSplash #appSplash{display:none}
 .splashInner{width:min(86vw,420px);text-align:center}
 .splashLogo{width:132px;height:132px;object-fit:cover;border-radius:22px;background:#fff;padding:8px;box-sizing:border-box;animation:splashLogoIn .65s cubic-bezier(.2,.8,.2,1) both}
 .splashTitle{font-size:28px;font-weight:850;margin:24px 0 5px;animation:splashFade .55s .2s both}
@@ -2085,6 +2088,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
     var pct=document.getElementById('splashPercent');
     var status=document.getElementById('splashStatus');
     if(!splash)return;
+    if(bmSkipSplash){splash.remove();return;}
+    try{sessionStorage.setItem('badminton-test-v2:splashSeen','1')}catch(_){}
     var closed=false;
     var startTime=performance.now();
     var duration=4000;
