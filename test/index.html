@@ -1237,6 +1237,7 @@ window.badmintonSaveProfile=function(groupId,playerId,values){
 };
 window.badmintonCloudContext=()=>lastSessionId?{sessionId:lastSessionId,groupId:lastSessionGroupId}:null;
 window.badmintonCloudRequest=request;
+window.badmintonCloudRole=()=>cloudRole;
 window.badmintonScoreSession=()=>lastSessionId;
 document.getElementById('cloudLogin').addEventListener('click',async()=>{
  const email=document.getElementById('cloudEmail').value.trim();
@@ -1910,6 +1911,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Glömt lösenord:</b> ange din e-postadress i Admin-fliken och tryck <b>Skicka återställningslänk</b>. Kontrollera inkorgen och skräpposten. Öppna länken, skriv samma nya lösenord i båda fälten, minst 8 tecken, och välj <b>Spara nytt lösenord</b>. Gå därefter till vanlig inloggning. En utgången länk kräver en ny begäran. Vid för många försök behöver du vänta.</p>
 <p><b>Ändra lösenord när du är inloggad:</b> öppna <b>Lösenord och kontosäkerhet → Ändra lösenord (inloggad)</b>, fyll i två lika lösenord och spara. Återställningsmejl kräver att appens HTTPS-adress är tillåten i Supabase. Dela aldrig lösenord eller hela återställningslänken med andra.</p>
 <h3>⚙️ 3. Grupper och återupptagning</h3>
+<p><b>Byt gruppnamn</b>: Super Admin väljer en grupp i Spelinställningar, trycker på knappen och sparar ett nytt namn med högst 80 tecken. Gruppens spelare, behörigheter och historik behålls. Namnbytet gäller den gemensamma databasen och syns även i ordinarie app. Vid databasfel visas ett felmeddelande.</p>
 <p><b>Hämta grupper</b> uppdaterar gruppvalet. Admin ser de grupper databasen ger kontot åtkomst till. Välj rätt grupp innan du hämtar spelare, skapar spel eller visar molnstatistik.</p>
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
@@ -3635,6 +3637,7 @@ const rotation=card('settings');const note=document.createElement('p');note.id='
   document.getElementById('v24GroupCounter').textContent=opts>1?(opts-1)+' grupper tillgängliga':'Välj eller hämta grupper';
  }
  document.getElementById('cloudGroupSelect')?.addEventListener('change',updateGroupBanner);
+ document.getElementById('cloudGroupSelect')?.addEventListener('badminton:group-renamed',updateGroupBanner);
  new MutationObserver(updateGroupBanner).observe(document.getElementById('cloudGroupSelect'),{childList:true});
  updateGroupBanner();
  // Flytta sessionåterupptagning till gruppkortet i stället för en extra stor huvudsektion.
@@ -4654,5 +4657,6 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel span,html.bmTextOnlyPlaye
 html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName img{width:1.35em!important;height:.9em!important;max-width:none!important;object-fit:contain!important;flex:0 0 auto!important}
 @media(max-width:600px){html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel:not(.isEmpty),html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName{flex-wrap:wrap!important}html.bmTextOnlyPlayers #gameView#gameView .threeDLabel span,html.bmTextOnlyPlayers #badmintonViewer#badmintonViewer .viewerName span{flex:0 1 auto!important}}
 </style>
+<script src="group-rename.js"></script>
 </body>
 </html>
