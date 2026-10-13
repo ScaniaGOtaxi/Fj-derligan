@@ -929,7 +929,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
  }}catch(e){}
  try{
    const last=JSON.parse(bmStorage.getItem(bridgeKey)||'null');receiveCompleted(last);
-   window.addEventListener('storage',e=>{if(e.key===bridgeKey){try{receiveCompleted(JSON.parse(e.newValue))}catch(err){}}});
+   window.addEventListener('storage',e=>{if(e.storageArea===localStorage&&e.key==='badminton-test-v2:'+bridgeKey){try{receiveCompleted(JSON.parse(e.newValue))}catch(err){}}});
  }catch(e){}
 
  if(!session&&!token)return;
@@ -941,6 +941,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  if(!uuid.test(session||'')||!/^[0-9a-f]{64}$/.test(token||'')){status.textContent='❌ Ogiltig visningslänk.';return;}
  const base='https://frkhzwutziysnjibaxfa.supabase.co',key='sb_publishable_Ls7ecNqa40yuRE8S1KiNCw_cHq_18Ej';
+ let busy=false,previous='',livePollTimer=null,livePollDelay=2000;
  let localLiveRound=null;
  function acceptLiveRound(payload){
   if(!payload||String(payload.sessionId)!==String(session)||!Array.isArray(payload.players))return;
@@ -953,12 +954,11 @@ window.badmintonPlayerImage=function(name,team,side,position){
  try{
   acceptLiveRound(JSON.parse(bmStorage.getItem('badmintonLiveRoundV16')||'null'));
   window.addEventListener('storage',e=>{
-    if(e.key==='badmintonLiveRoundV16'){try{acceptLiveRound(JSON.parse(e.newValue))}catch(_){}}
+    if(e.storageArea===localStorage&&e.key==='badminton-test-v2:badmintonLiveRoundV16'){try{acceptLiveRound(JSON.parse(e.newValue))}catch(_){}}
   });
   const ch=new BroadcastChannel('badminton-test-v2-live-round-v20');
   ch.onmessage=e=>acceptLiveRound(e.data);
  }catch(_){}
- let busy=false,previous='',livePollTimer=null,livePollDelay=2000;
  function scheduleLivePoll(){clearTimeout(livePollTimer);livePollTimer=null;if(!document.hidden&&navigator.onLine)livePollTimer=setTimeout(()=>{livePollTimer=null;void refresh();},livePollDelay);}
  function updateLiveScores(liveScores){document.querySelectorAll('#viewerCourts .viewerCourt').forEach((card,i)=>{let board=card.querySelector('.viewerLiveScore');if(!liveScores?.enabled){board?.remove();return;}if(!board){board=document.createElement('div');board.className='viewerLiveScore';board.style.cssText='text-align:center;font-size:32px;font-weight:800;padding:8px';card.append(board);}const val=liveScores.scores?.[i+1]||{red:0,blue:0};const text='🔴 '+(Number(val.red)||0)+' – '+(Number(val.blue)||0)+' 🔵';if(board.textContent!==text)board.textContent=text;});}
  function flagCode(p){
