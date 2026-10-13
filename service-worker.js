@@ -1,5 +1,5 @@
-const CACHE = 'badminton-app-release-20261013';
-const FILES = ['./', './index.html', './sync-v2.js', './flag-visibility.js', './player-visibility.js', './player-motion.js', './shuttle-motion.js', './results-v1.js', './statistics-ui.js', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
+const CACHE = 'badminton-app-production-20261013-all-updates';
+const FILES = ['./', './index.html', './group-players.js', './group-rename.js', './round-tips.js', './sync-v2.js', './flag-visibility.js', './player-visibility.js', './player-motion.js', './shuttle-motion.js', './results-v1.js', './statistics-ui.js', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
