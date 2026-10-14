@@ -10,7 +10,9 @@
  const info=document.createElement('button');info.id='bmRoundTipInfoButton';info.type='button';info.className='secondary';info.textContent='ⓘ Info';info.style.minHeight='44px';info.setAttribute('aria-expanded','false');info.setAttribute('aria-controls',detail.id);
  const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px';actions.append(apply,info);
  info.addEventListener('click',()=>{detail.hidden=!detail.hidden;info.setAttribute('aria-expanded',String(!detail.hidden));});
- box.append(text,actions,detail);document.getElementById('playerListArea').after(box);
+ box.append(text,actions,detail);
+ const place=()=>document.getElementById('playerListArea').after(box);
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>queueMicrotask(place));else place();
  let recommended=null,lastSignature=null;
  function update(){
   const players=selectedPlayers(),n=players.length,c=Number(courts.value);
