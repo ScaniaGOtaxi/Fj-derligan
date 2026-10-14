@@ -3,6 +3,18 @@
 <head>
 <script>
 const bmStorage={getItem:key=>localStorage.getItem(''+key),setItem:(key,value)=>localStorage.setItem(''+key,value),removeItem:key=>localStorage.removeItem(''+key)};
+// Initial game preferences; saved choices always take precedence.
+for(const [key,value] of Object.entries({
+ 'badminton-v20-score-enabled':'true',
+ 'badminton-v20-sound':'false',
+ 'badminton-v20-auto-next':'false',
+ 'badminton-player-motion':'false',
+ 'badminton-show-flags':'false',
+ 'badminton-show-player-figures':'false'
+})){
+ if(bmStorage.getItem(key)===null)bmStorage.setItem(key,value);
+}
+
 const bmSkipSplash=(()=>{try{return sessionStorage.getItem('badminton-app:splashSeen')==='1'}catch{return false}})();
 if(bmSkipSplash)document.documentElement.classList.add('bmSkipSplash');
 const bmRecoveryMode=(()=>{const hash=new URLSearchParams(location.hash.slice(1)),query=new URLSearchParams(location.search);return hash.get('type')==='recovery'||query.get('type')==='recovery'||hash.has('error_description')||query.has('error_description');})();
@@ -1922,6 +1934,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
+<p>Spelarlistan visar namn och deltagarkryss. Tryck ⚙ vid spelaren för att öppna kön, flaggor, spelpreferens och övriga inställningar. Tryck igen för att stänga. Bara en spelares inställningar visas åt gången; deltagarvalet påverkas inte.</p>
 <p><b>Rundtips</b> vid Dagens spelare använder tre provrotationer med samma schemalogik och valda spelarpreferenser. Normal får både dubbel och singel, Mer singel prioriteras för singel och Endast singel används aldrig i dubbel. Tipset visar rundantal, dubbel-/singelmatcher, vilotillfällen och hur många efterfrågade par eller möten provet täcker. Målet är alla dubbelpartners bland spelare som får spela dubbel och olika singelmotståndare för singelpreferenser; vid rent singelspel alla motståndare. Förslaget är en uppskattning och det skapade schemat kan skilja sig. Tryck Välj föreslaget antal rundor för att använda tipset.</p>
 <p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
@@ -3045,7 +3058,19 @@ function renderPlayerPool(){
   del.onclick=()=>removePlayer(i);
   const nationWrap=document.createElement('div');nationWrap.className='nationPicker';
   nationWrap.append(window.badmintonCreateFlagPicker(x.name,1),window.badmintonCreateFlagPicker(x.name,2));
-  row.append(cb,name,gender,nationWrap,modeControls,del); box.appendChild(row);
+  cb.setAttribute('aria-label','Markera '+x.name+' för dagens spel');
+  const menu=document.createElement('button');menu.type='button';menu.className='bmPlayerMenu';menu.textContent='⚙';
+  menu.setAttribute('aria-label','Inställningar för '+x.name);menu.setAttribute('aria-expanded','false');
+  const settings=document.createElement('div');settings.className='bmPlayerSettings';settings.id='bmPlayerSettings-'+i;settings.hidden=true;
+  menu.setAttribute('aria-controls',settings.id);
+  settings.append(gender,nationWrap,modeControls,del);
+  menu.addEventListener('click',()=>{
+    const opening=settings.hidden;
+    box.querySelectorAll('.bmPlayerSettings').forEach(panel=>{panel.hidden=true;});
+    box.querySelectorAll('.bmPlayerMenu').forEach(button=>button.setAttribute('aria-expanded','false'));
+    settings.hidden=!opening;menu.setAttribute('aria-expanded',String(opening));
+  });
+  row.append(cb,name,menu,settings); box.appendChild(row);
  });
  savePlayerPool(p);
  updateSelectedCount();
@@ -3161,6 +3186,16 @@ function badmintonPlanSchedule(players,R,wantedCourts,random=Math.random){
  const partner={}, opponent={}, rests={}, singles={};
  players.forEach(p=>{rests[p.name]=0;singles[p.name]=0});
  const planned=[];
+ // With three players every match is singles. Rotate all three pairings and rests.
+ if(players.length===3){
+  const names=mix(players).map(p=>p.name);
+  const pairs=[[0,1,2],[0,2,1],[1,2,0]];
+  for(let r=0;r<R;r++){
+   const [a,b,rest]=pairs[r%3];
+   planned.push({courts:[{type:'Singel',players:[names[a],names[b]]}],rest:[names[rest]]});
+  }
+  return planned;
+ }
 
  for(let r=0;r<R;r++){
    let available=mix(players);
@@ -4672,6 +4707,73 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 </style>
 <script src="group-rename.js"></script>
 <script src="round-tips.js"></script>
+<style id="compact-player-settings">
+#playerPool .playerChoice{align-items:center;flex-wrap:wrap}
+#playerPool .playerName{flex:1;min-width:0}
+#playerPool .bmPlayerMenu{min-width:44px;min-height:44px;font-size:18px!important;flex:0 0 auto}
+#playerPool .bmPlayerSettings[hidden]{display:none!important}
+#playerPool .bmPlayerSettings{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:start;gap:12px;border-top:1px solid #405568;padding-top:12px;min-width:0;box-sizing:border-box}
+#playerPool .bmPlayerSettings>.nationPicker{flex:1 0 100%;width:100%;max-width:100%}
+#playerPool .bmPlayerSettings .nationPicker{min-width:0;max-width:100%}
+#playerPool .bmPlayerSettings .nationSearch,#playerPool .bmPlayerSettings select{max-width:100%;box-sizing:border-box}
+#playerPool .bmPlayerSettings .playerGender{min-height:44px}
+</style>
+
+<style id="compact-settings-tab">
+#v14-settings>.v14Box{padding:12px!important;margin:8px 0!important;border-radius:12px}
+#v14-settings>.v14Intro,#v14-settings .v23StepHead p,#v14-settings .v14Intro,#v14-settings .v24GroupCount,#v14-settings .v24GameSummary,#v14-settings .v24Footer,#v14RotationNote,#v14-settings .v23Tip{display:none}
+#v14-settings .v23StepHead{gap:9px;margin-bottom:10px}
+#v14-settings .v23StepHead h3{font-size:18px;margin:0}
+#v14-settings .v23Number{width:28px;height:28px;min-width:28px;font-size:15px}
+#v14-settings .v24Pane,#v14-settings #playerManager,#v14-settings #setupView>.card{padding:0!important;border:0!important;background:transparent!important;margin:0!important}
+#v14-settings .v24Grid{gap:8px}
+#v14-settings .cloudRow,#v14-settings .topTools{margin:8px 0;gap:8px;flex-wrap:wrap}
+#v14-settings button,#v14-settings select,#v14-settings input:not([type=checkbox]){min-height:44px}
+#v14-settings .v24Notice{padding:8px!important;margin:6px 0!important}
+#v14-settings .v22GroupCard>.v24Notice{display:none}
+#v14-settings #cloudStatus,#v14-settings #v14RotationFeedback{padding:7px 9px!important;margin:6px 0!important;font-size:13px;line-height:1.4}
+#v14RotationFeedback:empty{display:none}
+#v14-settings .v23Advanced,#v14-settings .bmAddPlayerDetails{padding:8px;margin:8px 0;border:1px solid #405568;border-radius:8px}
+#v14-settings summary{min-height:28px;cursor:pointer}
+#v14-settings .bmGroupPlayerTools{padding:6px 0}
+#v14-settings .v24CreateActions{gap:8px;margin-top:10px}
+#v14-settings #setupView .row{gap:8px;margin:8px 0}
+#v14-settings #bmRoundTip{padding:10px!important;margin:8px 0!important}
+#v14-settings .bmAddPlayerDetails p{font-size:13px}
+#v14-settings #playerPool{gap:6px!important}
+#v14-settings #playerPool .playerChoice{padding:6px 8px!important;gap:6px!important;min-height:44px}
+#v14-settings #playerPool .playerChoice:has(.bmPlayerSettings:not([hidden])){grid-column:1/-1}
+#v14-settings #setupView .row,#v14-settings #setupView label{font-size:14px!important}
+@media(min-width:380px){#v14-settings #playerPool{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+</style>
+<script id="compact-settings-layout">
+(()=>{
+ function init(){
+  const settings=document.getElementById('v14-settings'),manager=document.getElementById('playerManager'),setup=document.getElementById('setupView');
+  if(!settings||!manager||!setup)return;
+  const add=document.createElement('details');add.className='bmAddPlayerDetails';
+  const title=document.createElement('summary');title.textContent='＋ Lägg till spelare';add.append(title);
+  const newPlayer=document.getElementById('cloudNewPlayer')?.closest('.cloudRow'),existing=manager.querySelector('.bmGroupPlayerTools');
+  if(newPlayer)add.append(newPlayer);if(existing)add.append(existing);manager.before(add);
+  const notice=settings.querySelector('.v24Notice:has(#cloudImportRotation)');
+  if(notice){[...notice.children].filter(x=>x.tagName==='DIV').forEach(x=>x.remove());}
+  const rotation=setup.closest('.v14Box');
+  const createButton=settings.querySelector('button[onclick="generate()"]'),createCard=createButton?.closest('.v14Box');
+  if(rotation&&createCard&&rotation!==createCard){
+   createCard.querySelector('.v23StepHead')?.remove();
+   while(createCard.firstChild)rotation.append(createCard.firstChild);
+   createCard.remove();
+   const heading=rotation.querySelector('.v23StepHead h3');if(heading)heading.textContent='Rotation och schema';
+  }
+  const info=document.createElement('details');info.className='v23Advanced';
+  const summary=document.createElement('summary');summary.textContent='ⓘ Om inställningarna';info.append(summary);
+  for(const node of [...setup.querySelectorAll('.small,.installNote')])info.append(node);
+  if(info.children.length>1)rotation?.append(info);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>queueMicrotask(init));else queueMicrotask(init);
+})();
+</script>
 <style id="settings-controls-always-visible">
 #v14-settings #setupView{display:block!important}
 </style>
