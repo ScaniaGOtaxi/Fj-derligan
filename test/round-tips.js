@@ -6,9 +6,11 @@
  const box=document.createElement('div');box.id='bmRoundTip';box.style.cssText='padding:12px;margin:12px 0;border:1px solid #54718b;border-radius:12px;background:#152535;line-height:1.5';
  const text=document.createElement('p');text.id='bmRoundTipText';text.setAttribute('role','status');text.style.cssText='margin:0 0 10px;white-space:pre-line;line-height:1.6';
  const detail=document.createElement('p');detail.id='bmRoundTipInfo';detail.hidden=true;detail.style.cssText='margin:0 0 8px;font-size:14px;color:#c6d7e7';
+ const chosen=document.createElement('span');chosen.id='bmRoundTipChosen';chosen.style.cssText='font-size:13px;color:#c6d7e7;align-self:center';
+ const showChosen=()=>{chosen.textContent='Valt i schemat: '+rounds.value+' rundor';};
  const apply=document.createElement('button');apply.id='bmApplyRoundTip';apply.type='button';apply.className='secondary';apply.style.minHeight='44px';
  const info=document.createElement('button');info.id='bmRoundTipInfoButton';info.type='button';info.className='secondary';info.textContent='ⓘ Info';info.style.minHeight='44px';info.setAttribute('aria-expanded','false');info.setAttribute('aria-controls',detail.id);
- const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px';actions.append(apply,info);
+ const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px';actions.append(apply,info,chosen);
  info.addEventListener('click',()=>{detail.hidden=!detail.hidden;info.setAttribute('aria-expanded',String(!detail.hidden));});
  box.append(text,actions,detail);
  const place=()=>document.getElementById('playerListArea').after(box);
@@ -65,6 +67,7 @@
   if(![...rounds.options].some(o=>Number(o.value)===recommended))rounds.add(new Option(String(recommended),String(recommended)));
   rounds.value=String(recommended);rounds.dispatchEvent(new Event('change',{bubbles:true}));
  });
+ rounds.addEventListener('change',showChosen);showChosen();
  courts.addEventListener('change',update);
  window.addEventListener('badminton:player-selection-updated',update);
  document.getElementById('playerPool')?.addEventListener('change',update);
