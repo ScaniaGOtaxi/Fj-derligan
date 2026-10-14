@@ -1922,6 +1922,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
+<p>Spelarlistan visar namn och deltagarkryss. Tryck ⚙ vid spelaren för att öppna kön, flaggor, spelpreferens och övriga inställningar. Tryck igen för att stänga. Bara en spelares inställningar visas åt gången; deltagarvalet påverkas inte.</p>
 <p><b>Rundtips</b> vid Dagens spelare använder tre provrotationer med samma schemalogik och valda spelarpreferenser. Normal får både dubbel och singel, Mer singel prioriteras för singel och Endast singel används aldrig i dubbel. Tipset visar rundantal, dubbel-/singelmatcher, vilotillfällen och hur många efterfrågade par eller möten provet täcker. Målet är alla dubbelpartners bland spelare som får spela dubbel och olika singelmotståndare för singelpreferenser; vid rent singelspel alla motståndare. Förslaget är en uppskattning och det skapade schemat kan skilja sig. Tryck Välj föreslaget antal rundor för att använda tipset.</p>
 <p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
@@ -3045,7 +3046,19 @@ function renderPlayerPool(){
   del.onclick=()=>removePlayer(i);
   const nationWrap=document.createElement('div');nationWrap.className='nationPicker';
   nationWrap.append(window.badmintonCreateFlagPicker(x.name,1),window.badmintonCreateFlagPicker(x.name,2));
-  row.append(cb,name,gender,nationWrap,modeControls,del); box.appendChild(row);
+  cb.setAttribute('aria-label','Markera '+x.name+' för dagens spel');
+  const menu=document.createElement('button');menu.type='button';menu.className='bmPlayerMenu';menu.textContent='⚙';
+  menu.setAttribute('aria-label','Inställningar för '+x.name);menu.setAttribute('aria-expanded','false');
+  const settings=document.createElement('div');settings.className='bmPlayerSettings';settings.id='bmPlayerSettings-'+i;settings.hidden=true;
+  menu.setAttribute('aria-controls',settings.id);
+  settings.append(gender,nationWrap,modeControls,del);
+  menu.addEventListener('click',()=>{
+    const opening=settings.hidden;
+    box.querySelectorAll('.bmPlayerSettings').forEach(panel=>{panel.hidden=true;});
+    box.querySelectorAll('.bmPlayerMenu').forEach(button=>button.setAttribute('aria-expanded','false'));
+    settings.hidden=!opening;menu.setAttribute('aria-expanded',String(opening));
+  });
+  row.append(cb,name,menu,settings); box.appendChild(row);
  });
  savePlayerPool(p);
  updateSelectedCount();
@@ -4672,5 +4685,16 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 </style>
 <script src="group-rename.js"></script>
 <script src="round-tips.js"></script>
+<style id="compact-player-settings">
+#playerPool .playerChoice{align-items:center;flex-wrap:wrap}
+#playerPool .playerName{flex:1;min-width:0}
+#playerPool .bmPlayerMenu{min-width:44px;min-height:44px;font-size:18px!important;flex:0 0 auto}
+#playerPool .bmPlayerSettings[hidden]{display:none!important}
+#playerPool .bmPlayerSettings{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:start;gap:12px;border-top:1px solid #405568;padding-top:12px;min-width:0;box-sizing:border-box}
+#playerPool .bmPlayerSettings>.nationPicker{flex:1 0 100%;width:100%;max-width:100%}
+#playerPool .bmPlayerSettings .nationPicker{min-width:0;max-width:100%}
+#playerPool .bmPlayerSettings .nationSearch,#playerPool .bmPlayerSettings select{max-width:100%;box-sizing:border-box}
+#playerPool .bmPlayerSettings .playerGender{min-height:44px}
+</style>
 </body>
 </html>
