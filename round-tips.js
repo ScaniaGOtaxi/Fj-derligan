@@ -14,8 +14,8 @@
  let recommended=null,lastSignature=null;
  function update(){
   const players=selectedPlayers(),n=players.length,c=Number(courts.value);
-  const signature=JSON.stringify([players,c]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=true;detail.hidden=true;info.setAttribute('aria-expanded','false');
-  if(n<3||n>12){text.textContent='Rundtips: markera 3–12 deltagare för dagens spel.';detail.textContent='Tipset uppdateras när du ändrar deltagare eller antal banor.';return;}
+  const signature=JSON.stringify([players,c]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=false;apply.disabled=true;apply.textContent='Välj rundor';detail.hidden=true;info.setAttribute('aria-expanded','false');
+  if(n<3||n>12){text.textContent='Banor: '+c+' · Spelare: '+n+'\nFörslag: markera 3–12 deltagare för dagens spel.';detail.textContent='Tipset uppdateras när du ändrar deltagare eller antal banor.';return;}
   const wanted=new Set(),onlySingles=players.filter(p=>p.mode==='onlySingles').length,moreSingles=players.filter(p=>p.mode==='moreSingles').length;
   const horizon=Math.max(24,n*(n-1));
   const key=(kind,a,b)=>kind+':'+pairKey(a,b);
@@ -56,7 +56,7 @@
   detail.textContent='Valda preferenser: '+(n-onlySingles-moreSingles)+' Normal, '+moreSingles+' Mer singel, '+onlySingles+' Endast singel. Provrotationen innehåller '+doubles+' dubbelmatcher, '+singles+' singelmatcher och '+rests+' vilotillfällen. '+
    (best.covered===best.total?'Provrotationen täcker alla '+best.total+' efterfrågade par/möten.':'Provrotationen täcker '+best.covered+' av '+best.total+' efterfrågade par/möten; fler rundor gav ingen ytterligare täckning i provet.')+
    ' Målet är alla dubbelpartners bland spelare som får spela dubbel, samt olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Endast singel placeras aldrig i dubbel; Mer singel prioriteras för singel. Tipset bygger på tre provrotationer med samma logik som schemat. Det är en uppskattning, inte ett garanterat minimiantal; det skapade schemat kan skilja sig.';
-  apply.hidden=false;apply.textContent='Välj '+recommended+' rundor';
+  apply.hidden=false;apply.disabled=false;apply.textContent='Välj '+recommended+' rundor';
  }
  apply.addEventListener('click',()=>{
   update();if(!recommended)return;
