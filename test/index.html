@@ -4696,5 +4696,61 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 #playerPool .bmPlayerSettings .nationSearch,#playerPool .bmPlayerSettings select{max-width:100%;box-sizing:border-box}
 #playerPool .bmPlayerSettings .playerGender{min-height:44px}
 </style>
+
+<style id="compact-settings-tab">
+#v14-settings>.v14Box{padding:12px!important;margin:8px 0!important;border-radius:12px}
+#v14-settings>.v14Intro,#v14-settings .v23StepHead p,#v14-settings .v14Intro,#v14-settings .v24GroupCount,#v14-settings .v24GameSummary,#v14-settings .v24Footer,#v14RotationNote,#v14-settings .v23Tip{display:none}
+#v14-settings .v23StepHead{gap:9px;margin-bottom:10px}
+#v14-settings .v23StepHead h3{font-size:18px;margin:0}
+#v14-settings .v23Number{width:28px;height:28px;min-width:28px;font-size:15px}
+#v14-settings .v24Pane,#v14-settings #playerManager,#v14-settings #setupView>.card{padding:0!important;border:0!important;background:transparent!important;margin:0!important}
+#v14-settings .v24Grid{gap:8px}
+#v14-settings .cloudRow,#v14-settings .topTools{margin:8px 0;gap:8px;flex-wrap:wrap}
+#v14-settings button,#v14-settings select,#v14-settings input:not([type=checkbox]){min-height:44px}
+#v14-settings .v24Notice{padding:8px!important;margin:6px 0!important}
+#v14-settings .v22GroupCard>.v24Notice{display:none}
+#v14-settings #cloudStatus,#v14-settings #v14RotationFeedback{padding:7px 9px!important;margin:6px 0!important;font-size:13px;line-height:1.4}
+#v14RotationFeedback:empty{display:none}
+#v14-settings .v23Advanced,#v14-settings .bmAddPlayerDetails{padding:8px;margin:8px 0;border:1px solid #405568;border-radius:8px}
+#v14-settings summary{min-height:28px;cursor:pointer}
+#v14-settings .bmGroupPlayerTools{padding:6px 0}
+#v14-settings .v24CreateActions{gap:8px;margin-top:10px}
+#v14-settings #setupView .row{gap:8px;margin:8px 0}
+#v14-settings #bmRoundTip{padding:10px!important;margin:8px 0!important}
+#v14-settings .bmAddPlayerDetails p{font-size:13px}
+#v14-settings #playerPool{gap:6px!important}
+#v14-settings #playerPool .playerChoice{padding:6px 8px!important;gap:6px!important;min-height:44px}
+#v14-settings #playerPool .playerChoice:has(.bmPlayerSettings:not([hidden])){grid-column:1/-1}
+#v14-settings #setupView .row,#v14-settings #setupView label{font-size:14px!important}
+@media(min-width:380px){#v14-settings #playerPool{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+</style>
+<script id="compact-settings-layout">
+(()=>{
+ function init(){
+  const settings=document.getElementById('v14-settings'),manager=document.getElementById('playerManager'),setup=document.getElementById('setupView');
+  if(!settings||!manager||!setup)return;
+  const add=document.createElement('details');add.className='bmAddPlayerDetails';
+  const title=document.createElement('summary');title.textContent='＋ Lägg till spelare';add.append(title);
+  const newPlayer=document.getElementById('cloudNewPlayer')?.closest('.cloudRow'),existing=manager.querySelector('.bmGroupPlayerTools');
+  if(newPlayer)add.append(newPlayer);if(existing)add.append(existing);manager.before(add);
+  const notice=settings.querySelector('.v24Notice:has(#cloudImportRotation)');
+  if(notice){[...notice.children].filter(x=>x.tagName==='DIV').forEach(x=>x.remove());}
+  const rotation=setup.closest('.v14Box');
+  const createButton=settings.querySelector('button[onclick="generate()"]'),createCard=createButton?.closest('.v14Box');
+  if(rotation&&createCard&&rotation!==createCard){
+   createCard.querySelector('.v23StepHead')?.remove();
+   while(createCard.firstChild)rotation.append(createCard.firstChild);
+   createCard.remove();
+   const heading=rotation.querySelector('.v23StepHead h3');if(heading)heading.textContent='Rotation och schema';
+  }
+  const info=document.createElement('details');info.className='v23Advanced';
+  const summary=document.createElement('summary');summary.textContent='ⓘ Om inställningarna';info.append(summary);
+  for(const node of [...setup.querySelectorAll('.small,.installNote')])info.append(node);
+  if(info.children.length>1)rotation?.append(info);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>queueMicrotask(init));else queueMicrotask(init);
+})();
+</script>
 </body>
 </html>
