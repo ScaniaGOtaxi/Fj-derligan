@@ -3186,6 +3186,16 @@ function badmintonPlanSchedule(players,R,wantedCourts,random=Math.random){
  const partner={}, opponent={}, rests={}, singles={};
  players.forEach(p=>{rests[p.name]=0;singles[p.name]=0});
  const planned=[];
+ // With three players every match is singles. Rotate all three pairings and rests.
+ if(players.length===3){
+  const names=mix(players).map(p=>p.name);
+  const pairs=[[0,1,2],[0,2,1],[1,2,0]];
+  for(let r=0;r<R;r++){
+   const [a,b,rest]=pairs[r%3];
+   planned.push({courts:[{type:'Singel',players:[names[a],names[b]]}],rest:[names[rest]]});
+  }
+  return planned;
+ }
 
  for(let r=0;r<R;r++){
    let available=mix(players);
