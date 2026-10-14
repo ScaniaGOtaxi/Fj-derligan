@@ -3,6 +3,18 @@
 <head>
 <script>
 const bmStorage={getItem:key=>localStorage.getItem('badminton-test-v2:'+key),setItem:(key,value)=>localStorage.setItem('badminton-test-v2:'+key,value),removeItem:key=>localStorage.removeItem('badminton-test-v2:'+key)};
+// Initial game preferences; saved choices always take precedence.
+for(const [key,value] of Object.entries({
+ 'badminton-v20-score-enabled':'true',
+ 'badminton-v20-sound':'false',
+ 'badminton-v20-auto-next':'false',
+ 'badminton-player-motion':'false',
+ 'badminton-show-flags':'false',
+ 'badminton-show-player-figures':'false'
+})){
+ if(bmStorage.getItem(key)===null)bmStorage.setItem(key,value);
+}
+
 const bmSkipSplash=(()=>{try{return sessionStorage.getItem('badminton-test-v2:splashSeen')==='1'}catch{return false}})();
 if(bmSkipSplash)document.documentElement.classList.add('bmSkipSplash');
 const bmRecoveryMode=(()=>{const hash=new URLSearchParams(location.hash.slice(1)),query=new URLSearchParams(location.search);return hash.get('type')==='recovery'||query.get('type')==='recovery'||hash.has('error_description')||query.has('error_description');})();
