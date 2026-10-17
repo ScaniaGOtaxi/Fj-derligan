@@ -15,7 +15,7 @@
   const allowed=()=>window.badmintonCloudRole?.()==='super_admin';
   function update(){panel.hidden=!allowed();one.disabled=!select?.value;}
   new MutationObserver(update).observe(document.getElementById('cloudAdminPanel'),{attributes:true,attributeFilter:['style']});select?.addEventListener('change',update);new MutationObserver(update).observe(select,{childList:true});update();
-  async function rpc(args){try{return await window.badmintonCloudRequest('/rest/v1/rpc/manage_badminton_statistics',{method:'POST',body:JSON.stringify(args)});}catch(e){if(e.code==='PGRST202')throw Error('Serverfunktionen saknas. Installera test/SUPABASE_RADERA_STATISTIK.sql i Supabase först.');throw e;}}
+  async function rpc(args){try{return await window.badmintonCloudRequest('/rest/v1/rpc/manage_badminton_statistics',{method:'POST',body:JSON.stringify(args)});}catch(e){if(e.code==='PGRST202')throw Error('Serverfunktionen saknas. Installera test/SUPABASE_RADERA_STATISTIK.sql i GitHub-repot i Supabase först.');throw e;}}
   async function open(groupId){
    if(!allowed())return;
    if(document.getElementById('bmDeleteStatsDialog'))return;
