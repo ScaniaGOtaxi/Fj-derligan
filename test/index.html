@@ -1994,6 +1994,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Uppdatera statistik</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
 <p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Flikarna <b>Resultat</b>, <b>Deltagande</b> och <b>Matchhistorik</b> skiljer resultaten från spelfördelningen. Välj grupp och period och tryck <b>Uppdatera statistik</b>. Tryck på ett spelarnamn för detaljer. På dator kan resultattabellen sorteras via rubrikerna. Exporten gäller vald flik och period. Lokal statistik finns under <b>Statistik på denna enhet</b>. Uppdatera med <b>Uppdatera statistik</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
 <h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
+<p><b>Radera serverstatistik</b> finns under Statistik, endast för Super Admin. Välj vald grupp eller alla grupper. Förhandsvisningen visar avslutade spel, rundor, spelarplaceringar och poängposter. Skriv gruppnamnet respektive RADERA ALL STATISTIK för att bekräfta. Pågående spel och deras statistik, spelare, grupper, konton och lokal webbläsarstatistik behålls. Raderingen kan inte ångras i appen. Serverfunktionen måste först installeras med test/SUPABASE_RADERA_STATISTIK.sql.</p>
 <p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
 <p><b>Admin</b> arbetar i tilldelade grupper: hämtar och lägger till gruppspelare, ändrar deras inställningar, skapar och återupptar spel, styr rundor, räknar poäng, delar Live och ser gruppstatistik. Admin kan inte använda appens verktyg för gruppskapande, administratörsinbjudningar, tilldelningar eller full gruppradering.</p>
 <p><b>Super Admin</b> har även dessa verktyg:</p>
@@ -4777,5 +4778,6 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <style id="settings-controls-always-visible">
 #v14-settings #setupView{display:block!important}
 </style>
+<script src="statistics-delete.js"></script>
 </body>
 </html>
