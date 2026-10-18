@@ -3583,7 +3583,10 @@ window.addEventListener('focus',updateSelectedCount);
 </script>
 <style id="finish-game-layout">
 #gameView .gameNav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
-#gameView #bmFinishGame{border:1px solid #c79a55;white-space:normal;min-height:40px}
+#gameView #bmFinishGame{background:#f6ad3b!important;color:#201506!important;border:2px solid #ffd28a;white-space:normal;min-height:40px;font-weight:800}
+#gameView #bmFinishGame:not(:disabled):hover{background:#ffc76d!important}
+#gameView #bmFinishGame:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#gameView #bmFinishGame:disabled{background:#354350!important;color:#c8d2dc!important;border-color:#607080;opacity:1}
 #bmFinishGameStatus{flex:0 0 auto;font-size:13px;overflow-wrap:anywhere}
 #bmFinishGameStatus:empty{display:none}
 @media(max-width:600px){#gameView .gameNav{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
