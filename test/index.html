@@ -1946,29 +1946,32 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 
 <div id="helpPanel" class="card helpPanel">
 <h2>❓ Hjälp och användarguide</h2>
+<p class="small">Uppdaterad 18 oktober 2026 · Gäller funktionerna i testappen.</p>
 <p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
+<p><b>Flikarna:</b> Admin för inloggning och lösenord, Spelinställningar för grupp och spelare, Badminton Rotation – Spel för den skapade rotationen, Live &amp; QR för åskådarlänkar samt Statistik och Hjälp. Behörigheter visas bara för Super Admin.</p>
 <h3>🚀 1. Snabbstart</h3>
 <ol>
 <li>Öppna <b>⌂ Admin</b> och logga in med ditt administratörskonto.</li>
 <li>Gå till <b>Spelinställningar</b>, tryck <b>Hämta grupper</b> och välj grupp.</li>
 <li>Tryck <b>Hämta gruppens spelare till rotationsschemat</b>. Vid första importen är ingen spelare markerad. Ny hämtning av samma grupp bevarar urvalet. Kryssa i dagens deltagare eller välj <b>Markera alla</b>.</li>
-<li>Välj 1–3 banor och antal rundor. Det behövs 3–12 markerade spelare.</li>
+<li>Välj 1–3 banor och markera 3–12 deltagare. Kontrollera spelarnas preferenser. Under spelarlistan visas ett förslag på rundantal; tryck <b>Välj … rundor</b> om du vill använda det.</li>
 <li>Tryck <b>Skapa spelschema</b>. Om gruppen redan har ett aktivt spel får du välja att behålla det eller avsluta det och skapa ett nytt.</li>
 <li>I spelvyn: starta timern vid behov och tryck <b>Klar</b> när rundan är spelad. Använd <b>Nästa runda</b> för att fortsätta.</li>
 </ol>
 <h3>🔐 2. Inloggning och lösenord</h3>
 <p><b>Admin</b> hanterar sina tilldelade grupper. <b>Super Admin</b> hanterar alla grupper och gruppbehörigheter. En vanlig deltagare behöver ingen Admin-inloggning för att öppna en giltig Live-länk.</p>
-<p><b>Logga ut</b> avslutar appens inloggning och rensar dess sparade inloggnings- och spelläge. Vid omladdning försöker appen återställa en giltig inloggning. Logga in igen om återställningen misslyckas.</p>
-<p><b>Glömt lösenord:</b> ange din e-postadress i Admin-fliken och tryck <b>Skicka återställningslänk</b>. Kontrollera inkorgen och skräpposten. Öppna länken, skriv samma nya lösenord i båda fälten, minst 8 tecken, och välj <b>Spara nytt lösenord</b>. Gå därefter till vanlig inloggning. En utgången länk kräver en ny begäran. Vid för många försök behöver du vänta.</p>
+<p><b>Logga ut</b> rensar appens sparade inloggning och koppling till den öppna molnrotationen. Molnspelen raderas inte. Övriga öppna flikar på samma webbplats loggas också ut. Om du fortfarande är inloggad vid en vanlig omladdning försöker appen återställa sessionen och molnkopplingen; efter utloggning krävs ny inloggning.</p>
+<p><b>Glömt lösenord:</b> ange din e-postadress i Admin-fliken och tryck <b>Skicka återställningslänk</b>. Kontrollera inkorgen och skräpposten. Öppna länken, skriv samma nya lösenord i båda fälten, minst 8 tecken, och välj <b>Spara nytt lösenord</b>. När bytet lyckas avslutas även återställningssessionen. Välj <b>Till vanlig inloggning</b> och logga in med det nya lösenordet. En utgången länk kräver en ny begäran. Vid för många försök behöver du vänta.</p>
 <p><b>Ändra lösenord när du är inloggad:</b> öppna <b>Lösenord och kontosäkerhet → Ändra lösenord (inloggad)</b>, fyll i två lika lösenord och spara. När bytet lyckas rensas den sparade inloggningen och du måste logga in igen med det nya lösenordet. Vid misslyckat byte behålls inloggningen. Öppna flikar på samma webbplats loggas också ut. Appen begär avslut av kontots sessioner hos Supabase; andra enheter kan behålla åtkomst tills deras aktuella inloggningstoken löper ut. Om servern inte bekräftar avslut av övriga sessioner visas ett meddelande, men du loggas ändå ut här. Återställningsmejl kräver att appens HTTPS-adress är tillåten i Supabase. Dela aldrig lösenord eller hela återställningslänken med andra.</p>
 <h3>⚙️ 3. Grupper och återupptagning</h3>
 <p><b>Byt gruppnamn</b>: Super Admin väljer en grupp i Spelinställningar, trycker på knappen och sparar ett nytt namn med högst 80 tecken. Gruppens spelare, behörigheter och historik behålls. Namnbytet gäller den gemensamma databasen och syns även i ordinarie app. Vid databasfel visas ett felmeddelande.</p>
-<p><b>Hämta grupper</b> laddar grupperna och visar <b>Välj grupp</b> i gruppvalet. Välj därefter den grupp du vill arbeta med. Admin ser de grupper databasen ger kontot åtkomst till. Välj rätt grupp innan du hämtar spelare, skapar spel eller visar molnstatistik.</p>
+<p><b>Hämta grupper</b> laddar grupperna och visar <b>Välj grupp</b> i gruppvalet. Välj därefter den grupp du vill arbeta med. Admin ser de grupper databasen ger kontot åtkomst till. Välj rätt grupp innan du hämtar spelare eller skapar spel. Statistik har ett eget gruppval och behöver ingen spelarimport.</p>
 <p><b>Återuppta senaste spel</b> hämtar gruppens aktiva spel från molnet och visar en bekräftelse innan den öppna rotationen ersätts. Det skapar inget nytt spel. <b>Återgå till spelet</b> öppnar rotationen som redan finns lokalt.</p>
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
 <p>Spelarlistan visar namn och deltagarkryss. Tryck ⚙ vid spelaren för att öppna kön, flaggor, spelpreferens och övriga inställningar. Tryck igen för att stänga. Bara en spelares inställningar visas åt gången; deltagarvalet påverkas inte.</p>
-<p><b>Rundtips</b> vid Dagens spelare använder tre provrotationer med samma schemalogik och valda spelarpreferenser. Normal får både dubbel och singel, Mer singel prioriteras för singel och Endast singel används aldrig i dubbel. Tipset visar rundantal, dubbel-/singelmatcher, vilotillfällen och hur många efterfrågade par eller möten provet täcker. Målet är alla dubbelpartners bland spelare som får spela dubbel och olika singelmotståndare för singelpreferenser; vid rent singelspel alla motståndare. Förslaget är en uppskattning och det skapade schemat kan skilja sig. Tryck Välj föreslaget antal rundor för att använda tipset.</p>
+<p><b>Rundtips</b> ligger direkt under alla spelare. Rutan visar antal banor, markerade spelare, fördelningen Normal / Mer singel / Endast singel samt föreslaget antal rundor. <b>Valt i schemat</b> visar det rundantal som faktiskt används. Förslaget ändrar inte ditt val automatiskt: tryck <b>Välj … rundor</b> för att använda det.</p>
+<p><b>ⓘ Info</b> i rundtipsrutan visar hur förslaget beräknas: tre provrotationer med samma logik och preferenser som schemat. Målet är olika dubbelpartners bland spelare som får spela dubbel, och olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Tipset är en uppskattning och garanterar varken minsta möjliga rundantal eller helt jämn fördelning. Om färre än 3 eller fler än 12 spelare markeras finns rutan kvar, men rundvalsknappen är avstängd.</p>
 <p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
 <p><b>Lägg till befintliga spelare</b> öppnar en sökbar lista över samtliga spelarprofiler. Även vanlig Admin får välja spelare från andra grupper, men endast lägga till dem i grupper hen får hantera. Markera spelarna och tryck <b>Lägg till i gruppen</b>. Spelarna behåller sitt ID, sina tidigare grupper och sin historik. Redan tillagda spelare visas som <b>Finns redan i gruppen</b>.</p>
@@ -1977,7 +1980,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Papperskorgen i rotationslistan</b> tar bort spelaren lokalt efter bekräftelse. Den raderar inte spelaren ur databasen. I Super Admins gruppöversikt tar <b>Ta bort gruppkoppling</b> bort en extra grupptillhörighet och behåller profilen och historiken. Det går inte medan spelaren används i ett aktivt spel. En profil i sin ursprungsgrupp kan inte raderas så länge den används i andra grupper.</p>
 <p><b>Kön</b> väljer manlig eller kvinnlig spelarfigur. Kön, flaggor och spelpreferens sparas i molnet för importerade gruppspelare. Vänta på <b>Spelarinställningar sparade i Supabase</b>. Om ett fel visas är ändringen inte bekräftad i molnet. På en annan enhet behöver du hämta gruppens spelare eller återuppta spelet för att läsa in inställningarna.</p>
 <h3>🌍 5. Två flaggor och landsökning</h3>
-<p><b>Flagga 1</b> är den huvudsakliga flaggan; Sverige används när inget land finns sparat. <b>Flagga 2</b> är valfri. Båda visas bredvid namnet i spelvyn och Live.</p>
+<p><b>Flagga 1</b> är den huvudsakliga flaggan; Sverige används när inget land finns sparat. <b>Flagga 2</b> är valfri. Båda kan visas bredvid namnet i spelvyn och Live när <b>Visa flaggor</b> är på.</p>
 <p>Skriv ett svenskt eller engelskt landsnamn, eller en landskod, exempelvis <b>Danmark</b>, <b>Denmark</b> eller <b>DNK</b>. Träffarna visas direkt under sökfältet med flagga och landsnamn. <b>Tryck på ett land för att välja och spara.</b> Att bara skriva ändrar inte flaggan. Enter väljer landet om sökningen har exakt en träff. När sökfältet är tomt kan du också använda rullistan.</p>
 <p>För att ta bort den andra flaggan: rensa sökningen och välj <b>Ingen andra flagga</b>. Om inga länder hittas, prova en annan stavning eller landskod. Rensning av sökfältet behåller ditt sparade flaggval. Om en flaggbild inte kan laddas försöker appen visa en reservbild eller landskod.</p>
 <h3>🎯 6. Spelpreferenser och informationsknappen</h3>
@@ -1988,11 +1991,12 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 </ul>
 <p>Den gröna <b>ⓘ-knappen</b> är centrerad under valet. Den öppnar en popup med alla tre beskrivningar och markerar det valda alternativet. Popupen öppnas också när du ändrar preferens. Stäng den med <b>Stäng</b>, Escape eller genom att trycka utanför rutan.</p>
 <h3>🏸 7. Rotationsschema och banor</h3>
-<p>Välj <b>1–3 banor</b> och <b>6, 7, 8, 10 eller 12 rundor</b>. Schemat försöker fördela medspelare, motståndare, singel och vila. Antalet spelare och preferenser påverkar hur många banor som kan fyllas; fördelningen är inte garanterat helt jämn.</p>
+<p>Välj <b>1–3 banor</b>. Rundlistans grundval är <b>6, 7, 8, 10 eller 12</b>; rundtipsknappen kan lägga till ett annat föreslaget rundantal, exempelvis 3. Schemat försöker fördela medspelare, motståndare, singel och vila. Antalet spelare och preferenser påverkar hur många banor som kan fyllas; fördelningen är inte garanterat helt jämn.</p>
 <p><b>Singel</b> visar två spelare, <b>Dubbel</b> fyra. Rött och blått skiljer lagen åt. Namn, flaggor och figurer följer rundans placeringar. Vilande spelare visas separat.</p>
 <p><b>Nästa runda</b> och <b>Föregående runda</b> bläddrar i samma schema. <b>Start/Inställningar</b> går tillbaka till inställningarna. Om <b>Visa hela schemat</b> visas kan du använda den för en översikt över rundorna.</p>
 <h3>⏱️ 8. Timer, inställningar och helskärm</h3>
 <p><b>Start</b> startar nedräkningen och blir <b>Paus</b>. <b>Nollställ</b> återställer vald matchtid. Vid rundbyte återställs timern. När tiden tar slut markeras rundan som klar och ljudsignalen spelas om den är aktiverad.</p>
+<p><b>Standard på en enhet utan sparade val:</b> poängräkning är På, matchtid är 10 minuter och ljudsignal, Auto start nästa runda, Rörliga spelare, Visa flaggor samt Visa spelarfigurer är Av. Dina sparade val behålls vid uppdatering.</p>
 <p>Kugghjulet i spelvyn öppnar de centrerade inställningarna:</p>
 <ul>
 <li><b>Visa poängräkning:</b> visar eller döljer poängtavlorna.</li>
@@ -2022,19 +2026,39 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Kontrollera QR/länk</b> verifierar den befintliga länken mot molnet. <b>Visa befintlig QR</b> visar länken som finns i den öppna fliken. Den sparas inte mellan sidomladdningar. En <b>ny visningslänk ersätter den gamla</b>; dela den nya länken med deltagarna. När spelet avslutas blir dess visningslänk ogiltig.</p>
 <p>Live visar runda, banor, två flaggor, spelarfigurer, vilande spelare, färdigmarkering och aktiverad poängräkning. Åskådaren kan välja helskärm men kan inte ändra spelare, runda eller poäng.</p>
 <p>En synlig Live-sida uppdateras ungefär varannan sekund plus nätverkets svarstid. Dold flik eller offline-läge pausar uppdateringen; den återupptas när sidan blir synlig eller nätverket återkommer. Vid serverfel väntar appen längre mellan försöken.</p>
-<h3>📊 12. Statistik och rapporter</h3>
-<p><b>Statistik sparad på servern</b> hämtar grupper och historik direkt efter inloggning när du öppnar Statistik. Admin kan läsa tilldelade grupper och Super Admin alla grupper. Välj grupp och period för att läsa resultat, deltagande och matchhistorik som sparats från andra enheter. Det kräver internet och att spelet/rundorna har sparats i molnet. Statistik endast på denna enhet visas separat och följer inte med till andra enheter.</p>
-<p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
-<p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Uppdatera statistik</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
-<p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Flikarna <b>Resultat</b>, <b>Deltagande</b> och <b>Matchhistorik</b> skiljer resultaten från spelfördelningen. Välj grupp och period och tryck <b>Uppdatera statistik</b>. Tryck på ett spelarnamn för detaljer. På dator kan resultattabellen sorteras via rubrikerna. Exporten gäller vald flik och period. Lokal statistik finns under <b>Statistik på denna enhet</b>. Uppdatera med <b>Uppdatera statistik</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
-<p><b>Dagens rapport</b> visar ett diplom med prispall och guld, silver och brons. Alla dagens spel i vald grupp summeras, med singel och dubbel tillsammans. Dagen avser spelens startdatum enligt enheten. Placering räknas efter vinster, poängskillnad och gjorda poäng; helt lika resultat ger delad placering. Medaljerna beräknas i rapporten och sparas inte separat. Deltagare och matchresultat finns under diplomet och på följande PDF-sidor. <b>Ladda ner PDF</b> skapar en fil. <b>Dela PDF · WhatsApp</b> öppnar enhetens fildelning där WhatsApp kan väljas. Om fildelning saknas laddas PDF ner för manuell bifogning.</p>
+<h3>📊 12. Serverstatistik, dagsrapport och diplom</h3>
+<h4>Statistik sparad på servern</h4>
+<p>Admin ser tilldelade grupper och Super Admin alla grupper som kontot har åtkomst till. När du öppnar <b>Statistik</b> hämtas grupper och statistik från servern. Du behöver inte först välja grupp i Spelinställningar eller hämta spelare. Statistikens gruppval ändrar inte gruppen för ditt pågående spel.</p>
+<p>Välj <b>Grupp</b> och <b>Period</b>: Allt, Idag, Senaste 7 dagarna eller Denna månad. Grupp- och periodbyte hämtar statistiken igen. <b>Hämta grupper</b> uppdaterar gruppvalet; <b>Uppdatera serverstatistik</b> hämtar nya siffror. Perioden avser spelens startdatum enligt enhetens datum, inte datumet för varje enskild match. Serverstatistik kan läsas från andra enheter när resultaten är sparade i molnet.</p>
+<ul>
+<li><b>Resultat:</b> spelade resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Bara färdigmarkerade rundor med ett giltigt registrerat resultat räknas; saknade poäng och 0–0 utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Tryck på ett namn för matchdetaljer. På dator kan tabellen sorteras med kolumnrubrikerna.</li>
+<li><b>Deltagande:</b> antal spelade singel- och dubbelmatcher samt vilor i färdigmarkerade rundor. Detta beskriver spelfördelningen och är inte samma sak som antal vinster.</li>
+<li><b>Matchhistorik:</b> spel, runda, bana, lag, poäng och vilket lag som vann. Sparade resultat kan även innehålla tidigare gruppspelare.</li>
+</ul>
+<p><b>Exportera resultat CSV</b> eller <b>Exportera CSV</b> exporterar vald statistikflik. <b>Skriv ut / PDF</b> öppnar den fliken för utskrift eller PDF-sparning. Om resultatdelen inte kan hämtas visas ett fel; deltagandestatistiken kan ändå vara tillgänglig.</p>
+<h4>Dagens rapport och diplom</h4>
+<p>Välj grupp och öppna <b>Dagens rapport</b>. Perioden växlar till <b>Idag</b>. Alla spel i gruppen som startats idag summeras. Bara färdigmarkerade rundor ingår. Rapporten visar deltagare, singel- och dubbelresultat, hela placeringslistan och matchvinnare.</p>
+<p>Diplomet har mörkblå bakgrund, gulddetaljer, medaljer och prispall. Namn, datum, antal spelare, matcher, rundor och placeringar fylls i från rapportens data. Under <b>Deltagare, detaljer och matchresultat</b> kan du öppna alla uppgifter i textform.</p>
+<p><b>Så räknas placeringarna:</b> alla dagens singel- och dubbelmatcher räknas ihop per spelare. Flest vinster ger högst placering, därefter avgör poängskillnad och sedan gjorda poäng. Helt lika resultat ger delad placering; två delade förstaplatser följs exempelvis av tredje plats. 🥇 Guld, 🥈 silver och 🥉 brons visas för placering 1–3. Dubbelpartners får samma resultat för den gemensamma matchen. Olika antal spelade matcher kan påverka placeringen. Spelare utan giltigt registrerat resultat får ingen placering. Medaljerna beräknas i rapporten och sparas inte som separata utmärkelser.</p>
+<h4>PDF och WhatsApp</h4>
+<ul>
+<li><b>Dela diplom via WhatsApp:</b> skapar en PDF med <b>endast första sidan</b> – själva diplomet. Välj WhatsApp och mottagare i mobilens delningsmeny. Inga detaljsidor följer med. Om placeringslistan behöver fortsättningssidor ingår de endast i hela rapporten.</li>
+<li><b>Ladda ner PDF:</b> laddar ner hela rapporten med diplom och samtliga detaljsidor.</li>
+<li><b>Dela PDF · WhatsApp:</b> delar hela PDF-rapporten, inklusive detaljer och matchresultat.</li>
+<li><b>Skriv ut dagsrapport / PDF:</b> öppnar hela rapporten för utskrift eller PDF-sparning i webbläsaren.</li>
+</ul>
+<p>Delningen kräver stöd för fildelning i webbläsaren och att WhatsApp är tillgängligt på enheten. Om fildelning saknas laddas filen ner så att du kan bifoga den som dokument i WhatsApp. Appen skickar inget automatiskt. Om PDF-knapparna är avstängda, vänta tills diplomet har skapats. Vid fel, kontrollera nätverket och hämta rapporten på nytt.</p>
+<h4>Statistik endast på denna enhet</h4>
+<p>Den här delen är hopfälld under serverstatistiken. Öppna den för lokal deltagarstatistik: spelat, singel, dubbel, vila och fördelning mellan spelare i just den webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b>. <b>Uppdatera statistik</b> läser om de lokalt sparade siffrorna och hämtar inte serverdata.</p>
+<p><b>Exportera PDF</b>, <b>Exportera CSV</b> och <b>Dela rapport</b> i den lokala delen gäller lokal deltagarstatistik. <b>Nollställ statistik</b> tar efter bekräftelse bort både total och daglig lokal statistik; serverns spel och resultat påverkas inte. Lokala och serverlagrade siffror kan därför skilja sig.</p>
 <h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
-<p><b>Radera serverstatistik</b> finns under Statistik, endast för Super Admin. Välj vald grupp eller alla grupper. Förhandsvisningen visar avslutade spel, rundor, spelarplaceringar och poängposter. Skriv gruppnamnet respektive RADERA ALL STATISTIK för att bekräfta. Pågående spel och deras statistik, spelare, grupper, konton och lokal webbläsarstatistik behålls. Raderingen kan inte ångras i appen. Serverfunktionen måste först installeras med test/SUPABASE_RADERA_STATISTIK.sql.</p>
+<p><b>Radera serverstatistik – Super Admin</b> finns under Statistik. <b>Radera vald grupps statistik</b> avser gruppen i statistikens gruppval. <b>Radera alla gruppers statistik</b> gäller alla grupper och påverkas inte av vald period.</p>
+<p>Förhandsvisningen visar vad som ska raderas. Skriv exakt gruppnamn eller <b>RADERA ALL STATISTIK</b> innan <b>Radera permanent</b> blir tillgänglig. <b>Avbryt</b> stänger utan radering. Bara avslutade spel med tillhörande rundor, spelarplaceringar och poäng raderas. Pågående spel och deras statistik, spelare, grupper, konton och lokal webbläsarstatistik behålls. Åtgärden kan inte ångras i appen. Om serverfunktionen saknas behöver appansvarig installera den innan funktionen kan användas. Hämta sedan aktuell statistik med <b>Uppdatera serverstatistik</b>.</p>
 <p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
 <p><b>Admin</b> arbetar i tilldelade grupper: hämtar och lägger till gruppspelare, ändrar deras inställningar, skapar och återupptar spel, styr rundor, räknar poäng, delar Live och ser gruppstatistik. Admin kan inte använda appens verktyg för gruppskapande, administratörsinbjudningar, tilldelningar eller full gruppradering.</p>
 <p><b>Super Admin</b> har även dessa verktyg:</p>
 <ul>
-<li><b>Skapa grupp</b> registrerar en ny grupp.</li>
+<li><b>Skapa grupp</b> registrerar en ny grupp. <b>Byt gruppnamn</b> ändrar vald grupps namn utan att kopiera spelare eller historik.</li>
 <li><b>Bjud in Admin</b> skickar en inbjudan till angiven e-postadress, när serverns inbjudningsfunktion är installerad.</li>
 <li><b>Hämta Admin-konton</b> visar administratörer och deras gruppkopplingar.</li>
 <li><b>Tilldela Admin</b> och <b>Ta bort Admin</b> ändrar gruppbehörighet. Borttagning från gruppen raderar inte användarkontot.</li>
@@ -2043,7 +2067,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li><b>Radera grupp</b> raderar gruppen och dess innehåll permanent. Det krävs först en bekräftelse och sedan exakt gruppnamn. Åtgärden kan inte ångras.</li>
 </ul>
 <p>Flera konton kan vara Super Admin. Appen har inget verktyg för att ge eller ta bort den rollen, radera administratörers inloggningskonton eller läsa och ändra andra personers lösenord. Rollen Super Admin i appen ger inte automatiskt åtkomst till Supabase Dashboard.</p>
-<h3>💾 14. Sparning, offline och installation</h3>
+<h3>💾 14. Startbild, sparning, offline och installation</h3>
+<p><b>Startbilden</b> visar appikonen, Badminton App, Skapad av Piotr Zdeb och version 2.0. Första öppningen i en webbläsarsession visar ungefär fyra sekunders startförlopp. Vanlig omladdning i samma session hoppar över det. Startbilden är inte kopplad till varje inloggning.</p>
 <p>Visningsinställningar, lokala spelare och en kopia av rotationen lagras i webbläsaren. Gruppspelare, deras inställningar, molnspel och poäng lagras i Supabase. Rensad webbplatsdata, privat läge eller byte av enhet kan göra att lokala uppgifter saknas.</p>
 <p>Efter ett besök kan appens sida och cachade bilder fungera offline. Molnsparning, inloggning, återställningsmejl och Live-synk kräver internet. Externa flaggbilder kan saknas offline. Vid fel, behåll sidan öppen och kontrollera sparstatus när nätverket återkommer.</p>
 <p>På mobilen kan webbläsaren erbjuda <b>Lägg till på startskärmen</b> eller <b>Installera app</b>. Möjligheten beror på webbläsaren. Testsidan och den vanliga appen har separata lokala inställningar.</p>
@@ -2059,6 +2084,10 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li><b>QR-länken är ogiltig:</b> använd Kontrollera QR/länk. Skapa och dela en ny länk om den gamla ersatts.</li>
 <li><b>Molnkopplingen saknas efter omladdning:</b> logga in och använd Återuppta senaste spel för rätt grupp.</li>
 <li><b>Databasfel eller nekad behörighet:</b> spara felmeddelandet och kontakta den som ansvarar för appens Supabase-konfiguration. Skicka inga lösenord eller hela länkar som innehåller inloggningskoder.</li>
+<li><b>Rundtipset och valt rundantal skiljer sig:</b> tryck Välj … rundor för att använda förslaget. Det används inte automatiskt.</li>
+<li><b>Diplomet saknar resultat:</b> välj rätt statistikgrupp, kontrollera dagens startdatum, sparade poäng och att rundorna markerats Klar. Tryck Uppdatera serverstatistik. Matcher utan poäng eller med 0–0 ger ingen placering.</li>
+<li><b>Bara diplomet ska skickas:</b> använd Dela diplom via WhatsApp. Dela PDF · WhatsApp skickar även detaljsidorna.</li>
+<li><b>Utloggad efter lösenordsbyte:</b> det är avsiktligt. Logga in med det nya lösenordet. Begär en återställningslänk om du inte minns det.</li>
 <li><b>Äldre gränssnitt visas:</b> ladda om med Ctrl+F5 på dator. Att rensa webbplatsdata tar också bort lokalt sparade inställningar och inloggning.</li>
 </ul>
 <h3>ℹ️ Om appen</h3>
@@ -4826,6 +4855,7 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <script src="statistics-delete.js"></script>
 </body>
 </html>
+
 
 
 
