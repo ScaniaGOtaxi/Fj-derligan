@@ -1,5 +1,5 @@
-const CACHE = 'badminton-test-diploma-20261018';
-const FILES = ['./', './index.html', './statistics-delete.js', './round-tips.js', './group-rename.js', './sync-v2.js', './group-players.js', './flag-visibility.js', './player-visibility.js', './player-motion.js', './shuttle-motion.js', './results-v1.js', './statistics-ui.js', './daily-pdf.js', './daily-diploma.js', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
+const CACHE = 'badminton-test-original-diploma-20261018';
+const FILES = ['./', './index.html', './statistics-delete.js', './round-tips.js', './group-rename.js', './sync-v2.js', './group-players.js', './flag-visibility.js', './player-visibility.js', './player-motion.js', './shuttle-motion.js', './results-v1.js', './statistics-ui.js', './daily-pdf.js', './daily-diploma.js', './diploma-template.png', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
@@ -12,7 +12,7 @@ self.addEventListener('fetch', event => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     // Versioned worker caches retain images; app scripts remain network-first.
-    if (/\.(png|jpe?g|webp)$/i.test(url.pathname)) {
+    if (!url.pathname.endsWith('/diploma-template.png') && /\.(png|jpe?g|webp)$/i.test(url.pathname)) {
       const cached = await cache.match(event.request);
       if (cached) return cached;
     }
@@ -30,5 +30,6 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
+
 
 
