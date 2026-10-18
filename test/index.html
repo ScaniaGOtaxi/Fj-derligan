@@ -1159,17 +1159,17 @@ async function restoreCloudBinding(){
  const saved=JSON.parse(bmStorage.getItem(STATE_KEY)||'null');const binding=saved?.cloud;
  if(!binding||binding.groupId!==groupSelect.value||!Array.isArray(saved.rounds))return;
  try{
-  const sessions=await request('/rest/v1/badminton_sessions?select=id,group_id,status&id=eq.'+encodeURIComponent(binding.sessionId)+'&group_id=eq.'+encodeURIComponent(binding.groupId)+'&status=eq.active');
-  if(sessions.length!==1)throw Error('Det sparade spelet är inte längre aktivt.');
+  const sessions=await request('/rest/v1/badminton_sessions?select=id,group_id,status&id=eq.'+encodeURIComponent(binding.sessionId)+'&group_id=eq.'+encodeURIComponent(binding.groupId));
+  if(sessions.length!==1)throw Error('Det sparade spelet kunde inte hittas.');
   const rounds=await request('/rest/v1/badminton_rounds?select=id,round_number,status&session_id=eq.'+encodeURIComponent(binding.sessionId)+'&order=round_number.asc');
   if(rounds.length!==saved.rounds.length)throw Error('Lokalt spel stämmer inte med molnsessionen.');
   const members=await fetchGroupMembers(binding.groupId);
   window.badmintonProfiles.load(binding.groupId,members);importedGroupId=binding.groupId;importedPlayerIds=new Map(members.map(p=>[p.name,p.id]));
-  lastSessionId=binding.sessionId;lastSessionGroupId=binding.groupId;cloudRoundIds=new Map(rounds.map(r=>[r.round_number,r.id]));
+  lastSessionId=binding.sessionId;lastSessionGroupId=binding.groupId;cloudRoundIds=new Map(rounds.map(r=>[r.round_number,r.id]));confirmedCompletions.clear();rounds.filter(r=>r.status==='completed').forEach(r=>confirmedCompletions.add(r.round_number));if(sessions[0].status==='completed')closedSessions.add(binding.sessionId);
   rounds.filter(r=>r.status==='completed').forEach(r=>completedRounds.add(r.round_number-1));
-  (saved.done||[]).filter(i=>rounds[i]?.status!=='completed').forEach(i=>window.dispatchEvent(new CustomEvent('badminton:round-completed',{detail:{roundNumber:i+1}})));
+  (saved.done||[]).filter(i=>!closedSessions.has(lastSessionId)&&rounds[i]?.status!=='completed').forEach(i=>window.dispatchEvent(new CustomEvent('badminton:round-completed',{detail:{roundNumber:i+1}})));
   renderBigRound();persistGame();
-  window.badmintonLoadScores?.();sessionStatus.textContent='✅ Molnkopplingen återställd efter omladdning.';
+  window.badmintonLoadScores?.();sessionStatus.textContent=closedSessions.has(lastSessionId)?'✓ Spelet är avslutat. Resultaten finns under Statistik.':'✅ Molnkopplingen återställd efter omladdning.';refreshFinishButton();maybeFinishGame();
  }catch(e){sessionStatus.textContent='⚠️ '+e.message+' Använd Återuppta senaste spel.';}
 }
 async function restoreAuth(){
@@ -1260,7 +1260,7 @@ window.badmintonSaveProfile=function(groupId,playerId,values){
  profileQueues.set(queueKey,next);
  return next;
 };
-window.badmintonCloudContext=()=>lastSessionId?{sessionId:lastSessionId,groupId:lastSessionGroupId}:null;
+window.badmintonCloudContext=()=>lastSessionId?{sessionId:lastSessionId,groupId:lastSessionGroupId,finished:closedSessions.has(lastSessionId)}:null;
 window.badmintonCloudRequest=request;
 window.badmintonCloudRole=()=>cloudRole;
 window.badmintonScoreSession=()=>lastSessionId;
@@ -1449,6 +1449,61 @@ importBtn.addEventListener('click',async()=>{
  });
 const sessionStatus=document.getElementById('cloudSessionStatus');
 let lastSessionId=null,lastSessionGroupId=null;
+const closedSessions=new Set(),confirmedCompletions=new Set(),roundWrites=new Map();
+let finishingSession=null,finishPromise=null;
+window.badmintonGameReadOnly=()=>!!(lastSessionId&&(finishingSession===lastSessionId||closedSessions.has(lastSessionId)))||(!lastSessionId&&window.badmintonPendingCloud?.finished===true);
+function finishStatus(message){const node=document.getElementById('bmFinishGameStatus');if(node){node.textContent=message;node.dataset.sessionId=lastSessionId||'';}sessionStatus.textContent=message;}
+function refreshFinishButton(){
+ const button=document.getElementById('bmFinishGame');if(!button)return;
+ const feedback=document.getElementById('bmFinishGameStatus');if(feedback&&feedback.dataset.sessionId!==(lastSessionId||'')){feedback.textContent='';feedback.dataset.sessionId=lastSessionId||'';}
+ const closed=closedSessions.has(lastSessionId)||(!lastSessionId&&window.badmintonPendingCloud?.finished===true);
+ button.disabled=!accessToken||!lastSessionId||!!finishingSession||cloudSaveBusy||closed;
+ button.textContent=closed?'✓ Spelet är avslutat':finishingSession?'Avslutar spelet …':'Avsluta spel';
+ if(closed){const node=document.getElementById('bmFinishGameStatus');if(node)node.textContent='✓ Spelet är avslutat. Resultaten finns kvar under Statistik.';}
+ document.querySelectorAll('#gameView .timerBox button').forEach(b=>b.disabled=window.badmintonGameReadOnly());
+}
+async function finishGame(automatic=false){
+ if(finishPromise)return finishPromise;
+ const sessionId=lastSessionId,groupId=lastSessionGroupId,generation=authGeneration;
+ if(!sessionId||!accessToken||!['admin','super_admin'].includes(cloudRole)||cloudSaveBusy||closedSessions.has(sessionId))return;
+ const expected=cloudRoundIds.size;
+ const same=()=>lastSessionId===sessionId&&lastSessionGroupId===groupId&&authGeneration===generation;
+ const ensure=()=>{if(!same())throw Error('Inloggningen eller spelet har ändrats. Återuppta rätt spel och försök igen.');};
+ finishingSession=sessionId;refreshFinishButton();window.badmintonScoreRefresh?.();
+ finishPromise=(async()=>{
+  try{
+   await Promise.all([...cloudRoundIds.values()].map(id=>roundWrites.get(id)).filter(Boolean));ensure();
+   const rounds=await request('/rest/v1/badminton_rounds?select=id,round_number,status&session_id=eq.'+encodeURIComponent(sessionId));ensure();
+   if(!Array.isArray(rounds)||!expected||rounds.length!==expected)throw Error('Alla sparade rundor kunde inte verifieras. Försök igen.');
+   const done=rounds.filter(r=>r.status==='completed').length;
+   if(automatic&&done!==rounds.length)return;
+   if(!automatic){const prompt=done===rounds.length?'Alla '+done+' rundor är klara. Avsluta spelet?':done+' av '+rounds.length+' rundor är klara. Avsluta ändå? Ospelade rundor markeras inte som spelade.';
+    if(!(await window.bmCenteredConfirm('Avsluta spel',prompt+' Resultaten sparas och Live-länken slutar fungera.','Avsluta spel')))return;ensure();}
+   finishStatus('⏳ Sparar väntande poäng och avslutar spelet …');
+   await window.badmintonFlushScores?.(sessionId);ensure();
+   const changed=await request('/rest/v1/badminton_sessions?id=eq.'+encodeURIComponent(sessionId)+'&group_id=eq.'+encodeURIComponent(groupId)+'&status=eq.active&select=id,status',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'completed',ended_at:new Date().toISOString()})});ensure();
+   if(!Array.isArray(changed)||changed.length!==1){
+    const current=await request('/rest/v1/badminton_sessions?select=id,status&id=eq.'+encodeURIComponent(sessionId)+'&group_id=eq.'+encodeURIComponent(groupId));ensure();
+    if(current.length!==1||current[0].status!=='completed')throw Error('Servern kunde inte bekräfta att spelet avslutats. Försök igen.');
+   }
+   closedSessions.add(sessionId);liveRoundWanted=null;clearTimeout(liveRoundRetry);
+   for(const id of cloudRoundIds.values()){const retry=completionRetries.get(id);if(retry)clearTimeout(retry.timer);completionRetries.delete(id);}
+   window.badmintonPendingCloud=window.badmintonCloudContext();resetTimer();persistGame();
+   finishStatus('✓ Spelet är avslutat'+(done===rounds.length?' – alla '+done+' rundor är klara.':'.')+' Resultaten finns kvar under Statistik.');
+   window.dispatchEvent(new CustomEvent('badminton:game-finished',{detail:{sessionId,groupId}}));
+  }catch(e){if(same())finishStatus('❌ Spelet kunde inte avslutas: '+e.message+' Använd Avsluta spel för att försöka igen.');}
+  finally{finishingSession=null;finishPromise=null;refreshFinishButton();window.badmintonScoreRefresh?.();}
+ })();
+ return finishPromise;
+}
+function maybeFinishGame(){
+ if(!lastSessionId||cloudSaveBusy||!cloudRoundIds.size||closedSessions.has(lastSessionId))return;
+ if([...cloudRoundIds.keys()].every(number=>confirmedCompletions.has(number)))void finishGame(true);
+}
+window.addEventListener('badminton:auth-changed',refreshFinishButton);
+window.addEventListener('badminton:round-changed',refreshFinishButton);
+document.addEventListener('DOMContentLoaded',()=>{document.getElementById('bmFinishGame').onclick=()=>finishGame(false);refreshFinishButton();});
+
 window.addEventListener('badminton:rotation-created', async (event)=>{
  const {courtCount,roundCount,rounds}=event.detail||{};
  const id=groupSelect.value;
@@ -1456,7 +1511,7 @@ window.addEventListener('badminton:rotation-created', async (event)=>{
  if(cloudSaveBusy){sessionStatus.textContent='⚠️ Föregående molnsparning pågår. Vänta innan du skapar ett nytt schema.';return;}
  if(!accessToken || !id || importedGroupId!==id){sessionStatus.textContent='⚠️ Rotationen är lokal. Logga in, välj grupp och hämta dess spelare först för molnsparning.';return;}
  if(!Array.isArray(rounds)||rounds.length!==roundCount){sessionStatus.textContent='❌ Kunde inte läsa rotationsschemat för molnsparning.';return;}
- cloudSaveBusy=true;lastSessionId=null;cloudRoundIds.clear();pendingCompletions.clear();
+ cloudSaveBusy=true;lastSessionId=null;cloudRoundIds.clear();confirmedCompletions.clear();pendingCompletions.clear();refreshFinishButton();
  sessionStatus.textContent='⏳ Sparar session, rundor och spelare i Supabase …';
  let createdSession=null;
  try{
@@ -1490,7 +1545,7 @@ window.addEventListener('badminton:rotation-created', async (event)=>{
   let cleanup='';
   if(createdSession){try{await request('/rest/v1/badminton_rounds?session_id=eq.'+encodeURIComponent(createdSession),{method:'DELETE'});await request('/rest/v1/badminton_sessions?id=eq.'+encodeURIComponent(createdSession),{method:'DELETE'});}catch(_){cleanup=' OBS: En ofullständig testsession kan finnas kvar i databasen.'}}
   sessionStatus.textContent='❌ Molnsparningen misslyckades: '+e.message+'. Den lokala rotationen fungerar fortfarande.'+cleanup;
-  }finally{cloudSaveBusy=false;void syncLiveRound();}
+  }finally{cloudSaveBusy=false;refreshFinishButton();void syncLiveRound();}
 });
 // Steg 96: synkronisera Admins aktuella runda med Supabase.
 let liveRoundWanted=null;
@@ -1504,7 +1559,7 @@ async function syncLiveRound(){
       const wanted=liveRoundWanted;
       liveRoundWanted=null;
       const sessionId=lastSessionId;
-      if(!accessToken||!sessionId)continue;
+      if(!accessToken||!sessionId||closedSessions.has(sessionId)||finishingSession===sessionId)continue;
       try{
         const updated=await request('/rest/v1/badminton_sessions?id=eq.'+encodeURIComponent(sessionId)+'&status=eq.active&select=id',{
           method:'PATCH',headers:{Prefer:'return=representation'},
@@ -1512,9 +1567,10 @@ async function syncLiveRound(){
         });
         if(!Array.isArray(updated)||updated.length!==1)throw Error('Ingen aktiv session uppdaterades');
         liveRoundRetryDelay=1000;
-        if(liveRoundWanted===null && lastSessionId===sessionId)
+        if(liveRoundWanted===null && lastSessionId===sessionId&&!closedSessions.has(sessionId))
           sessionStatus.textContent='📡 Liverunda '+wanted+' synkroniserad till Supabase.';
       }catch(e){
+        if(closedSessions.has(sessionId)||lastSessionId!==sessionId)continue;
         sessionStatus.textContent='⚠️ Liverundan kunde inte synkroniseras: '+e.message+' Försöker igen …';
         if(lastSessionId===sessionId && liveRoundWanted===null)liveRoundWanted=wanted;
         clearTimeout(liveRoundRetry);liveRoundRetry=setTimeout(()=>{liveRoundRetry=null;void syncLiveRound();},liveRoundRetryDelay);liveRoundRetryDelay=Math.min(30000,liveRoundRetryDelay*2);break;
@@ -1558,11 +1614,14 @@ window.addEventListener('badminton:round-completed',async event=>{
 
  const id=cloudRoundIds.get(number);
  if(!id||!lastSessionId){if(cloudSaveBusy)pendingCompletions.add(number);return;}
+ if(closedSessions.has(lastSessionId))return;
  const completionSession=lastSessionId;
- try{await request('/rest/v1/badminton_rounds?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'completed',completed_at:new Date().toISOString()})});
+ const write=request('/rest/v1/badminton_rounds?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'completed',completed_at:new Date().toISOString()})});roundWrites.set(id,write);
+ try{await write;if(roundWrites.get(id)===write)roundWrites.delete(id);
   const retry=completionRetries.get(id);if(retry)clearTimeout(retry.timer);completionRetries.delete(id);
-  sessionStatus.textContent='✅ Runda '+number+' markerad som spelad i Supabase.';
- }catch(e){sessionStatus.textContent='⚠️ Runda '+number+' är klar lokalt men kunde inte uppdateras i Supabase: '+e.message+' Försöker igen …';
+  if(lastSessionId!==completionSession)return;confirmedCompletions.add(number);
+  sessionStatus.textContent='✅ Runda '+number+' markerad som spelad i Supabase.';maybeFinishGame();
+ }catch(e){if(roundWrites.get(id)===write)roundWrites.delete(id);sessionStatus.textContent='⚠️ Runda '+number+' är klar lokalt men kunde inte uppdateras i Supabase: '+e.message+' Försöker igen …';
   const previous=completionRetries.get(id);if(previous)clearTimeout(previous.timer);const delay=Math.min(30000,(previous?.delay||500)*2);
   const timer=setTimeout(()=>{if(lastSessionId===completionSession)window.dispatchEvent(new CustomEvent('badminton:round-completed',{detail:{roundNumber:number}}));},delay);completionRetries.set(id,{timer,delay});}
 });
@@ -1581,7 +1640,7 @@ document.getElementById('cloudResumeSession').addEventListener('click',async()=>
  const groupId=groupSelect.value;
  if(!accessToken){sessionStatus.textContent='❌ Logga in som Admin eller Super Admin först.';return;}
  if(!groupId){sessionStatus.textContent='❌ Välj en grupp först.';return;}
- if(cloudSaveBusy){sessionStatus.textContent='Vänta tills den pågående sparningen är klar.';return;}
+ if(cloudSaveBusy||finishingSession){sessionStatus.textContent='Vänta tills den pågående sparningen är klar.';return;}
  const btn=document.getElementById('cloudResumeSession');btn.disabled=true;
  sessionStatus.textContent='⏳ Hämtar senaste spelet för '+groupSelect.selectedOptions[0].text+' …';
  try{
@@ -1617,7 +1676,7 @@ document.getElementById('cloudResumeSession').addEventListener('click',async()=>
   // Uppdatera molnkopplingen innan vyn öppnas. Ingen ny session skapas.
   lastSessionId=session.id;lastSessionGroupId=groupId;
    liveRoundWanted=null;
-  cloudRoundIds=new Map(rounds.map(r=>[r.round_number,r.id]));
+  cloudRoundIds=new Map(rounds.map(r=>[r.round_number,r.id]));confirmedCompletions.clear();rounds.filter(r=>r.status==='completed').forEach(r=>confirmedCompletions.add(r.round_number));
   pendingCompletions.clear();
   importedGroupId=groupId;
   importedPlayerIds=new Map(members.map(x=>[x.name,x.id]));
@@ -1625,12 +1684,12 @@ document.getElementById('cloudResumeSession').addEventListener('click',async()=>
   window.badmintonLoadScores?.();persistGame();
   sessionStatus.textContent='✅ Återupptaget: '+session.name+' – '+rounds.length+' rundor, '+done.length+' färdiga. Visar runda '+(resumeIndex+1)+'.';
  }catch(e){sessionStatus.textContent='❌ Kunde inte återuppta spelet: '+e.message;}
- finally{btn.disabled=false;}
+ finally{btn.disabled=false;refreshFinishButton();maybeFinishGame();}
 });
 // Steg 46: Kontrollera aktiv session INNAN ett nytt lokalt schema skapas.
 let cloudNewGameGuardBusy=false;
 window.badmintonV13PrepareNewGame=async function(){
- if(cloudNewGameGuardBusy || cloudSaveBusy){sessionStatus.textContent='⏳ Vänta tills föregående åtgärd är klar.';return false;}
+ if(cloudNewGameGuardBusy || cloudSaveBusy || finishingSession){sessionStatus.textContent='⏳ Vänta tills föregående åtgärd är klar.';return false;}
  if(!accessToken || !groupSelect.value || importedGroupId!==groupSelect.value){
   sessionStatus.textContent='❌ Logga in, välj grupp och hämta gruppens spelare innan du skapar ett molnschema.';
   return false;
@@ -2012,6 +2071,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <h3>✅ 9. Färdiga rundor</h3>
 <p><b>Klar</b> markerar rundan som spelad. Spelrutorna blir röda i både Admin- och Live-vyn efter molnsynk. Röda spelrutor betyder färdig runda, inte ett annat lag. Rundorna har varsin färgstatus. Lokal statistik räknas en gång när rundan först markeras klar.</p>
 <p>Vid tillfälligt fel försöker appen skicka rundbyte och färdigmarkering igen. Kontrollera statusmeddelandet: en lokal ändring är inte säkert sparad förrän molnet har bekräftat den.</p>
+<h4>Avsluta hela spelet</h4>
+<p>När alla schemats rundor är markerade Klar och bekräftade i molnet avslutas spelet automatiskt. Appen väntar på sparning av rundor och poäng. Knappen <b>Avsluta spel</b> i spelvyn kan också avsluta tidigare efter bekräftelse; ospelade rundor markeras inte som spelade. Resultaten behålls under Statistik. Live-länken slutar fungera när molnspelet avslutats. Ett avslutat spel kan visas men inte fortsätta poängsättas. Vid sparfel behålls spelet som pågående; kontrollera anslutningen och tryck Avsluta spel för att försöka igen.</p>
 <h3>🔢 10. Poängräkning</h3>
 <p>Aktivera <b>Visa poängräkning</b>. Använd <b>+</b> och <b>−</b> för respektive lag. Poängen kan inte bli negativa. Minimeringsknappen visar en mindre poängtavla; tryck igen för att öppna den.</p>
 <p>Poäng sparas separat för varje spel, runda och bana. Snabba tryck samlas till färre sparningar utan att slutpoängen tappas. Vänta på <b>Poäng sparade i Supabase</b> innan du stänger sidan. Byte tillbaka till en runda hämtar dess poäng. Poängen visas skrivskyddat i Live när poängräkningen är aktiverad.</p>
@@ -2241,6 +2302,7 @@ function resetTimer(){
   const b=document.getElementById('timerStartBtn'); if(b)b.textContent='▶ Start';
 }
 function toggleTimer(){
+  if(window.badmintonGameReadOnly?.())return;
   if(timerRunning){
     clearInterval(timerHandle);timerHandle=null;timerRunning=false;
     document.getElementById('timerStartBtn').textContent='▶ Start'; return;
@@ -2258,6 +2320,7 @@ function toggleTimer(){
   },1000);
 }
 function markRoundDone(){
+  if(window.badmintonGameReadOnly?.())return;
   if(!schedule.length)return;
   const alreadyDone=completedRounds.has(currentRoundIndex);
   if(!alreadyDone)recordRoundStatistics(schedule[currentRoundIndex]);
@@ -3518,6 +3581,13 @@ window.addEventListener('DOMContentLoaded',refreshPlayerListUI);
 window.addEventListener('pageshow',event=>{if(event.persisted)refreshPlayerListUI();});
 window.addEventListener('focus',updateSelectedCount);
 </script>
+<style id="finish-game-layout">
+#gameView .gameNav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+#gameView #bmFinishGame{border:1px solid #c79a55;white-space:normal;min-height:40px}
+#bmFinishGameStatus{flex:0 0 auto;font-size:13px;overflow-wrap:anywhere}
+#bmFinishGameStatus:empty{display:none}
+@media(max-width:600px){#gameView .gameNav{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+</style>
 <div id="gameView">
 <div class="gameTop">
 
@@ -3540,7 +3610,9 @@ window.addEventListener('focus',updateSelectedCount);
 <button class="backBtn" onclick="backToSetup()">⌂ Start / Inställningar</button>
 <button class="backBtn" id="bigPrevBtn" onclick="prevRound()">← Föregående runda</button>
 <button id="bigNextBtn" onclick="nextRound()">Nästa runda ➜</button>
+<button type="button" class="backBtn" id="bmFinishGame" disabled>Avsluta spel</button>
 </div>
+<div id="bmFinishGameStatus" role="status" style="padding:8px 0;line-height:1.5"></div>
 </div>
 <div class="appCredit">Badminton App ver. 2.0 • Skapad av Piotr Zdeb +=RYB@=+</div>
 
@@ -4468,26 +4540,36 @@ window.badmintonConfirmActiveGame=function(name){
        const toggle=event.target.closest('.bmScoreCollapse');
        if(toggle){collapsed=!collapsed;bmStorage.setItem(collapsedKey,String(collapsed));render();return}
        const b=event.target.closest('[data-team][data-delta]');
-       if(!b)return;
+       if(!b||window.badmintonGameReadOnly?.())return;
        const team=Number(b.dataset.team),delta=Number(b.dataset.delta);
        const old=scores[key]||[0,0];
        old[team]=Math.max(0,old[team]+delta);scores[key]=old;save();render();publishScores();
      });
+     el.querySelectorAll('[data-team]').forEach(button=>button.disabled=!!window.badmintonGameReadOnly?.());
      stage.appendChild(el);
    });
  }
  let scoreRevision=0,scoreSaveTimer=null,scoreWriting=false,scoreWritingKey=null;
- const pendingScores=new Map();
- async function flushScores(){
+ const pendingScores=new Map(),failedScores=new Map();
+ let scoreFlushPromise=null;
+ function flushScores(){if(scoreFlushPromise)return scoreFlushPromise;scoreFlushPromise=writeScores().finally(()=>{scoreFlushPromise=null;});return scoreFlushPromise;}
+ async function writeScores(){
   clearTimeout(scoreSaveTimer);scoreSaveTimer=null;if(scoreWriting)return;scoreWriting=true;
   try{while(pendingScores.size){const [key,payload]=pendingScores.entries().next().value;pendingScores.delete(key);scoreWritingKey=key;
    try{await window.badmintonCloudRequest('/rest/v1/rpc/set_badminton_live_scores',{method:'POST',body:JSON.stringify(payload),keepalive:true});
-    if(!pendingScores.size)window.badmintonSyncStatus('scores','✅ Poäng sparade i Supabase.');
-   }catch(e){window.badmintonSyncStatus('scores','❌ Poäng kunde inte sparas: '+e.message);}
+    failedScores.delete(key);if(!pendingScores.size&&!failedScores.size)window.badmintonSyncStatus('scores','✅ Poäng sparade i Supabase.');
+   }catch(e){failedScores.set(key,payload);window.badmintonSyncStatus('scores','❌ Poäng kunde inte sparas: '+e.message);}
   }}finally{scoreWriting=false;scoreWritingKey=null;}
  }
+ window.badmintonFlushScores=async session=>{
+  await flushScores();
+  for(const [key,payload] of failedScores)if(payload.p_session_id===session&&!pendingScores.has(key))pendingScores.set(key,payload);
+  await flushScores();
+  if([...failedScores.values()].some(payload=>payload.p_session_id===session))throw Error('Alla poäng är inte sparade. Kontrollera anslutningen och försök igen.');
+ };
  window.addEventListener('pagehide',()=>{void flushScores();});
  function publishScores(){
+  if(window.badmintonGameReadOnly?.())return;
   scoreRevision++;
   const session=window.badmintonScoreSession?.();if(!session)return;
   const round=currentRoundIndex+1;
@@ -4498,9 +4580,10 @@ window.badmintonConfirmActiveGame=function(name){
   clearTimeout(scoreSaveTimer);scoreSaveTimer=setTimeout(()=>{void flushScores();},150);
  }
  window.badmintonLoadScores=async function(){
+  if(window.badmintonGameReadOnly?.())return;
   const session=window.badmintonScoreSession?.();if(!session)return;
   const round=currentRoundIndex,revision=scoreRevision;
-  if(pendingScores.has(session+':'+(round+1))||scoreWritingKey===session+':'+(round+1))return;
+  if(pendingScores.has(session+':'+(round+1))||failedScores.has(session+':'+(round+1))||scoreWritingKey===session+':'+(round+1))return;
   try{const rows=await window.badmintonCloudRequest('/rest/v1/rpc/get_badminton_admin_scores',{method:'POST',body:JSON.stringify({p_session_id:session,p_round_number:round+1})});
    if(session!==window.badmintonScoreSession?.()||round!==currentRoundIndex||revision!==scoreRevision)return;
    if(!Array.isArray(rows))throw Error('Oväntat poängsvar');
@@ -4855,6 +4938,7 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <script src="statistics-delete.js"></script>
 </body>
 </html>
+
 
 
 
