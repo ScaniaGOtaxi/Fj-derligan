@@ -1332,7 +1332,7 @@ document.getElementById('cloudLoadGroups').addEventListener('click',async()=>{
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return}
  try{await loadGroups()}catch(e){say('❌ Kunde inte hämta grupper: '+e.message)}
 });
-groupSelect.addEventListener('change',()=>{window.badmintonPendingCloud=null;lastSessionId=null;lastSessionGroupId=null;cloudRoundIds.clear();window.badmintonProfiles.reset();if(groupSelect.value)bmStorage.setItem(GROUP_KEY,groupSelect.value);else bmStorage.removeItem(GROUP_KEY);});
+groupSelect.addEventListener('change',()=>{window.badmintonPendingCloud=null;lastSessionId=null;lastSessionGroupId=null;cloudRoundIds.clear();window.badmintonProfiles.reset();if(groupSelect.value)bmStorage.setItem(GROUP_KEY,groupSelect.value);else bmStorage.removeItem(GROUP_KEY);refreshFinishButton();});
 // Restore authentication on reload; never persist a password.
 restoreAuth();
 async function loadPlayers(){
@@ -1452,14 +1452,21 @@ let lastSessionId=null,lastSessionGroupId=null;
 const closedSessions=new Set(),confirmedCompletions=new Set(),roundWrites=new Map();
 let finishingSession=null,finishPromise=null;
 window.badmintonGameReadOnly=()=>!!(lastSessionId&&(finishingSession===lastSessionId||closedSessions.has(lastSessionId)))||(!lastSessionId&&window.badmintonPendingCloud?.finished===true);
-function finishStatus(message){const node=document.getElementById('bmFinishGameStatus');if(node){node.textContent=message;node.dataset.sessionId=lastSessionId||'';}sessionStatus.textContent=message;}
+function finishStatus(message){const node=document.getElementById('bmFinishGameStatus');if(node){node.textContent=message;node.dataset.sessionId=lastSessionId||'';delete node.dataset.reason;}sessionStatus.textContent=message;}
 function refreshFinishButton(){
  const button=document.getElementById('bmFinishGame');if(!button)return;
  const feedback=document.getElementById('bmFinishGameStatus');if(feedback&&feedback.dataset.sessionId!==(lastSessionId||'')){feedback.textContent='';feedback.dataset.sessionId=lastSessionId||'';}
  const closed=closedSessions.has(lastSessionId)||(!lastSessionId&&window.badmintonPendingCloud?.finished===true);
  button.disabled=!accessToken||!lastSessionId||!!finishingSession||cloudSaveBusy||closed;
  button.textContent=closed?'✓ Spelet är avslutat':finishingSession?'Avslutar spelet …':'Avsluta spel';
- if(closed){const node=document.getElementById('bmFinishGameStatus');if(node)node.textContent='✓ Spelet är avslutat. Resultaten finns kvar under Statistik.';}
+ button.dataset.finished=String(!!closed);
+ const reason=closed?'✓ Spelet är avslutat. Resultaten finns kvar under Statistik.':!accessToken?'Logga in under Admin för att avsluta molnspelet.':cloudSaveBusy?'Vänta tills schemat är sparat i molnet.':!lastSessionId?'Schemat saknar molnkoppling. Välj rätt grupp i Spelinställningar och använd Återuppta senaste spel.':finishingSession?'Väntar på sparning innan spelet avslutas …':'';
+ button.title=reason||'Avsluta det öppna molnspelet';
+ button.setAttribute('aria-describedby','bmFinishGameStatus');
+ if(feedback){
+  if(reason&&(!finishingSession||!feedback.textContent||feedback.dataset.reason)){feedback.textContent=reason;feedback.dataset.reason='true';}
+  else if(!reason&&feedback.dataset.reason){feedback.textContent='';delete feedback.dataset.reason;}
+ }
  document.querySelectorAll('#gameView .timerBox button').forEach(b=>b.disabled=window.badmintonGameReadOnly());
 }
 async function finishGame(automatic=false){
@@ -2072,7 +2079,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Klar</b> markerar rundan som spelad. Spelrutorna blir röda i både Admin- och Live-vyn efter molnsynk. Röda spelrutor betyder färdig runda, inte ett annat lag. Rundorna har varsin färgstatus. Lokal statistik räknas en gång när rundan först markeras klar.</p>
 <p>Vid tillfälligt fel försöker appen skicka rundbyte och färdigmarkering igen. Kontrollera statusmeddelandet: en lokal ändring är inte säkert sparad förrän molnet har bekräftat den.</p>
 <h4>Avsluta hela spelet</h4>
-<p>När alla schemats rundor är markerade Klar och bekräftade i molnet avslutas spelet automatiskt. Appen väntar på sparning av rundor och poäng. Knappen <b>Avsluta spel</b> i spelvyn kan också avsluta tidigare efter bekräftelse; ospelade rundor markeras inte som spelade. Resultaten behålls under Statistik. Live-länken slutar fungera när molnspelet avslutats. Ett avslutat spel kan visas men inte fortsätta poängsättas. Vid sparfel behålls spelet som pågående; kontrollera anslutningen och tryck Avsluta spel för att försöka igen.</p>
+<p>När alla schemats rundor är markerade Klar och bekräftade i molnet avslutas spelet automatiskt. Appen väntar på sparning av rundor och poäng. Knappen <b>Avsluta spel</b> i spelvyn kan också avsluta tidigare efter bekräftelse; ospelade rundor markeras inte som spelade. Resultaten behålls under Statistik. Live-länken slutar fungera när molnspelet avslutats. Ett avslutat spel kan visas men inte fortsätta poängsättas. Om Avsluta spel är avstängd visas orsaken under knappen. Vid sparfel behålls spelet som pågående; kontrollera anslutningen och tryck Avsluta spel för att försöka igen.</p>
 <h3>🔢 10. Poängräkning</h3>
 <p>Aktivera <b>Visa poängräkning</b>. Använd <b>+</b> och <b>−</b> för respektive lag. Poängen kan inte bli negativa. Minimeringsknappen visar en mindre poängtavla; tryck igen för att öppna den.</p>
 <p>Poäng sparas separat för varje spel, runda och bana. Snabba tryck samlas till färre sparningar utan att slutpoängen tappas. Vänta på <b>Poäng sparade i Supabase</b> innan du stänger sidan. Byte tillbaka till en runda hämtar dess poäng. Poängen visas skrivskyddat i Live när poängräkningen är aktiverad.</p>
@@ -3586,7 +3593,8 @@ window.addEventListener('focus',updateSelectedCount);
 #gameView #bmFinishGame{background:#f6ad3b!important;color:#201506!important;border:2px solid #ffd28a;white-space:normal;min-height:40px;font-weight:800}
 #gameView #bmFinishGame:not(:disabled):hover{background:#ffc76d!important}
 #gameView #bmFinishGame:focus-visible{outline:3px solid #fff;outline-offset:3px}
-#gameView #bmFinishGame:disabled{background:#354350!important;color:#c8d2dc!important;border-color:#607080;opacity:1}
+#gameView #bmFinishGame:disabled{background:#9a601b!important;color:#fff4df!important;border-color:#d5a058;opacity:1}
+#gameView #bmFinishGame[data-finished="true"]{background:#354350!important;color:#c8d2dc!important;border-color:#607080}
 #bmFinishGameStatus{flex:0 0 auto;font-size:13px;overflow-wrap:anywhere}
 #bmFinishGameStatus:empty{display:none}
 @media(max-width:600px){#gameView .gameNav{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
