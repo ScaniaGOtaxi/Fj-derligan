@@ -1,4 +1,0 @@
-Testversion byggd från Badminton_App_v2.0_Flaggval_Synk_Felsokning_FIX.zip
-Ändrat endast flaggsökning i index.html och cache-id i service-worker.js.
-Sökning filtrerar utan att ändra flagga. Välj uttryckligen land i listan.
-Ingen ny Supabase-logik, spelarimport, Live & QR eller poängräkning.
