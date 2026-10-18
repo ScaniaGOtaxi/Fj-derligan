@@ -5,7 +5,7 @@
  const normalize=value=>String(value||'').trim().toLocaleLowerCase('sv').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
  async function rpc(name,args){
   try{return await api.request('/rest/v1/rpc/'+name,{method:'POST',body:JSON.stringify(args)});}
-  catch(error){if(error.code==='PGRST202')throw Error('Gruppfunktionen är inte installerad ännu. Kör SUPABASE_GRUPPSPELARE.sql i Supabase SQL Editor och ladda om appen.');throw error;}
+  catch(error){if(error.code==='PGRST202')throw Error('Gruppfunktionen är inte installerad ännu. Kör test/SUPABASE_GRUPPSPELARE.sql i Supabase SQL Editor och ladda om testsidan.');throw error;}
  }
  function status(message){const el=document.getElementById('bmGroupPlayerStatus');if(el)el.textContent=message;}
  window.badmintonGroupPlayers={
