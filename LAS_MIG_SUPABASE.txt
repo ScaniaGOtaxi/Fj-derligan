@@ -1,9 +1,0 @@
-Badminton App v2.0 – Supabase spelarinställningar (TEST)
-
-1. Kör SUPABASE_SPELARINSTALLNINGAR.sql i Supabase SQL Editor EN GÅNG.
-2. Packa upp ZIP och publicera samtliga filer i GitHub Pages.
-3. Logga in som Admin i appen, välj grupp, klicka Hämta spelare till rotationen.
-4. Välj flagga 1/2, kön och läge; inställningarna sparas automatiskt för importerade gruppspelare.
-5. Testa samma grupp på en annan enhet: importera spelarna där också.
-
-OBS: Första gången finns äldre lokala flaggval inte automatiskt i databasen. Välj om dem i den nya versionen så sparas de. Endast gruppspelare importerade från Supabase synkas. Ingen anonym skrivåtkomst tillåts. Live & QR är oförändrat.
