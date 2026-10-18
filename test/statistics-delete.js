@@ -13,8 +13,9 @@
   actions.append(one,all);panel.append(heading,help,actions,feedback);tab.append(panel);
   const select=document.getElementById('cloudGroupSelect');
   const allowed=()=>window.badmintonCloudRole?.()==='super_admin';
-  function update(){panel.hidden=!allowed();one.disabled=!select?.value;}
-  new MutationObserver(update).observe(document.getElementById('cloudAdminPanel'),{attributes:true,attributeFilter:['style']});select?.addEventListener('change',update);new MutationObserver(update).observe(select,{childList:true});update();
+  const selectedGroup=()=>document.getElementById('bmStatsGroup')?.value??select?.value;
+  function update(){panel.hidden=!allowed();one.disabled=!selectedGroup();}
+  new MutationObserver(update).observe(document.getElementById('cloudAdminPanel'),{attributes:true,attributeFilter:['style']});select?.addEventListener('change',update);document.addEventListener('change',e=>{if(e.target.id==='bmStatsGroup')update();});new MutationObserver(update).observe(tab,{childList:true,subtree:true});new MutationObserver(update).observe(select,{childList:true});update();
   async function rpc(args){try{return await window.badmintonCloudRequest('/rest/v1/rpc/manage_badminton_statistics',{method:'POST',body:JSON.stringify(args)});}catch(e){if(e.code==='PGRST202')throw Error('Serverfunktionen saknas. Installera test/SUPABASE_RADERA_STATISTIK.sql i Supabase först.');throw e;}}
   async function open(groupId){
    if(!allowed())return;
@@ -54,7 +55,7 @@
     label.textContent='Skriv exakt: '+data.confirmation;input.disabled=data.sessions===0;status.textContent=data.sessions===0?'Det finns ingen avslutad spelhistorik att radera.':'';if(data.sessions)input.focus();
    }catch(e){if(dialog.isConnected)status.textContent='❌ '+e.message;}
   }
-  one.onclick=()=>{if(select.value)open(select.value);};all.onclick=()=>open(null);
+  one.onclick=()=>{const id=selectedGroup();if(id)open(id);};all.onclick=()=>open(null);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>queueMicrotask(mount));else queueMicrotask(mount);
 })();

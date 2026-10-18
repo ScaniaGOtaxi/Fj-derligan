@@ -1185,7 +1185,7 @@ async function restoreAuth(){
 }
 
 const groupCreateRow=document.getElementById('cloudNewGroup').closest('.cloudRow');
-function updateRoleUI(){groupCreateRow.style.display=cloudRole==='super_admin'?'':'none';document.getElementById('cloudAdminPanel').style.display=cloudRole==='super_admin'?'':'none';if(cloudRole!=='super_admin'){document.getElementById('cloudAdminSelect').replaceChildren(new Option('Hämta Admin-konton först',''));document.getElementById('cloudAdminAssignments').textContent='';document.getElementById('cloudAdminStatus').textContent='';}}
+function updateRoleUI(){queueMicrotask(()=>window.dispatchEvent(new Event('badminton:auth-changed')));groupCreateRow.style.display=cloudRole==='super_admin'?'':'none';document.getElementById('cloudAdminPanel').style.display=cloudRole==='super_admin'?'':'none';if(cloudRole!=='super_admin'){document.getElementById('cloudAdminSelect').replaceChildren(new Option('Hämta Admin-konton först',''));document.getElementById('cloudAdminAssignments').textContent='';document.getElementById('cloudAdminStatus').textContent='';}}
 updateRoleUI();
 const status=document.getElementById('cloudStatus'), groups=document.getElementById('cloudGroups'), groupSelect=document.getElementById('cloudGroupSelect'), players=document.getElementById('cloudPlayers');
 const say=t=>{status.textContent=t};
@@ -1656,6 +1656,7 @@ cloudStatsBtn.addEventListener('click',async()=>{
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return;}
  const statsGroup=document.getElementById('bmStatsGroup'),period=document.getElementById('bmStatsPeriod');
  const groupId=statsGroup?.value||groupSelect.value,selectedPeriod=period?.value||'all';
+ const statsAccessToken=accessToken;
  const groupName=(statsGroup||groupSelect).selectedOptions[0]?.text||'Grupp';
  if(!groupId){say('Välj en grupp först.');return;}
  cloudStatsBtn.disabled=true;
@@ -1670,18 +1671,21 @@ cloudStatsBtn.addEventListener('click',async()=>{
   const positions=await fetchByIds('badminton_round_players','round_id,player_id,court_number,activity','round_id',completed.map(r=>r.id));
   let resultData=null,resultError='';
   try{const matches=await request('/rest/v1/rpc/get_badminton_result_statistics',{method:'POST',body:JSON.stringify({p_group_id:groupId})});if(!Array.isArray(matches))throw Error('Oväntat resultatsvar');resultData=window.badmintonResults.calculate(matches.filter(m=>sessions.some(session=>session.id===m.session_id)),members);}catch(e){resultError=e.message;}
+  if(accessToken!==statsAccessToken)throw Error('Inloggningen har ändrats. Hämta statistiken igen.');
   if((statsGroup?.value||groupSelect.value)!==groupId||(period?.value||'all')!==selectedPeriod)throw Error('Du har bytt grupp. Klicka på statistik igen.');
   const perPlayer=new Map(members.map(m=>[m.id,{id:m.id,name:m.name,single:0,double:0,rest:0}]));
+  for(const player of resultData?.players||[]){if(!perPlayer.has(player.id))perPlayer.set(player.id,{id:player.id,name:player.name,single:0,double:0,rest:0});}
   let singles=0,doubles=0,rests=0;
   for(const p of positions){
-   const stat=perPlayer.get(p.player_id);if(!stat)continue;
+   if(!perPlayer.has(p.player_id))perPlayer.set(p.player_id,{id:p.player_id,name:'Tidigare spelare',single:0,double:0,rest:0});
+   const stat=perPlayer.get(p.player_id);
    if(p.activity==='single'){stat.single++;singles++;}
    else if(p.activity==='double'){stat.double++;doubles++;}
    else if(p.activity==='rest'){stat.rest++;rests++;}
   }
-  window.badmintonStatsUI.render({groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
+  window.badmintonStatsUI.render({fetchedAt:new Date().toISOString(),groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
  }catch(e){cloudStats.replaceChildren();statsText(cloudStats,'p','❌ Kunde inte hämta gruppstatistik: '+e.message);}
- finally{cloudStatsBtn.disabled=false;}
+ finally{cloudStatsBtn.disabled=!['admin','super_admin'].includes(cloudRole);}
 });
 
 // Steg 86: Super Admin hanterar gruppadministratörer via skyddade RPC-funktioner.
@@ -1990,6 +1994,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p>Live visar runda, banor, två flaggor, spelarfigurer, vilande spelare, färdigmarkering och aktiverad poängräkning. Åskådaren kan välja helskärm men kan inte ändra spelare, runda eller poäng.</p>
 <p>En synlig Live-sida uppdateras ungefär varannan sekund plus nätverkets svarstid. Dold flik eller offline-läge pausar uppdateringen; den återupptas när sidan blir synlig eller nätverket återkommer. Vid serverfel väntar appen längre mellan försöken.</p>
 <h3>📊 12. Statistik och rapporter</h3>
+<p><b>Statistik sparad på servern</b> hämtar grupper och historik direkt efter inloggning när du öppnar Statistik. Admin kan läsa tilldelade grupper och Super Admin alla grupper. Välj grupp och period för att läsa resultat, deltagande och matchhistorik som sparats från andra enheter. Det kräver internet och att spelet/rundorna har sparats i molnet. Statistik endast på denna enhet visas separat och följer inte med till andra enheter.</p>
 <p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
 <p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Uppdatera statistik</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
 <p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Flikarna <b>Resultat</b>, <b>Deltagande</b> och <b>Matchhistorik</b> skiljer resultaten från spelfördelningen. Välj grupp och period och tryck <b>Uppdatera statistik</b>. Tryck på ett spelarnamn för detaljer. På dator kan resultattabellen sorteras via rubrikerna. Exporten gäller vald flik och period. Lokal statistik finns under <b>Statistik på denna enhet</b>. Uppdatera med <b>Uppdatera statistik</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
