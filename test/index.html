@@ -905,7 +905,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 @media(max-width:650px){.bmStatsCards{grid-template-columns:repeat(2,minmax(0,1fr))}.bmStatsDesktop{display:none}.bmStatsMobile{display:grid;gap:10px}.bmStatsControls select{max-width:100%}.bmStatsMobile .bmStatsCard{line-height:1.8}.bmStatsMobile button{font-size:17px!important}}
 </style>
 <style id="live-score-at-net">
-#badmintonViewer .viewerStage .viewerLiveScore{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:150;box-sizing:border-box;max-width:calc(100% - 16px);padding:5px 12px;border:1px solid #ffffff80;border-radius:12px;background:#08131de6;color:#fff;box-shadow:0 2px 10px #0008;text-align:center;font-size:clamp(18px,2.8vw,38px);font-weight:800;line-height:1.25;white-space:nowrap;pointer-events:none}
+#badmintonViewer .viewerStage .viewerLiveScore{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:20000!important;isolation:isolate;box-sizing:border-box;max-width:calc(100% - 16px);padding:5px 12px;border:1px solid #ffffff80;border-radius:12px;background:#08131de6;color:#fff;box-shadow:0 2px 10px #0008;text-align:center;font-size:clamp(18px,2.8vw,38px);font-weight:800;line-height:1.25;white-space:nowrap;pointer-events:none}
 </style>
 </head>
 <body>
@@ -2165,7 +2165,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li><b>Visa spelarfigurer:</b> när reglaget är Av döljs figurerna och fjäderbollen. Varje spelare har en separat namnruta på sin planhalva. Visa flaggor styr flaggorna även i detta läge. Namn, poäng och spelarnas sparade inställningar ändras inte. Slå På för att återgå till figurerna. Inställningen sparas på denna enhet.</li>
 <li><b>Visa flaggor:</b> visar eller döljer båda flaggorna i spelvyn. Sparade flaggval och flaggväljarna ändras inte. Inställningen sparas på denna enhet och används även för Live på samma appadress.</li>
 <li><b>Ljudsignal:</b> slår på eller av ljudet vid avslutad tid. Enheten och webbläsaren måste tillåta ljud.</li>
-<li><b>Rörliga spelare:</b> ger figurerna en liten, lugn rörelse och visar en fjäderboll som flyger över nätet. Bollens rörelse är visuell och påverkar inte poäng eller matchresultat. Kan slås av. Rörelsen pausas i dolda flikar och stängs av när enheten använder minskad rörelse. I Live finns även en egen rörelseknapp.</li>
+<li><b>Rörliga spelare:</b> ger figurerna en liten, lugn rörelse och visar en fjäderboll som flyger över nätet. Bollens rörelse är visuell och påverkar inte poäng eller matchresultat. Kan slås av. Rörelsen pausas i dolda flikar och stängs av när enheten använder minskad rörelse.</li>
 <li><b>Auto start nästa runda:</b> byter automatiskt till nästa runda när tiden är slut. Den nya rundans timer startas inte automatiskt.</li>
 </ul>
 <p>Reglagen visar <b>PÅ</b> i grönt med knappen till höger och <b>AV</b> i rött med knappen till vänster. Stäng inställningarna med kryssknappen eller Escape.</p>
