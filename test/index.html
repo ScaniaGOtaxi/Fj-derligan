@@ -3576,7 +3576,7 @@ function init(){
  const panel=document.getElementById('cloudTestPanel'),setup=document.getElementById('setupView');if(!panel||!setup)return;
  const heading=panel.querySelector('h2');heading.textContent='🏸 Badminton · Adminpanel v2.0';
  const oldIntro=heading.nextElementSibling;if(oldIntro?.tagName==='P')oldIntro.remove();
- const intro=document.createElement('p');intro.id='v14MainHelp';intro.textContent='En lugnare arbetsyta – välj grupp och hantera spelet från tydliga flikar.';heading.after(intro);
+ const intro=document.createElement('p');intro.id='v14MainHelp';intro.hidden=true;heading.after(intro);
  const nav=document.createElement('nav');nav.id='v14Nav';nav.setAttribute('aria-label','Adminmeny');
  const holder=document.createElement('div');holder.id='v14Sections';intro.after(nav,holder);
  const sections={};
