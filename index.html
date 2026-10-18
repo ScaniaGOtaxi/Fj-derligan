@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
 <script>
-const bmStorage={getItem:key=>localStorage.getItem(''+key),setItem:(key,value)=>localStorage.setItem(''+key,value),removeItem:key=>localStorage.removeItem(''+key)};
+const bmStorage={getItem:key=>localStorage.getItem('badminton-netlify:'+key),setItem:(key,value)=>localStorage.setItem('badminton-netlify:'+key,value),removeItem:key=>localStorage.removeItem('badminton-netlify:'+key)};
 // Initial game preferences; saved choices always take precedence.
 for(const [key,value] of Object.entries({
  'badminton-v20-score-enabled':'true',
@@ -15,13 +15,13 @@ for(const [key,value] of Object.entries({
  if(bmStorage.getItem(key)===null)bmStorage.setItem(key,value);
 }
 
-const bmSkipSplash=(()=>{try{return sessionStorage.getItem('badminton-app:splashSeen')==='1'}catch{return false}})();
+const bmSkipSplash=(()=>{try{return sessionStorage.getItem('badminton-netlify:splashSeen')==='1'}catch{return false}})();
 if(bmSkipSplash)document.documentElement.classList.add('bmSkipSplash');
 const bmRecoveryMode=(()=>{const hash=new URLSearchParams(location.hash.slice(1)),query=new URLSearchParams(location.search);return hash.get('type')==='recovery'||query.get('type')==='recovery'||hash.has('error_description')||query.has('error_description');})();
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Badmintonrotation</title>
+<title>Badminton App</title>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color-scheme:dark}
 body{margin:0;background:#101418;color:#ffffff}
@@ -747,11 +747,13 @@ window.badmintonPlayerImage=function(name,team,side,position){
 </script>
 <script src="sync-v2.js"></script>
 <script src="group-players.js"></script>
-<script src="flag-visibility.js" data-storage-prefix=""></script>
+<script src="flag-visibility.js" data-storage-prefix="badminton-netlify:"></script>
 <script src="player-visibility.js"></script>
 <script src="player-motion.js"></script>
 <script src="shuttle-motion.js"></script>
 <script src="results-v1.js"></script>
+<script src="daily-diploma.js"></script>
+<script src="daily-pdf.js"></script>
 <script src="statistics-ui.js"></script>
 
 
@@ -895,7 +897,6 @@ window.badmintonPlayerImage=function(name,team,side,position){
 </head>
 <body>
 
-
 <style>
 .viewer-mode body{margin:0!important;overflow-x:hidden}
 .viewer-mode #badmintonViewer{display:flex!important;flex-direction:column;box-sizing:border-box;width:100%;max-width:none!important;min-height:100dvh;padding:clamp(4px,.65vw,10px)!important;gap:5px;color:white;font-family:system-ui,sans-serif}
@@ -940,12 +941,12 @@ window.badmintonPlayerImage=function(name,team,side,position){
  }
  let liveBridge=null;
  try{if(typeof BroadcastChannel!=='undefined'){
-   liveBridge=new BroadcastChannel('badminton-live-completed-v20');
+   liveBridge=new BroadcastChannel('badminton-netlify-live-completed-v20');
    liveBridge.onmessage=e=>receiveCompleted(e.data);
  }}catch(e){}
  try{
    const last=JSON.parse(bmStorage.getItem(bridgeKey)||'null');receiveCompleted(last);
-   window.addEventListener('storage',e=>{if(e.storageArea===localStorage&&e.key===''+bridgeKey){try{receiveCompleted(JSON.parse(e.newValue))}catch(err){}}});
+   window.addEventListener('storage',e=>{if(e.storageArea===localStorage&&e.key==='badminton-netlify:'+bridgeKey){try{receiveCompleted(JSON.parse(e.newValue))}catch(err){}}});
  }catch(e){}
 
  if(!session&&!token)return;
@@ -970,9 +971,9 @@ window.badmintonPlayerImage=function(name,team,side,position){
  try{
   acceptLiveRound(JSON.parse(bmStorage.getItem('badmintonLiveRoundV16')||'null'));
   window.addEventListener('storage',e=>{
-    if(e.storageArea===localStorage&&e.key==='badmintonLiveRoundV16'){try{acceptLiveRound(JSON.parse(e.newValue))}catch(_){}}
+    if(e.storageArea===localStorage&&e.key==='badminton-netlify:badmintonLiveRoundV16'){try{acceptLiveRound(JSON.parse(e.newValue))}catch(_){}}
   });
-  const ch=new BroadcastChannel('badminton-live-round-v20');
+  const ch=new BroadcastChannel('badminton-netlify-live-round-v20');
   ch.onmessage=e=>acceptLiveRound(e.data);
  }catch(_){}
  function scheduleLivePoll(){clearTimeout(livePollTimer);livePollTimer=null;if(!document.hidden&&navigator.onLine)livePollTimer=setTimeout(()=>{livePollTimer=null;void refresh();},livePollDelay);}
@@ -1057,9 +1058,9 @@ window.badmintonPlayerImage=function(name,team,side,position){
 #cloudStatus{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#d7e7ff}
 #cloudGroups{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
 </style>
-<section id="cloudTestPanel" aria-label="Molnanslutning">
-<h2>🏸 Badminton App v2.0</h2>
-<p style="font-size:13px">Hantera spelgrupper, deltagare och rotationsscheman. Gruppspelare, banplaceringar och spelade rundor sparas i Supabase när molnfunktionerna används.</p>
+<section id="cloudTestPanel" aria-label="Supabase anslutningstest">
+<h2>🏸 Badminton App v1.3 – Molntest</h2>
+<p style="font-size:13px">Spelare, rotationsscheman, banplaceringar, färdiga rundor och poäng sparas i Supabase när molnsynk är aktiv. Kontrollera att sparningen har bekräftats innan du stänger sidan.</p>
 <div class="cloudRow"><input id="cloudEmail" type="email" autocomplete="username" placeholder="Admin / Super Admin e-post"><input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Lösenord"></div>
 <div class="cloudRow"><button type="button" id="cloudLogin">Logga in som Admin</button><button type="button" class="secondary" id="cloudLogout">Logga ut</button><button type="button" class="secondary" id="cloudLoadGroups">Hämta grupper</button></div>
 <div class="cloudRow" style="margin-top:10px"><input id="cloudNewGroup" type="text" maxlength="80" placeholder="Namn på ny grupp"><button type="button" id="cloudCreateGroup">Skapa grupp</button></div>
@@ -1185,7 +1186,7 @@ async function restoreAuth(){
 }
 
 const groupCreateRow=document.getElementById('cloudNewGroup').closest('.cloudRow');
-function updateRoleUI(){groupCreateRow.style.display=cloudRole==='super_admin'?'':'none';document.getElementById('cloudAdminPanel').style.display=cloudRole==='super_admin'?'':'none';if(cloudRole!=='super_admin'){document.getElementById('cloudAdminSelect').replaceChildren(new Option('Hämta Admin-konton först',''));document.getElementById('cloudAdminAssignments').textContent='';document.getElementById('cloudAdminStatus').textContent='';}}
+function updateRoleUI(){queueMicrotask(()=>window.dispatchEvent(new Event('badminton:auth-changed')));groupCreateRow.style.display=cloudRole==='super_admin'?'':'none';document.getElementById('cloudAdminPanel').style.display=cloudRole==='super_admin'?'':'none';if(cloudRole!=='super_admin'){document.getElementById('cloudAdminSelect').replaceChildren(new Option('Hämta Admin-konton först',''));document.getElementById('cloudAdminAssignments').textContent='';document.getElementById('cloudAdminStatus').textContent='';}}
 updateRoleUI();
 const status=document.getElementById('cloudStatus'), groups=document.getElementById('cloudGroups'), groupSelect=document.getElementById('cloudGroupSelect'), players=document.getElementById('cloudPlayers');
 const say=t=>{status.textContent=t};
@@ -1302,7 +1303,7 @@ document.getElementById('cloudCreateGroup').addEventListener('click',async()=>{
  }catch(e){say('❌ Kunde inte skapa grupp: '+e.message)}
  finally{btn.disabled=false}
 });
-document.getElementById('cloudLogout').addEventListener('click',()=>{if(accessToken)fetch(base+'/auth/v1/logout',{method:'POST',headers:{apikey:apiKey,Authorization:'Bearer '+accessToken}}).catch(()=>{});bmStorage.removeItem(AUTH_KEY);bmStorage.removeItem(GROUP_KEY);bmStorage.removeItem(STATE_KEY);bmStorage.removeItem(TAB_KEY);refreshToken=null;accessToken=null;cloudRole=null;updateRoleUI();window.badmintonProfiles.reset();window.badmintonPendingCloud=null;lastSessionGroupId=null;resetImport();importedPlayerIds.clear();lastSessionId=null;cloudRoundIds.clear();groups.textContent='';players.textContent='';groupSelect.innerHTML='<option value="">Hämta grupper först</option>'; document.getElementById('cloudPassword').value='';say('Utloggad.');});
+document.getElementById('cloudLogout').addEventListener('click',()=>{if(accessToken)fetch(base+'/auth/v1/logout',{method:'POST',headers:{apikey:apiKey,Authorization:'Bearer '+accessToken}}).catch(()=>{});bmStorage.removeItem(AUTH_KEY);bmStorage.removeItem(GROUP_KEY);bmStorage.removeItem(STATE_KEY);bmStorage.removeItem(TAB_KEY);refreshToken=null;accessToken=null;cloudRole=null;updateRoleUI();window.badmintonProfiles.reset();window.badmintonPendingCloud=null;lastSessionGroupId=null;resetImport();importedPlayerIds.clear();lastSessionId=null;cloudRoundIds.clear();groups.textContent='';players.textContent='';groupSelect.innerHTML='<option value="">Hämta grupper först</option>'; document.getElementById('cloudPassword').value='';say('Utloggad från testpanelen.');});
 document.getElementById('cloudLoadGroups').addEventListener('click',async()=>{
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return}
  try{await loadGroups()}catch(e){say('❌ Kunde inte hämta grupper: '+e.message)}
@@ -1347,7 +1348,7 @@ importBtn.addEventListener('click',async()=>{
  let currentShareLink='',currentShareSession=null;
  function getPublishedLink(){
    if(location.protocol!=='file:')return new URL(location.href);
-   return new URL('https://scaniagotaxi.github.io/Fj-derligan/');
+   return new URL('https://badminkton.netlify.app/');
  }
  function displayShortLink(url){
    const u=new URL(url);
@@ -1512,7 +1513,7 @@ function publishLocalLiveRound(number){
   (item.rest||[]).forEach(name=>players.push({name,activity:'rest'}));
   const payload={sessionId:lastSessionId,roundNumber:number,players,court_count:item.courts.length,at:Date.now()};
   bmStorage.setItem('badmintonLiveRoundV16',JSON.stringify(payload));
-  try{const ch=new BroadcastChannel('badminton-live-round-v20');ch.postMessage(payload);ch.close()}catch(_){}
+  try{const ch=new BroadcastChannel('badminton-netlify-live-round-v20');ch.postMessage(payload);ch.close()}catch(_){}
  }catch(e){console.warn('Lokal live-synk:',e)}
 }
 window.addEventListener('badminton:round-changed',event=>{
@@ -1528,7 +1529,7 @@ window.addEventListener('badminton:round-completed',async event=>{
  if(lastSessionId && Number.isInteger(Number(number))){
    const payload={sessionId:lastSessionId,roundNumber:Number(number),at:Date.now()};
    try{bmStorage.setItem('badmintonLiveCompletedV16',JSON.stringify(payload))}catch(e){}
-   try{const ch=new BroadcastChannel('badminton-live-completed-v20');ch.postMessage(payload);ch.close()}catch(e){}
+   try{const ch=new BroadcastChannel('badminton-netlify-live-completed-v20');ch.postMessage(payload);ch.close()}catch(e){}
  }
 
  const id=cloudRoundIds.get(number);
@@ -1642,7 +1643,7 @@ async function fetchAll(path,pageSize=500){
   result.push(...rows);
   if(rows.length<pageSize)return result;
  }
- throw Error('För många rader för hämtningen.');
+ throw Error('För många rader för rapporten.');
 }
 async function fetchByIds(table,columns,column,ids){
  const result=[];
@@ -1656,6 +1657,7 @@ cloudStatsBtn.addEventListener('click',async()=>{
  if(!accessToken){say('Logga in som Admin eller Super Admin först.');return;}
  const statsGroup=document.getElementById('bmStatsGroup'),period=document.getElementById('bmStatsPeriod');
  const groupId=statsGroup?.value||groupSelect.value,selectedPeriod=period?.value||'all';
+ const statsAccessToken=accessToken;
  const groupName=(statsGroup||groupSelect).selectedOptions[0]?.text||'Grupp';
  if(!groupId){say('Välj en grupp först.');return;}
  cloudStatsBtn.disabled=true;
@@ -1665,23 +1667,30 @@ cloudStatsBtn.addEventListener('click',async()=>{
   const allSessions=await fetchAll('/rest/v1/badminton_sessions?select=id,name,created_at&group_id=eq.'+encodeURIComponent(groupId));
   const sessions=window.badmintonStatsUI.filterSessions(allSessions,selectedPeriod);
   const members=await fetchGroupMembers(groupId);
-  const rounds=await fetchByIds('badminton_rounds','id,status','session_id',sessions.map(s=>s.id));
+  const rounds=await fetchByIds('badminton_rounds','id,status,session_id','session_id',sessions.map(s=>s.id));
   const completed=rounds.filter(r=>r.status==='completed');
   const positions=await fetchByIds('badminton_round_players','round_id,player_id,court_number,activity','round_id',completed.map(r=>r.id));
   let resultData=null,resultError='';
   try{const matches=await request('/rest/v1/rpc/get_badminton_result_statistics',{method:'POST',body:JSON.stringify({p_group_id:groupId})});if(!Array.isArray(matches))throw Error('Oväntat resultatsvar');resultData=window.badmintonResults.calculate(matches.filter(m=>sessions.some(session=>session.id===m.session_id)),members);}catch(e){resultError=e.message;}
+  if(accessToken!==statsAccessToken)throw Error('Inloggningen har ändrats. Hämta statistiken igen.');
   if((statsGroup?.value||groupSelect.value)!==groupId||(period?.value||'all')!==selectedPeriod)throw Error('Du har bytt grupp. Klicka på statistik igen.');
   const perPlayer=new Map(members.map(m=>[m.id,{id:m.id,name:m.name,single:0,double:0,rest:0}]));
+  for(const player of resultData?.players||[]){if(!perPlayer.has(player.id))perPlayer.set(player.id,{id:player.id,name:player.name,single:0,double:0,rest:0});}
   let singles=0,doubles=0,rests=0;
   for(const p of positions){
-   const stat=perPlayer.get(p.player_id);if(!stat)continue;
+   if(!perPlayer.has(p.player_id))perPlayer.set(p.player_id,{id:p.player_id,name:'Tidigare spelare',single:0,double:0,rest:0});
+   const stat=perPlayer.get(p.player_id);
    if(p.activity==='single'){stat.single++;singles++;}
    else if(p.activity==='double'){stat.double++;doubles++;}
    else if(p.activity==='rest'){stat.rest++;rests++;}
   }
-  window.badmintonStatsUI.render({groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
+  const todaySessions=window.badmintonStatsUI.filterSessions(sessions,'today');
+  const todayRounds=new Set(completed.filter(r=>todaySessions.some(session=>session.id===r.session_id)).map(r=>r.id));
+  const dailyPlayers=new Map();
+  for(const p of positions){if(!todayRounds.has(p.round_id)||!['single','double'].includes(p.activity))continue;if(!dailyPlayers.has(p.player_id))dailyPlayers.set(p.player_id,{id:p.player_id,name:perPlayer.get(p.player_id)?.name||'Tidigare spelare',single:0,double:0});dailyPlayers.get(p.player_id)[p.activity]++;}
+  window.badmintonStatsUI.render({dailyParticipation:[...dailyPlayers.values()],fetchedAt:new Date().toISOString(),groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
  }catch(e){cloudStats.replaceChildren();statsText(cloudStats,'p','❌ Kunde inte hämta gruppstatistik: '+e.message);}
- finally{cloudStatsBtn.disabled=false;}
+ finally{cloudStatsBtn.disabled=!['admin','super_admin'].includes(cloudRole);}
 });
 
 // Steg 86: Super Admin hanterar gruppadministratörer via skyddade RPC-funktioner.
@@ -1913,7 +1922,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 
 <div id="helpPanel" class="card helpPanel">
 <h2>❓ Hjälp och användarguide</h2>
-<p>Här beskrivs funktionerna i appen. Molnsparning och Live kräver internet. Ordinarie app och testapp har separata lokala inställningar och inloggningar, men använder samma databas.</p>
+<p>Molnsparning och Live kräver internet. Webbplatsen har egna lokala inställningar men använder samma Supabase-databas som GitHub-versionen.</p>
 <h3>🚀 1. Snabbstart</h3>
 <ol>
 <li>Öppna <b>⌂ Admin</b> och logga in med ditt administratörskonto.</li>
@@ -1990,10 +1999,13 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p>Live visar runda, banor, två flaggor, spelarfigurer, vilande spelare, färdigmarkering och aktiverad poängräkning. Åskådaren kan välja helskärm men kan inte ändra spelare, runda eller poäng.</p>
 <p>En synlig Live-sida uppdateras ungefär varannan sekund plus nätverkets svarstid. Dold flik eller offline-läge pausar uppdateringen; den återupptas när sidan blir synlig eller nätverket återkommer. Vid serverfel väntar appen längre mellan försöken.</p>
 <h3>📊 12. Statistik och rapporter</h3>
+<p><b>Statistik sparad på servern</b> hämtar grupper och historik direkt efter inloggning när du öppnar Statistik. Admin kan läsa tilldelade grupper och Super Admin alla grupper. Välj grupp och period för att läsa resultat, deltagande och matchhistorik som sparats från andra enheter. Det kräver internet och att spelet/rundorna har sparats i molnet. Statistik endast på denna enhet visas separat och följer inte med till andra enheter.</p>
 <p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
 <p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Uppdatera statistik</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
 <p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Flikarna <b>Resultat</b>, <b>Deltagande</b> och <b>Matchhistorik</b> skiljer resultaten från spelfördelningen. Välj grupp och period och tryck <b>Uppdatera statistik</b>. Tryck på ett spelarnamn för detaljer. På dator kan resultattabellen sorteras via rubrikerna. Exporten gäller vald flik och period. Lokal statistik finns under <b>Statistik på denna enhet</b>. Uppdatera med <b>Uppdatera statistik</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
+<p><b>Dagens rapport</b> visar ett diplom med prispall och guld, silver och brons. Alla dagens spel i vald grupp summeras, med singel och dubbel tillsammans. Dagen avser spelens startdatum enligt enheten. Placering räknas efter vinster, poängskillnad och gjorda poäng; helt lika resultat ger delad placering. Medaljerna beräknas i rapporten och sparas inte separat. Deltagare och matchresultat finns under diplomet och på följande PDF-sidor. <b>Ladda ner PDF</b> skapar en fil. <b>Dela PDF · WhatsApp</b> öppnar enhetens fildelning där WhatsApp kan väljas. Om fildelning saknas laddas PDF ner för manuell bifogning.</p>
 <h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
+<p><b>Radera serverstatistik</b> finns under Statistik, endast för Super Admin. Välj vald grupp eller alla grupper. Förhandsvisningen visar avslutade spel, rundor, spelarplaceringar och poängposter. Skriv gruppnamnet respektive RADERA ALL STATISTIK för att bekräfta. Pågående spel och deras statistik, spelare, grupper, konton och lokal webbläsarstatistik behålls. Raderingen kan inte ångras i appen. Serverfunktionen måste först installeras med test/SUPABASE_RADERA_STATISTIK.sql i GitHub-repot.</p>
 <p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
 <p><b>Admin</b> arbetar i tilldelade grupper: hämtar och lägger till gruppspelare, ändrar deras inställningar, skapar och återupptar spel, styr rundor, räknar poäng, delar Live och ser gruppstatistik. Admin kan inte använda appens verktyg för gruppskapande, administratörsinbjudningar, tilldelningar eller full gruppradering.</p>
 <p><b>Super Admin</b> har även dessa verktyg:</p>
@@ -2010,7 +2022,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <h3>💾 14. Sparning, offline och installation</h3>
 <p>Visningsinställningar, lokala spelare och en kopia av rotationen lagras i webbläsaren. Gruppspelare, deras inställningar, molnspel och poäng lagras i Supabase. Rensad webbplatsdata, privat läge eller byte av enhet kan göra att lokala uppgifter saknas.</p>
 <p>Efter ett besök kan appens sida och cachade bilder fungera offline. Molnsparning, inloggning, återställningsmejl och Live-synk kräver internet. Externa flaggbilder kan saknas offline. Vid fel, behåll sidan öppen och kontrollera sparstatus när nätverket återkommer.</p>
-<p>På mobilen kan webbläsaren erbjuda <b>Lägg till på startskärmen</b> eller <b>Installera app</b>. Möjligheten beror på webbläsaren. Testsidan och den vanliga appen har separata lokala inställningar.</p>
+<p>På mobilen kan webbläsaren erbjuda <b>Lägg till på startskärmen</b> eller <b>Installera app</b>. Möjligheten beror på webbläsaren. Lokala inställningar sparas separat på varje enhet och webbplats.</p>
 <h3>🛠️ 15. Felsökning</h3>
 <ul>
 <li><b>Inloggningen misslyckas:</b> kontrollera e-post, lösenord, internet och att kontot är Admin eller Super Admin. Begär återställningslänk vid behov.</li>
@@ -2103,7 +2115,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
     var status=document.getElementById('splashStatus');
     if(!splash)return;
     if(bmSkipSplash){splash.remove();return;}
-    try{sessionStorage.setItem('badminton-app:splashSeen','1')}catch(_){}
+    try{sessionStorage.setItem('badminton-netlify:splashSeen','1')}catch(_){}
     var closed=false;
     var startTime=performance.now();
     var duration=4000;
@@ -3570,7 +3582,7 @@ function init(){
  const panel=document.getElementById('cloudTestPanel'),setup=document.getElementById('setupView');if(!panel||!setup)return;
  const heading=panel.querySelector('h2');heading.textContent='🏸 Badminton · Adminpanel v2.0';
  const oldIntro=heading.nextElementSibling;if(oldIntro?.tagName==='P')oldIntro.remove();
- const intro=document.createElement('p');intro.id='v14MainHelp';intro.textContent='En lugnare arbetsyta – välj grupp och hantera spelet från tydliga flikar.';heading.after(intro);
+ const intro=document.createElement('p');intro.id='v14MainHelp';intro.hidden=true;heading.after(intro);
  const nav=document.createElement('nav');nav.id='v14Nav';nav.setAttribute('aria-label','Adminmeny');
  const holder=document.createElement('div');holder.id='v14Sections';intro.after(nav,holder);
  const sections={};
@@ -4777,5 +4789,8 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <style id="settings-controls-always-visible">
 #v14-settings #setupView{display:block!important}
 </style>
+<script src="statistics-delete.js"></script>
 </body>
 </html>
+
+
