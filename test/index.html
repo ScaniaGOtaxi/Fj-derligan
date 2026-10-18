@@ -752,6 +752,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 <script src="player-motion.js"></script>
 <script src="shuttle-motion.js"></script>
 <script src="results-v1.js"></script>
+<script src="daily-diploma.js"></script>
 <script src="daily-pdf.js"></script>
 <script src="statistics-ui.js"></script>
 
@@ -2003,6 +2004,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p><b>Lokal statistik</b> visar deltagande, singel, dubbel, vila och fördelning mellan spelare i den aktuella webbläsaren. Välj <b>Totalt</b> eller <b>Idag</b> och använd <b>Uppdatera statistik</b>. <b>Exportera PDF</b> öppnar en rapport för utskrift eller PDF-sparning. <b>Exportera CSV</b> ger en fil för kalkylprogram. <b>Dela rapport</b> använder enhetens delningsfunktion eller kopierar rapporttext.</p>
 <p><b>Nollställ statistik</b> tar bort lokal statistik efter bekräftelse. Det raderar inte gruppens molnspel. <b>Uppdatera statistik</b> hämtar vald grupps spelhistorik. Endast färdigmarkerade rundor räknas som spelade. Siffrorna för singel och dubbel avser spelarens deltaganden, inte vunna matcher. Lokal statistik och molnstatistik kan skilja sig.</p>
 <p><b>Resultat och poäng:</b> under gruppstatistiken visas resultatmatcher, vinster, förluster, oavgjorda, gjorda och insläppta poäng, poängskillnad och vinstprocent. Endast färdigmarkerade rundor med ett sparat resultat räknas; 0–0 och saknade poäng utesluts. Dubbelpartners får samma lagresultat och lagpoäng. Flikarna <b>Resultat</b>, <b>Deltagande</b> och <b>Matchhistorik</b> skiljer resultaten från spelfördelningen. Välj grupp och period och tryck <b>Uppdatera statistik</b>. Tryck på ett spelarnamn för detaljer. På dator kan resultattabellen sorteras via rubrikerna. Exporten gäller vald flik och period. Lokal statistik finns under <b>Statistik på denna enhet</b>. Uppdatera med <b>Uppdatera statistik</b>. <b>Exportera resultat CSV</b> och <b>Skriv ut resultat / PDF</b> exporterar molnresultaten; de äldre exportknapparna avser lokal deltagarstatistik.</p>
+<p><b>Dagens rapport</b> visar ett diplom med prispall och guld, silver och brons. Alla dagens spel i vald grupp summeras, med singel och dubbel tillsammans. Dagen avser spelens startdatum enligt enheten. Placering räknas efter vinster, poängskillnad och gjorda poäng; helt lika resultat ger delad placering. Medaljerna beräknas i rapporten och sparas inte separat. Deltagare och matchresultat finns under diplomet och på följande PDF-sidor. <b>Ladda ner PDF</b> skapar en fil. <b>Dela PDF · WhatsApp</b> öppnar enhetens fildelning där WhatsApp kan väljas. Om fildelning saknas laddas PDF ner för manuell bifogning.</p>
 <h3>♙ 13. Admin, Super Admin och Behörigheter</h3>
 <p><b>Radera serverstatistik</b> finns under Statistik, endast för Super Admin. Välj vald grupp eller alla grupper. Förhandsvisningen visar avslutade spel, rundor, spelarplaceringar och poängposter. Skriv gruppnamnet respektive RADERA ALL STATISTIK för att bekräfta. Pågående spel och deras statistik, spelare, grupper, konton och lokal webbläsarstatistik behålls. Raderingen kan inte ångras i appen. Serverfunktionen måste först installeras med test/SUPABASE_RADERA_STATISTIK.sql.</p>
 <p><b>⌂ Admin</b> är fliken för inloggning och kontohantering. <b>♙ Behörigheter</b> visas bara för Super Admin.</p>
@@ -4791,4 +4793,5 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <script src="statistics-delete.js"></script>
 </body>
 </html>
+
 

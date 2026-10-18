@@ -3,10 +3,13 @@
  async function create(section){
   const canvas=document.createElement('canvas');canvas.width=1240;canvas.height=1754;
   const ctx=canvas.getContext('2d'),pages=[];let y;
-  const reset=()=>{ctx.fillStyle='#fff';ctx.fillRect(0,0,1240,1754);ctx.fillStyle='#111';ctx.font='26px Arial';y=75;};
+  const reset=()=>{ctx.fillStyle='#0b1e30';ctx.fillRect(0,0,1240,1754);ctx.strokeStyle='#cda352';ctx.lineWidth=2;ctx.strokeRect(30,30,1180,1694);ctx.fillStyle='#e9c979';ctx.font='bold 28px Arial';ctx.fillText('DAGENS SPEL · DETALJER OCH MATCHRESULTAT',65,82);ctx.fillStyle='#f2f5f8';ctx.font='26px Arial';y=145;};
   const save=()=>pages.push(Uint8Array.from(atob(canvas.toDataURL('image/jpeg',0.9).split(',')[1]),c=>c.charCodeAt(0)));
+  section.querySelectorAll('canvas[data-diploma-page]').forEach(page=>pages.push(Uint8Array.from(atob(page.toDataURL('image/jpeg',0.94).split(',')[1]),c=>c.charCodeAt(0))));
   reset();
-  for(const node of section.children){
+  const details=section.querySelector('details');
+  for(const node of (details||section).children){
+   if(node.tagName==='SUMMARY'||node.tagName==='CANVAS')continue;
    const heading=/^H/.test(node.tagName);ctx.font=heading?'bold 32px Arial':'26px Arial';
    let line='';
    const flush=()=>{if(y>1650){save();reset();ctx.font=heading?'bold 32px Arial':'26px Arial';}ctx.fillText(line,65,y);y+=40;line='';};
@@ -27,3 +30,4 @@
  function download(file){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
  window.badmintonDailyPDF={create,download};
 })();
+

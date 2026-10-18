@@ -30,6 +30,10 @@
  section.append(el('h4','Matchresultat och vinnare'));
  matches.forEach(m=>{const team=n=>m.players.filter(p=>p.team===n).map(p=>p.name).join(' & ');const session=sessions.find(s=>s.id===m.session_id);section.append(el('p',(m.players.length===2?'Singel':'Dubbel')+' · '+(session?.name||'Spel')+' · runda '+m.round_number+', bana '+m.court_number+': '+team(1)+' – '+team(2)+' · '+m.red+'–'+m.blue+' · '+(m.red===m.blue?'Oavgjort':'Vinnare: '+team(m.red>m.blue?1:2))));});
  if(!matches.length)section.append(el('p','Inga färdigmarkerade matcher med registrerade resultat idag.'));
+ const diplomaPages=window.badmintonDailyDiploma.create({groupName:state.groupName,date,ranking,participants,matches,sessions,rounds:state.completed});
+ const details=el('details');details.append(el('summary','Deltagare, detaljer och matchresultat'));
+ details.append(...section.childNodes);section.append(details);
+ diplomaPages.forEach((canvas,index)=>{canvas.style.cssText='display:block;width:100%;height:auto;margin:12px 0;border-radius:10px';canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Dagens diplom för '+state.groupName+'. Fullständiga resultat finns under detaljer.');canvas.dataset.diplomaPage=String(index+1);section.insertBefore(canvas,details);});
  root.append(section);
  let pdfFile=null;
  const download=el('button','Ladda ner PDF'),share=el('button','Dela PDF · WhatsApp');download.type=share.type='button';
@@ -40,7 +44,7 @@
  download.onclick=()=>window.badmintonDailyPDF.download(pdfFile);
  share.onclick=async()=>{try{if(navigator.canShare?.({files:[pdfFile]})){await navigator.share({files:[pdfFile],title:'Dagens badmintonrapport'});status.textContent='';}else{window.badmintonDailyPDF.download(pdfFile);status.textContent='PDF har laddats ner. Öppna WhatsApp och bifoga filen som dokument.';}}catch(e){if(e.name!=='AbortError')status.textContent='Kunde inte dela filen. Ladda ner PDF och bifoga den i WhatsApp.';}};
  root.append(download,share,status);
- const print=el('button','Skriv ut dagsrapport / PDF');print.type='button';print.onclick=()=>{const page=window.open('','_blank');if(!page){window.bmCenteredAlert('Tillåt popupfönster för att öppna rapporten.');return;}page.document.title='Dagens badmintonrapport';page.document.body.append(page.document.importNode(section,true));const style=page.document.createElement('style');style.textContent='body{font:14px system-ui;padding:24px;line-height:1.5}h4{margin-top:24px}p{break-inside:avoid}';page.document.head.append(style);page.document.close();page.print();};root.append(print);
+ const print=el('button','Skriv ut dagsrapport / PDF');print.type='button';print.onclick=()=>{const page=window.open('','_blank');if(!page){window.bmCenteredAlert('Tillåt popupfönster för att öppna rapporten.');return;}page.document.title='Dagens badmintonrapport';const copy=page.document.importNode(section,true);copy.querySelectorAll('canvas').forEach((node,i)=>{const image=page.document.createElement('img');image.src=section.querySelectorAll('canvas')[i].toDataURL('image/png');image.style.cssText='display:block;width:100%;break-after:page';node.replaceWith(image);});copy.querySelectorAll('details').forEach(d=>d.open=true);page.document.body.append(copy);const style=page.document.createElement('style');style.textContent='body{font:14px system-ui;padding:24px;line-height:1.5}h4{margin-top:24px}p{break-inside:avoid}';page.document.head.append(style);page.document.close();page.print();};root.append(print);
  }
  function render(){const root=document.getElementById('cloudStats');root.replaceChildren();root.append(el('h3',state.groupName+' · '+state.periodLabel),el('p','Sparat på servern · Hämtat '+new Date(state.fetchedAt||Date.now()).toLocaleTimeString('sv-SE')+'. Perioden avser spelens startdatum.')); 
  const cards=el('div',undefined,'bmStatsCards');const participants=state.participation.filter(p=>p.single+p.double+p.rest>0).length;[['Spelade matcher',state.playedMatches],['Deltagande spelare',participants],['Färdiga rundor',state.completed],['Matcher med resultat',state.result?state.result.matches.length:'–']].forEach(([title,value])=>{const card=el('div',undefined,'bmStatsCard');card.append(el('span',title),el('strong',String(value)));cards.append(card);});root.append(cards);
@@ -111,4 +115,5 @@
 
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0));else init();
 })();
+
 
