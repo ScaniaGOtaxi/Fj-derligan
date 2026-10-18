@@ -904,6 +904,9 @@ window.badmintonPlayerImage=function(name,team,side,position){
 .bmStatsControls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.bmStatsCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.bmStatsCard{padding:14px;background:#102131;border:1px solid #405365;border-radius:12px}.bmStatsCard strong{display:block;font-size:26px}.bmStatsTabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.bmStatsTabs [aria-selected=true]{background:#248647}.bmStatsDesktop th button,.bmStatsDesktop td button{background:transparent!important;border:0!important;color:inherit;padding:4px!important;font-size:inherit!important}.bmStatsMobile{display:none}.bmLocalStats{margin:20px 0;padding:12px;border:1px solid #405365;border-radius:12px}.bmLocalStats summary{cursor:pointer;font-size:16px;font-weight:700}
 @media(max-width:650px){.bmStatsCards{grid-template-columns:repeat(2,minmax(0,1fr))}.bmStatsDesktop{display:none}.bmStatsMobile{display:grid;gap:10px}.bmStatsControls select{max-width:100%}.bmStatsMobile .bmStatsCard{line-height:1.8}.bmStatsMobile button{font-size:17px!important}}
 </style>
+<style id="live-score-at-net">
+#badmintonViewer .viewerStage .viewerLiveScore{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:150;box-sizing:border-box;max-width:calc(100% - 16px);padding:5px 12px;border:1px solid #ffffff80;border-radius:12px;background:#08131de6;color:#fff;box-shadow:0 2px 10px #0008;text-align:center;font-size:clamp(18px,2.8vw,38px);font-weight:800;line-height:1.25;white-space:nowrap;pointer-events:none}
+</style>
 </head>
 <body>
 <div role="note" style="padding:9px;background:#683800;color:white;text-align:center">TESTMILJÖ v2 – synk och dubbla flaggor. Använd en testgrupp: Supabase-databasen delas med ordinarie app.</div>
@@ -1033,7 +1036,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
   ch.onmessage=e=>acceptLiveRound(e.data);
  }catch(_){}
  function scheduleLivePoll(){clearTimeout(livePollTimer);livePollTimer=null;if(!document.hidden&&navigator.onLine)livePollTimer=setTimeout(()=>{livePollTimer=null;void refresh();},livePollDelay);}
- function updateLiveScores(liveScores){document.querySelectorAll('#viewerCourts .viewerCourt').forEach((card,i)=>{let board=card.querySelector('.viewerLiveScore');if(!liveScores?.enabled){board?.remove();return;}if(!board){board=document.createElement('div');board.className='viewerLiveScore';board.style.cssText='text-align:center;font-size:32px;font-weight:800;padding:8px';card.append(board);}const val=liveScores.scores?.[i+1]||{red:0,blue:0};const text='🔴 '+(Number(val.red)||0)+' – '+(Number(val.blue)||0)+' 🔵';if(board.textContent!==text)board.textContent=text;});}
+ function updateLiveScores(liveScores){document.querySelectorAll('#viewerCourts .viewerCourt').forEach((card,i)=>{let board=card.querySelector('.viewerLiveScore');if(!liveScores?.enabled){board?.remove();return;}if(!board){board=document.createElement('div');board.className='viewerLiveScore';card.querySelector('.viewerStage').append(board);}const val=liveScores.scores?.[i+1]||{red:0,blue:0};const text='🔴 '+(Number(val.red)||0)+' – '+(Number(val.blue)||0)+' 🔵';if(board.textContent!==text)board.textContent=text;});}
  function flagCode(p){
    const raw=p.country_code||p.countryCode||p.nationality_code||p.flag_code||p.iso2||p.nationality||p.country||'';
    const value=String(raw).trim().toUpperCase();
@@ -1087,7 +1090,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
       stage.append(figure);
     });
     const netLayer=document.createElement('img');netLayer.src='nat.png';netLayer.alt='';netLayer.className='courtNet';stage.append(netLayer);
-    card.append(stage);if(liveScores?.enabled){const val=liveScores.scores?.[n]||{red:0,blue:0};const board=document.createElement('div');board.className='viewerLiveScore';board.textContent='🔴 '+(Number(val.red)||0)+' – '+(Number(val.blue)||0)+' 🔵';board.style.cssText='text-align:center;font-size:32px;font-weight:800;padding:8px';card.append(board);}courts.append(card);
+    card.append(stage);if(liveScores?.enabled){const val=liveScores.scores?.[n]||{red:0,blue:0};const board=document.createElement('div');board.className='viewerLiveScore';board.textContent='🔴 '+(Number(val.red)||0)+' – '+(Number(val.blue)||0)+' 🔵';stage.append(board);}courts.append(card);
    }
    const resting=players.filter(p=>p.activity==='rest').map(p=>p.name);
    rest.textContent=resting.length?'Vilar: '+resting.join(', '):'';
