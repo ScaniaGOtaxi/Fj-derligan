@@ -752,6 +752,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 <script src="player-motion.js"></script>
 <script src="shuttle-motion.js"></script>
 <script src="results-v1.js"></script>
+<script src="daily-pdf.js"></script>
 <script src="statistics-ui.js"></script>
 
 
@@ -1666,7 +1667,7 @@ cloudStatsBtn.addEventListener('click',async()=>{
   const allSessions=await fetchAll('/rest/v1/badminton_sessions?select=id,name,created_at&group_id=eq.'+encodeURIComponent(groupId));
   const sessions=window.badmintonStatsUI.filterSessions(allSessions,selectedPeriod);
   const members=await fetchGroupMembers(groupId);
-  const rounds=await fetchByIds('badminton_rounds','id,status','session_id',sessions.map(s=>s.id));
+  const rounds=await fetchByIds('badminton_rounds','id,status,session_id','session_id',sessions.map(s=>s.id));
   const completed=rounds.filter(r=>r.status==='completed');
   const positions=await fetchByIds('badminton_round_players','round_id,player_id,court_number,activity','round_id',completed.map(r=>r.id));
   let resultData=null,resultError='';
@@ -1683,7 +1684,11 @@ cloudStatsBtn.addEventListener('click',async()=>{
    else if(p.activity==='double'){stat.double++;doubles++;}
    else if(p.activity==='rest'){stat.rest++;rests++;}
   }
-  window.badmintonStatsUI.render({fetchedAt:new Date().toISOString(),groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
+  const todaySessions=window.badmintonStatsUI.filterSessions(sessions,'today');
+  const todayRounds=new Set(completed.filter(r=>todaySessions.some(session=>session.id===r.session_id)).map(r=>r.id));
+  const dailyPlayers=new Map();
+  for(const p of positions){if(!todayRounds.has(p.round_id)||!['single','double'].includes(p.activity))continue;if(!dailyPlayers.has(p.player_id))dailyPlayers.set(p.player_id,{id:p.player_id,name:perPlayer.get(p.player_id)?.name||'Tidigare spelare',single:0,double:0});dailyPlayers.get(p.player_id)[p.activity]++;}
+  window.badmintonStatsUI.render({dailyParticipation:[...dailyPlayers.values()],fetchedAt:new Date().toISOString(),groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
  }catch(e){cloudStats.replaceChildren();statsText(cloudStats,'p','❌ Kunde inte hämta gruppstatistik: '+e.message);}
  finally{cloudStatsBtn.disabled=!['admin','super_admin'].includes(cloudRole);}
 });
@@ -4786,3 +4791,4 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <script src="statistics-delete.js"></script>
 </body>
 </html>
+

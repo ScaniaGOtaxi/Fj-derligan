@@ -2,15 +2,50 @@
  'use strict';
  const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;};
  let state=null,active='results',sortKey='wins',descending=true;
- const tabs=[['results','Resultat'],['participation','Deltagande'],['history','Matchhistorik']];
+ const tabs=[['results','Resultat'],['participation','Deltagande'],['history','Matchhistorik'],['daily','Dagens rapport']];
  const headers={results:['Spelare','Resultatmatcher','Vinster','Förluster','Oavgjorda','Gjorda poäng','Insläppta poäng','Poängskillnad','Vinst %'],participation:['Spelare','Spelat','Singel','Dubbel','Vila'],history:['Datum','Spel','Runda','Bana','Rött lag','Blått lag','Poäng','Resultat']};
  const resultValues=p=>[p.name,p.played,p.wins,p.losses,p.draws,p.for,p.against,p.difference,p.winPercent+' %'];
  const historyValues=m=>{const session=state.sessions.find(s=>s.id===m.session_id);return [session?.created_at?new Date(session.created_at).toLocaleDateString('sv-SE'):'–',m.session_name||session?.name||'Spel',m.round_number,m.court_number,m.players.filter(p=>p.team===1).map(p=>p.name).join(' & '),m.players.filter(p=>p.team===2).map(p=>p.name).join(' & '),m.red+' – '+m.blue,m.red===m.blue?'Oavgjort':m.red>m.blue?'Rött vann':'Blått vann'];};
  function rows(){if(active==='results')return (state.result?.players||[]).slice().sort((a,b)=>{const diff=sortKey==='name'?a.name.localeCompare(b.name,'sv'):a[sortKey]-b[sortKey];return (descending?-diff:diff)||a.name.localeCompare(b.name,'sv');}).map(p=>({id:p.id,values:resultValues(p)}));if(active==='participation')return state.participation.map(p=>({id:p.id,values:[p.name,p.single+p.double,p.single,p.double,p.rest]}));return (state.result?.matches||[]).map(m=>({values:historyValues(m)}));}
  function details(id){const player=state.result?.players.find(p=>p.id===id)||state.members.find(p=>p.id===id);if(!player)return;const overlay=el('div',undefined,'bmConfirmOverlay'),dialog=el('div',undefined,'bmConfirmDialog');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Statistik för '+player.name);dialog.append(el('h3',player.name));const stat=state.result?.players.find(p=>p.id===id);if(stat)dialog.append(el('p',stat.wins+' vinster · '+stat.losses+' förluster · '+stat.draws+' oavgjorda · '+stat.for+'–'+stat.against+' poäng'));const matches=(state.result?.matches||[]).filter(m=>m.players.some(p=>p.id===id));if(!matches.length)dialog.append(el('p','Inga registrerade resultat under vald period.'));matches.forEach(m=>dialog.append(el('p',historyValues(m).join(' · '))));const close=el('button','Stäng');close.type='button';const previous=document.activeElement;const finish=()=>{document.removeEventListener('keydown',key);overlay.remove();previous?.focus();};const key=e=>{if(e.key==='Escape')finish();if(e.key==='Tab'){e.preventDefault();close.focus();}};close.onclick=finish;overlay.onclick=e=>{if(e.target===overlay)finish();};document.addEventListener('keydown',key);dialog.append(close);overlay.append(dialog);document.body.append(overlay);close.focus();}
+ function dailyReport(root){
+ const now=new Date(),date=now.toLocaleDateString('sv-SE');
+ const sessions=window.badmintonStatsUI.filterSessions(state.sessions,'today',now);
+ const matches=(state.result?.matches||[]).filter(m=>sessions.some(s=>s.id===m.session_id));
+ const section=el('section');section.id='bmDailyReport';
+ section.append(el('h3','Dagens spel · '+date),el('p',state.groupName),el('p','Omfattar spel som startats idag enligt enhetens datum. Endast färdigmarkerade rundor ingår.'));
+ const participants=state.dailyParticipation||[];
+ section.append(el('h4','Deltagare'),el('p',participants.length?participants.map(p=>p.name+' ('+p.single+' singel, '+p.double+' dubbel)').join(' · '):'Inga spelade matcher idag.'));
+ if(state.error){section.append(el('p','Resultaten kunde inte hämtas. Ingen pallplacering kan fastställas.'));root.append(section);return;}
+ section.append(el('p','Medaljer beräknas per spelare: flest vinster, därefter poängskillnad och gjorda poäng. Lika resultat ger delad placering (nästa placering hoppas över). Samtliga dagens singel- och dubbelmatcher summeras till en gemensam placering. I dubbel får båda partners samma matchresultat. Olika antal matcher kan påverka placeringen. Medaljerna visas i rapporten och sparas inte som separata utmärkelser.'));
+ const summary=el('p',sessions.length+' spel · '+matches.length+' matcher med resultat. Matcher utan poäng eller med 0–0 ger ingen placering.');section.append(summary);
+ const ranking=window.badmintonResults.podium(matches);
+ const singles=window.badmintonResults.podium(matches,1),doubles=window.badmintonResults.podium(matches,2);
+ section.append(el('h4','Sammanlagd pall · singel och dubbel'));
+ ranking.filter(p=>p.rank<=3).forEach(p=>section.append(el('p',p.medal+' · '+p.rank+'. '+p.name+' · '+p.wins+' vinster · poängskillnad '+p.difference)));
+ section.append(el('h4','Alla placeringar'));
+ ranking.forEach(p=>{const single=singles.find(x=>x.id===p.id),double=doubles.find(x=>x.id===p.id);section.append(el('p',p.rank+'. '+p.name+' · '+p.played+' matcher · '+p.wins+' vinster, '+p.losses+' förluster, '+p.draws+' oavgjorda · '+p.for+'–'+p.against+' poäng · Singel: '+(single?.played||0)+' matcher / '+(single?.wins||0)+' vinster · Dubbel: '+(double?.played||0)+' matcher / '+(double?.wins||0)+' vinster'));});
+ const unscored=participants.filter(p=>!ranking.some(r=>r.id===p.id));
+ unscored.forEach(p=>section.append(el('p',p.name+' · Ej placerad: saknar registrerat matchresultat.')));
+ section.append(el('h4','Matchresultat och vinnare'));
+ matches.forEach(m=>{const team=n=>m.players.filter(p=>p.team===n).map(p=>p.name).join(' & ');const session=sessions.find(s=>s.id===m.session_id);section.append(el('p',(m.players.length===2?'Singel':'Dubbel')+' · '+(session?.name||'Spel')+' · runda '+m.round_number+', bana '+m.court_number+': '+team(1)+' – '+team(2)+' · '+m.red+'–'+m.blue+' · '+(m.red===m.blue?'Oavgjort':'Vinnare: '+team(m.red>m.blue?1:2))));});
+ if(!matches.length)section.append(el('p','Inga färdigmarkerade matcher med registrerade resultat idag.'));
+ root.append(section);
+ let pdfFile=null;
+ const download=el('button','Ladda ner PDF'),share=el('button','Dela PDF · WhatsApp');download.type=share.type='button';
+ const status=el('p');status.setAttribute('role','status');
+ // Prepare the file before the click to preserve native sharing's user activation.
+ window.badmintonDailyPDF.create(section).then(file=>{pdfFile=file;download.disabled=share.disabled=false;}).catch(()=>{status.textContent='PDF kunde inte skapas. Använd Skriv ut / PDF.';});
+ download.disabled=share.disabled=true;
+ download.onclick=()=>window.badmintonDailyPDF.download(pdfFile);
+ share.onclick=async()=>{try{if(navigator.canShare?.({files:[pdfFile]})){await navigator.share({files:[pdfFile],title:'Dagens badmintonrapport'});status.textContent='';}else{window.badmintonDailyPDF.download(pdfFile);status.textContent='PDF har laddats ner. Öppna WhatsApp och bifoga filen som dokument.';}}catch(e){if(e.name!=='AbortError')status.textContent='Kunde inte dela filen. Ladda ner PDF och bifoga den i WhatsApp.';}};
+ root.append(download,share,status);
+ const print=el('button','Skriv ut dagsrapport / PDF');print.type='button';print.onclick=()=>{const page=window.open('','_blank');if(!page){window.bmCenteredAlert('Tillåt popupfönster för att öppna rapporten.');return;}page.document.title='Dagens badmintonrapport';page.document.body.append(page.document.importNode(section,true));const style=page.document.createElement('style');style.textContent='body{font:14px system-ui;padding:24px;line-height:1.5}h4{margin-top:24px}p{break-inside:avoid}';page.document.head.append(style);page.document.close();page.print();};root.append(print);
+ }
  function render(){const root=document.getElementById('cloudStats');root.replaceChildren();root.append(el('h3',state.groupName+' · '+state.periodLabel),el('p','Sparat på servern · Hämtat '+new Date(state.fetchedAt||Date.now()).toLocaleTimeString('sv-SE')+'. Perioden avser spelens startdatum.')); 
  const cards=el('div',undefined,'bmStatsCards');const participants=state.participation.filter(p=>p.single+p.double+p.rest>0).length;[['Spelade matcher',state.playedMatches],['Deltagande spelare',participants],['Färdiga rundor',state.completed],['Matcher med resultat',state.result?state.result.matches.length:'–']].forEach(([title,value])=>{const card=el('div',undefined,'bmStatsCard');card.append(el('span',title),el('strong',String(value)));cards.append(card);});root.append(cards);
- const nav=el('div',undefined,'bmStatsTabs');nav.setAttribute('role','tablist');tabs.forEach(([key,label])=>{const button=el('button',label);button.type='button';button.setAttribute('role','tab');button.setAttribute('aria-selected',String(active===key));button.onclick=()=>{active=key;render();};nav.append(button);});root.append(nav);
+ const nav=el('div',undefined,'bmStatsTabs');nav.setAttribute('role','tablist');tabs.forEach(([key,label])=>{const button=el('button',label);button.type='button';button.setAttribute('role','tab');button.setAttribute('aria-selected',String(active===key));button.onclick=()=>{active=key;if(key==='daily'){const period=document.getElementById('bmStatsPeriod');if(period&&period.value!=='today'){period.value='today';period.dispatchEvent(new Event('change'));return;}}render();};nav.append(button);});root.append(nav);
+ if(active==='daily'){dailyReport(root);return;}
  if(state.error&&active!=='participation')root.append(el('p','Resultatstatistiken kunde inte hämtas: '+state.error+'. Deltagarstatistiken är fortfarande tillgänglig.'));
  if(active==='results'&&state.result)root.append(el('p',state.result.unscored+' matcher utan registrerade poäng/resultat. 0–0 räknas inte. Dubbelpartners får samma lagresultat och lagpoäng.'));
  const data=rows();const panel=el('div');panel.setAttribute('role','tabpanel');panel.setAttribute('aria-label',tabs.find(t=>t[0]===active)[1]);
@@ -76,3 +111,4 @@
 
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0));else init();
 })();
+
