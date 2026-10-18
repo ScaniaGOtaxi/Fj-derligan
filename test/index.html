@@ -542,6 +542,16 @@ html.bmSkipSplash #appSplash{display:none}
 
 <script>if(new URLSearchParams(location.hash.slice(1)).has('live'))document.documentElement.classList.add('viewer-mode');</script>
 <style>.viewer-mode body > :not(#badmintonViewer):not(script){display:none!important}.viewer-mode #badmintonViewer{display:block!important}</style>
+<style id="signed-in-navigation">
+html:not(.bmAdminSignedIn) #v14Nav [data-tab]:not([data-tab="overview"]):not([data-tab="help"]),
+html:not(.bmAdminSignedIn) #v14Sections>.v14Section:not(#v14-overview):not(#v14-help),
+html:not(.bmAdminSignedIn) #gameView,
+html:not(.bmAdminSignedIn) #setupView,
+html:not(.bmAdminSignedIn) #playMode,
+html:not(.bmAdminSignedIn) #statsPanel,
+html:not(.bmAdminSignedIn) #liveSharePanel,
+html:not(.bmAdminSignedIn) #cloudAdminPanel{display:none!important}
+</style>
 <style id="v14-theme">
 :root{color-scheme:dark}body{background:#0d131a;color:#edf3f9}#cloudTestPanel{max-width:960px!important;background:transparent!important;border:0!important;padding:12px 16px!important;margin:14px auto!important;box-shadow:none!important}#cloudTestPanel h2{font-size:clamp(25px,4vw,34px)!important;letter-spacing:-.6px;margin-bottom:6px!important}#cloudTestPanel button{border:1px solid #556778;border-radius:12px;padding:12px 16px;font-size:14px}#cloudTestPanel button:not(.secondary){background:#248647}#cloudTestPanel button.secondary{background:#263443}#cloudTestPanel input,#cloudTestPanel select{background:#111b25;border:1px solid #465869;border-radius:11px;min-height:44px;font-size:15px}#cloudTestPanel .cloudRow{gap:10px;margin:12px 0}#cloudStatus,#cloudSessionStatus{padding:12px 14px;border-radius:12px;background:#152535;border-left:3px solid #63b3ef;color:#d7e8f6!important;line-height:1.5}#cloudGroups,#cloudPlayers{line-height:2.05}#cloudTestPanel .card{background:#17232e;border:1px solid #304354;border-radius:16px;padding:16px}#v14Nav{display:flex;gap:8px;overflow-x:auto;padding:5px 0 12px;scrollbar-width:thin}#v14Nav button{white-space:nowrap;background:#1a2937!important;color:#cbd8e4;border:1px solid #35485a!important;border-radius:12px;font-weight:700}#v14Nav button.active{background:#276d4b!important;border-color:#6ddaa1!important;color:#fff}#v14Sections{min-height:210px}.v14Section{display:none;animation:v14fade .15s ease}.v14Section.active{display:block}.v14Section h3{font-size:20px;margin:5px 0 12px}.v14Intro{color:#aebdcb;font-size:14px;line-height:1.5;margin:0 0 16px}.v14Box{background:#17232e;border:1px solid #304354;border-radius:17px;padding:18px;margin:12px 0}.v14Box label{font-weight:650}#cloudAdminPanel{margin:0!important}#v14MainHelp{color:#aebdcb;font-size:14px;margin:0 0 14px}#setupView.v14Hidden{display:none!important}#v14RotationNote{padding:12px;border:1px solid #334a5b;background:#14222e;border-radius:12px;color:#c8d9e7}#liveSharePanel{margin:0!important}#cloudStats{max-width:100%;overflow:auto}#v14-stats #statsPanel{display:block!important;margin:0 0 16px;padding:12px;border:1px solid #304354;border-radius:12px;background:#17232e}#v14-stats #statsPanel>h2{font-size:19px;margin:0 0 10px}#v14-stats #statsPanel .topTools{flex-wrap:wrap}@keyframes v14fade{from{opacity:.5}to{opacity:1}}@media(max-width:600px){#cloudTestPanel{padding:10px!important}#cloudTestPanel button{font-size:13px!important;padding:10px 12px!important}#v14Nav button{font-size:12px!important}#cloudTestPanel .cloudRow input{min-width:130px}#cloudTestPanel .v14Box{padding:13px}}
 </style>
@@ -919,9 +929,31 @@ window.badmintonPlayerImage=function(name,team,side,position){
 @media(max-width:700px){#viewerCourts{grid-template-columns:1fr!important}.viewerName{font-size:clamp(13px,3.5vw,22px)}}
 @media(min-width:701px){.viewer-mode #badmintonViewer:has(#viewerCourts[data-count="1"]) .viewerCourt{max-width:min(100%,140vh);width:100%;justify-self:center}}
 </style>
+<style id="viewer-launch-style">
+#viewerLaunch{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid #4d8d72;border-radius:20px;padding:28px;background:#112536;color:#f4f8fb;box-shadow:0 18px 65px #0009;text-align:center}
+#viewerLaunch::backdrop{background:rgba(4,12,20,.92)}
+#viewerLaunch .viewerLaunchIcon{font-size:52px;line-height:1.2}
+#viewerLaunch h2{font-size:28px!important;margin:12px 0}
+#viewerLaunch p{font-size:16px!important;line-height:1.5}
+#viewerLaunchStatus{color:#b9d5e8;overflow-wrap:anywhere}
+#viewerLaunch button{display:block;width:100%;min-height:52px;margin-top:14px;padding:12px;border:1px solid #62bc8b;border-radius:12px;background:#23854e;color:white;font-size:18px!important;font-weight:700;white-space:normal}
+#viewerLaunch button.secondary{background:#263b4c;border-color:#658095;font-size:15px!important}
+#viewerLaunch button:focus-visible{outline:3px solid #ffe39b;outline-offset:3px}
+#viewerFullscreenNotice{margin:4px 0;padding:9px 12px;border:1px solid #9a793e;border-radius:9px;background:#302717;color:#ffe7b2;font-size:14px!important;line-height:1.4}
+#viewerFullscreenNotice[hidden]{display:none!important}
+</style>
 <section id="badmintonViewer" style="display:none" aria-label="Badminton Live">
  <header id="viewerHead"><div><h1 id="viewerRound">Badminton – Live</h1><p id="viewerStatus" aria-live="polite">Ansluter …</p></div><button type="button" id="viewerFullscreen">⛶ Helskärm</button></header>
+ <p id="viewerFullscreenNotice" role="status" hidden></p>
  <div id="viewerCourts"></div><p id="viewerRest"></p>
+ <dialog id="viewerLaunch" aria-labelledby="viewerLaunchTitle" aria-describedby="viewerLaunchHelp">
+  <div class="viewerLaunchIcon" aria-hidden="true">🏸</div>
+  <h2 id="viewerLaunchTitle">Badminton Live</h2>
+  <p id="viewerLaunchHelp">Tryck för att följa spelet i helskärm utan adressfält, där webbläsaren stöder det.</p>
+  <p id="viewerLaunchStatus" role="status">Ansluter …</p>
+  <button type="button" id="viewerLaunchFullscreen" autofocus>▶ Visa Live i helskärm</button>
+  <button type="button" id="viewerLaunchNormal" class="secondary">Visa utan helskärm</button>
+ </dialog>
 </section>
 <script>
 (function(){
@@ -954,10 +986,33 @@ window.badmintonPlayerImage=function(name,team,side,position){
  const view=document.getElementById('badmintonViewer');view.style.display='flex';
  const status=document.getElementById('viewerStatus'),round=document.getElementById('viewerRound'),courts=document.getElementById('viewerCourts'),rest=document.getElementById('viewerRest');
  const full=document.getElementById('viewerFullscreen');
- full.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){status.textContent='Helskärm stöds inte i den här webbläsaren.';}};
- document.addEventListener('fullscreenchange',()=>{full.textContent=document.fullscreenElement?'⤢ Avsluta helskärm':'⛶ Helskärm';});
+ const notice=document.getElementById('viewerFullscreenNotice');
+ const fullscreen=()=>document.fullscreenElement||document.webkitFullscreenElement;
+ function fullscreenNotice(message=''){notice.textContent=message;notice.hidden=!message;}
+ async function enterFullscreen(){
+  const root=document.documentElement,request=root.requestFullscreen||root.webkitRequestFullscreen;
+  if(!request)throw Error('Helskärm saknas');
+  await request.call(root);fullscreenNotice();
+ }
+ full.onclick=async()=>{try{if(fullscreen()){const exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit)await exit.call(document);}else await enterFullscreen();}catch{fullscreenNotice('Live visas utan helskärm. Webbläsaren tillåter inte helskärm här.');}};
+ const updateFullscreen=()=>{full.textContent=fullscreen()?'⤢ Avsluta helskärm':'⛶ Helskärm';full.setAttribute('aria-pressed',String(!!fullscreen()));if(fullscreen())fullscreenNotice();};
+ document.addEventListener('fullscreenchange',updateFullscreen);document.addEventListener('webkitfullscreenchange',updateFullscreen);updateFullscreen();
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  if(!uuid.test(session||'')||!/^[0-9a-f]{64}$/.test(token||'')){status.textContent='❌ Ogiltig visningslänk.';return;}
+ const launch=document.getElementById('viewerLaunch'),launchStatus=document.getElementById('viewerLaunchStatus');
+ const mirrorStatus=()=>{launchStatus.textContent=status.textContent;};
+ const statusObserver=new MutationObserver(mirrorStatus);statusObserver.observe(status,{childList:true,characterData:true,subtree:true});mirrorStatus();
+ let started=false;
+ async function startLive(wantFullscreen){
+  if(started)return;started=true;statusObserver.disconnect();
+  if(typeof launch.close==='function')launch.close();else launch.removeAttribute('open');
+  if(wantFullscreen){try{await enterFullscreen();}catch{fullscreenNotice('Live visas utan helskärm. Webbläsaren tillåter inte helskärm här. Prova knappen Helskärm igen eller öppna länken i en annan webbläsare.');}}
+  full.focus({preventScroll:true});
+ }
+ document.getElementById('viewerLaunchFullscreen').onclick=()=>startLive(true);
+ document.getElementById('viewerLaunchNormal').onclick=()=>startLive(false);
+ launch.addEventListener('cancel',event=>{event.preventDefault();void startLive(false);});
+ if(typeof launch.showModal==='function')launch.showModal();else launch.setAttribute('open','');
  const base='https://frkhzwutziysnjibaxfa.supabase.co',key='sb_publishable_Ls7ecNqa40yuRE8S1KiNCw_cHq_18Ej';
  let busy=false,previous='',livePollTimer=null,livePollDelay=2000;
  let localLiveRound=null;
@@ -1190,7 +1245,7 @@ async function restoreAuth(){
 }
 
 const groupCreateRow=document.getElementById('cloudNewGroup').closest('.cloudRow');
-function updateRoleUI(){queueMicrotask(()=>window.dispatchEvent(new Event('badminton:auth-changed')));groupCreateRow.style.display=cloudRole==='super_admin'?'':'none';document.getElementById('cloudAdminPanel').style.display=cloudRole==='super_admin'?'':'none';if(cloudRole!=='super_admin'){document.getElementById('cloudAdminSelect').replaceChildren(new Option('Hämta Admin-konton först',''));document.getElementById('cloudAdminAssignments').textContent='';document.getElementById('cloudAdminStatus').textContent='';}}
+function updateRoleUI(){document.documentElement.classList.toggle('bmAdminSignedIn',['admin','super_admin'].includes(cloudRole));queueMicrotask(()=>window.dispatchEvent(new Event('badminton:auth-changed')));groupCreateRow.style.display=cloudRole==='super_admin'?'':'none';document.getElementById('cloudAdminPanel').style.display=cloudRole==='super_admin'?'':'none';if(cloudRole!=='super_admin'){document.getElementById('cloudAdminSelect').replaceChildren(new Option('Hämta Admin-konton först',''));document.getElementById('cloudAdminAssignments').textContent='';document.getElementById('cloudAdminStatus').textContent='';}}
 updateRoleUI();
 const status=document.getElementById('cloudStatus'), groups=document.getElementById('cloudGroups'), groupSelect=document.getElementById('cloudGroupSelect'), players=document.getElementById('cloudPlayers');
 const say=t=>{status.textContent=t};
@@ -2050,7 +2105,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <h2>❓ Hjälp och användarguide</h2>
 <p class="small">Uppdaterad 18 oktober 2026 · Gäller funktionerna i testappen.</p>
 <p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
-<p><b>Flikarna:</b> Admin för inloggning och lösenord, Spelinställningar för grupp och spelare, Badminton Rotation – Spel för den skapade rotationen, Live &amp; QR för åskådarlänkar samt Statistik och Hjälp. Behörigheter visas bara för Super Admin.</p>
+<p><b>Före inloggning visas Admin och Hjälp.</b> Admin innehåller inloggning och lösenordsverktyg; Hjälp kan läsas utan konto. Efter verifierad Admin-inloggning visas appens övriga flikar. Vid utloggning döljs de skyddade flikarna igen och appen återgår till Admin. Giltiga Live-länkar fungerar fortfarande för deltagare utan Admin-konto.</p>
+<p><b>Flikarna efter inloggning:</b> Admin för inloggning och lösenord, Spelinställningar för grupp och spelare, Badminton Rotation – Spel för den skapade rotationen, Live &amp; QR för åskådarlänkar samt Statistik och Hjälp. Behörigheter visas bara för Super Admin.</p>
 <h3>🚀 1. Snabbstart</h3>
 <ol>
 <li>Öppna <b>⌂ Admin</b> och logga in med ditt administratörskonto.</li>
@@ -2133,9 +2189,10 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li>Skapa eller återuppta gruppens aktiva molnspel.</li>
 <li>Öppna <b>Live &amp; QR</b> och välj <b>Skapa ny visningslänk</b>.</li>
 <li>Låt deltagarna skanna QR-koden eller använd <b>Kopiera länk</b>, <b>WhatsApp</b> eller mobilens delningsfunktion.</li>
-<li>Öppna länken på en annan enhet. Ingen Admin-inloggning behövs.</li>
+<li>Öppna länken på en annan enhet. Ingen Admin-inloggning behövs. Tryck <b>▶ Visa Live i helskärm</b> på startsidan, eller välj <b>Visa utan helskärm</b>.</li>
 </ol>
 <p><b>Kontrollera QR/länk</b> verifierar den befintliga länken mot molnet. <b>Visa befintlig QR</b> visar länken som finns i den öppna fliken. Den sparas inte mellan sidomladdningar. En <b>ny visningslänk ersätter den gamla</b>; dela den nya länken med deltagarna. När spelet avslutas blir dess visningslänk ogiltig.</p>
+<p><b>Helskärm i Live:</b> startknappen begär helskärm med ett tryck så att adressfältet döljs där webbläsaren stöder det. Webbläsaren kräver normalt ett nytt tryck efter öppning eller omladdning; helskärm kan inte tvingas fram automatiskt. Om helskärm nekas visas Live i vanligt läge med ett meddelande. Knappen <b>⛶ Helskärm</b> kan användas igen. Välj <b>Avsluta helskärm</b> eller Escape för att lämna. På vissa mobiler stöds inte webbläsarens helskärmsfunktion.</p>
 <p>Live visar runda, banor, två flaggor, spelarfigurer, vilande spelare, färdigmarkering och aktiverad poängräkning. Åskådaren kan välja helskärm men kan inte ändra spelare, runda eller poäng.</p>
 <p>En synlig Live-sida uppdateras ungefär varannan sekund plus nätverkets svarstid. Dold flik eller offline-läge pausar uppdateringen; den återupptas när sidan blir synlig eller nätverket återkommer. Vid serverfel väntar appen längre mellan försöken.</p>
 <h3>📊 12. Serverstatistik, dagsrapport och diplom</h3>
@@ -3954,7 +4011,8 @@ const rotation=card('settings');const note=document.createElement('p');note.id='
  sections.settings.append(footer);
 
  const unplaced=[...panel.children].filter(el=>el!==heading&&el!==intro&&el!==nav&&el!==holder&&el.tagName!=='SCRIPT');unplaced.forEach(el=>{if(el.id==='cloudTestPanel')return;game.append(el)});
- function show(key){try{bmStorage.setItem('badmintonV14CurrentTab',key)}catch(e){}if(key==='play' && !playView.classList.contains('active') && typeof schedule!=='undefined' && schedule.length){resumeGame();return;}panel.classList.toggle('v14Playing',key==='play' && playView.classList.contains('active'));if(key==='help'&&helpPanel){helpPanel.style.display='block';helpPanel.classList.add('open');}if(key==='stats'){const p=document.getElementById('statsPanel');if(p){p.classList.add('open');p.style.display='block';}if(typeof renderStatistics==='function')renderStatistics();}if(key==='play'&&!playView.classList.contains('active')){emptyGame.style.display='block';emptyBack.style.display='block'}else{emptyGame.style.display='none';emptyBack.style.display='none'}nav.querySelectorAll('button').forEach(b=>{const active=b.dataset.tab===key;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))});Object.entries(sections).forEach(([k,sec])=>sec.classList.toggle('active',k===key));setup.classList.toggle('v14Hidden',key!=='settings');requestAnimationFrame(()=>{window.scrollTo({top:0,left:0,behavior:'instant'});});}
+ function tabAllowed(key){const role=window.badmintonCloudRole?.();return ['overview','help'].includes(key)||(['admin','super_admin'].includes(role)&&(key!=='admins'||role==='super_admin'));}
+ function show(key){if(!tabAllowed(key))key='overview';try{bmStorage.setItem('badmintonV14CurrentTab',key)}catch(e){}if(key==='play' && !playView.classList.contains('active') && typeof schedule!=='undefined' && schedule.length){resumeGame();return;}panel.classList.toggle('v14Playing',key==='play' && playView.classList.contains('active'));if(key==='help'&&helpPanel){helpPanel.style.display='block';helpPanel.classList.add('open');}if(key==='stats'){const p=document.getElementById('statsPanel');if(p){p.classList.add('open');p.style.display='block';}if(typeof renderStatistics==='function')renderStatistics();}if(key==='play'&&!playView.classList.contains('active')){emptyGame.style.display='block';emptyBack.style.display='block'}else{emptyGame.style.display='none';emptyBack.style.display='none'}nav.querySelectorAll('button').forEach(b=>{const active=b.dataset.tab===key;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))});Object.entries(sections).forEach(([k,sec])=>sec.classList.toggle('active',k===key));setup.classList.toggle('v14Hidden',key!=='settings');requestAnimationFrame(()=>{window.scrollTo({top:0,left:0,behavior:'instant'});});}
  window.badmintonV14ShowTab=show;
  window.addEventListener('badminton:rotation-created',()=>show('play'));
  window.addEventListener('badminton:round-changed',()=>{if(playView.classList.contains('active')&&document.getElementById('setupView').classList.contains('hidden'))show('play')});
@@ -3966,7 +4024,13 @@ const rotation=card('settings');const note=document.createElement('p');note.id='
  show(lastTab==='play' && !playView.classList.contains('active') ? 'overview' : (tabs.some(t=>t[0]===lastTab)&&lastTab!=='admins'?lastTab:'overview'));
  // Synliggör Behörigheter enbart för Super Admin, utan att ändra den befintliga behörighetskontrollen.
  const adminTab=nav.querySelector('[data-tab="admins"]');const rolePanel=document.getElementById('cloudAdminPanel');
- function updateAdminTab(){const visible=rolePanel&&getComputedStyle(rolePanel).display!=='none';adminTab.style.display=visible?'':'none';if(!visible&&sections.admins.classList.contains('active'))show('overview')}
+ function updateAdminTab(){
+  const role=window.badmintonCloudRole?.();document.documentElement.classList.toggle('bmAdminSignedIn',['admin','super_admin'].includes(role));
+  nav.querySelectorAll('[data-tab]').forEach(button=>{const allowed=tabAllowed(button.dataset.tab);button.hidden=!allowed;button.style.display=allowed?'':'none';});
+  const current=Object.entries(sections).find(([,section])=>section.classList.contains('active'))?.[0];
+  if(current&&!tabAllowed(current))show('overview');
+ }
+ window.addEventListener('badminton:auth-changed',updateAdminTab);
  const observer=new MutationObserver(updateAdminTab);observer.observe(rolePanel,{attributes:true,attributeFilter:['style']});updateAdminTab();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
@@ -4999,6 +5063,7 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <script src="statistics-delete.js"></script>
 </body>
 </html>
+
 
 
 
