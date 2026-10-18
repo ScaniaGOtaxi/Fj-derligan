@@ -37,19 +37,22 @@
  details.append(...section.childNodes);section.append(details);
  diplomaPages.forEach((canvas,index)=>{canvas.style.cssText='display:block;width:100%;height:auto;margin:12px 0;border-radius:10px';canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Dagens diplom för '+state.groupName+'. Fullständiga resultat finns under detaljer.');canvas.dataset.diplomaPage=String(index+1);section.insertBefore(canvas,details);});
  root.append(section);
- let pdfFile=null,diplomaFile=null;
+ let pdfFile=null,diplomaFile=null,imageFile=null;
  const download=el('button','Ladda ner PDF'),share=el('button','Dela PDF · WhatsApp');download.type=share.type='button';
  const shareDiploma=el('button','Dela diplom via WhatsApp');shareDiploma.type='button';shareDiploma.disabled=true;shareDiploma.title='Dela endast första sidan som PDF';
+ const shareImage=el('button','Dela diplom som bild');shareImage.type='button';shareImage.disabled=true;shareImage.title='Dela första diplomsidan som bild, till exempel till WhatsApp';
  const status=el('p');status.setAttribute('role','status');
  // Prepare the file before the click to preserve native sharing's user activation.
  window.badmintonDailyPDF.create(section).then(file=>{pdfFile=file;download.disabled=share.disabled=false;}).catch(()=>{status.textContent='PDF kunde inte skapas. Använd Skriv ut / PDF.';});
  window.badmintonDailyPDF.create(section,{firstPageOnly:true}).then(file=>{diplomaFile=file;shareDiploma.disabled=false;}).catch(()=>{status.textContent='Diplomets PDF kunde inte skapas. Försök uppdatera rapporten.';});
+ try{section.querySelector('canvas[data-diploma-page]').toBlob(blob=>{if(!blob){status.textContent='Diplombilden kunde inte skapas. Försök uppdatera rapporten.';return;}imageFile=new File([blob],'badminton-diplom-'+new Date().toLocaleDateString('sv-SE')+'.png',{type:'image/png'});shareImage.disabled=false;},'image/png');}catch{status.textContent='Diplombilden kunde inte skapas. Försök uppdatera rapporten.';}
  download.disabled=share.disabled=true;
  download.onclick=()=>window.badmintonDailyPDF.download(pdfFile);
- const shareFile=async(file,diploma=false)=>{try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:diploma?'Dagens diplom':'Dagens badmintonrapport'});status.textContent='';}else{window.badmintonDailyPDF.download(file);status.textContent=(diploma?'Diplomet (1 sida)':'PDF')+' har laddats ner. Öppna WhatsApp och bifoga filen som dokument.';}}catch(e){if(e.name!=='AbortError'){window.badmintonDailyPDF.download(file);status.textContent='Kunde inte dela filen. PDF har laddats ner; bifoga den som dokument i WhatsApp.';}}};
+ const shareFile=async(file,diploma=false)=>{try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:diploma?'Dagens diplom':'Dagens badmintonrapport'});status.textContent='';}else{window.badmintonDailyPDF.download(file);status.textContent=(file.type.startsWith('image/')?'Diplombilden':diploma?'Diplomet (1 sida)':'PDF')+' har laddats ner. '+(file.type.startsWith('image/')?'Öppna WhatsApp och bifoga bilden från Hämtade filer.':'Öppna WhatsApp och bifoga filen som dokument.');}}catch(e){if(e.name!=='AbortError'){window.badmintonDailyPDF.download(file);status.textContent='Kunde inte dela filen. '+(file.type.startsWith('image/')?'Bilden har laddats ner; bifoga den i WhatsApp.':'PDF har laddats ner; bifoga den som dokument i WhatsApp.');}}};
  share.onclick=()=>shareFile(pdfFile);
  shareDiploma.onclick=()=>shareFile(diplomaFile,true);
- root.append(shareDiploma,download,share,status);
+ shareImage.onclick=()=>shareFile(imageFile,true);
+ root.append(shareImage,shareDiploma,download,share,status);
  const print=el('button','Skriv ut dagsrapport / PDF');print.type='button';print.onclick=()=>{const page=window.open('','_blank');if(!page){window.bmCenteredAlert('Tillåt popupfönster för att öppna rapporten.');return;}page.document.title='Dagens badmintonrapport';const copy=page.document.importNode(section,true);copy.querySelectorAll('canvas').forEach((node,i)=>{const image=page.document.createElement('img');image.src=section.querySelectorAll('canvas')[i].toDataURL('image/png');image.style.cssText='display:block;width:100%;break-after:page';node.replaceWith(image);});copy.querySelectorAll('details').forEach(d=>d.open=true);page.document.body.append(copy);const style=page.document.createElement('style');style.textContent='body{font:14px system-ui;padding:24px;line-height:1.5}h4{margin-top:24px}p{break-inside:avoid}';page.document.head.append(style);page.document.close();page.print();};root.append(print);
  }
  function render(){const root=document.getElementById('cloudStats');root.replaceChildren();root.append(el('h3',state.groupName+' · '+state.periodLabel),el('p','Sparat på servern · Hämtat '+new Date(state.fetchedAt||Date.now()).toLocaleTimeString('sv-SE')+'. Perioden avser spelens startdatum.')); 
@@ -121,6 +124,7 @@
 
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0));else init();
 })();
+
 
 
 
