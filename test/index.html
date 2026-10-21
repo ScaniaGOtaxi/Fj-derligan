@@ -908,6 +908,12 @@ window.badmintonPlayerImage=function(name,team,side,position){
 <style id="live-score-at-net">
 #badmintonViewer .viewerStage .viewerLiveScore{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:20000!important;isolation:isolate;box-sizing:border-box;max-width:calc(100% - 16px);padding:5px 12px;border:1px solid #ffffff80;border-radius:12px;background:#08131de6;color:#fff;box-shadow:0 2px 10px #0008;text-align:center;font-size:clamp(18px,2.8vw,38px);font-weight:800;line-height:1.25;white-space:nowrap;pointer-events:none}
 </style>
+<style id="two-one-help-highlight">
+#helpPanel #bmHelpTwoOne{border:2px solid #ff5b65;border-radius:12px;padding:12px 16px;margin:12px 0;background:#251b25}
+#helpPanel #bmHelpTwoOne,#helpPanel #bmHelpTwoOne summary,#helpPanel #bmHelpTwoOne p,#helpPanel #bmHelpTwoOne li,#helpPanel #bmHelpTwoOne strong{color:#ff929b!important}
+#helpPanel #bmHelpTwoOne summary{font-size:18px;font-weight:800}
+#helpPanel #bmHelpTwoOne p,#helpPanel #bmHelpTwoOne li{line-height:1.6}
+</style>
 </head>
 <body>
 <div role="note" style="padding:9px;background:#683800;color:white;text-align:center">TESTMILJÖ v2 – synk och dubbla flaggor. Använd en testgrupp: Supabase-databasen delas med ordinarie app.</div>
@@ -2114,7 +2120,20 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 
 <div id="helpPanel" class="card helpPanel">
 <h2>❓ Hjälp och användarguide</h2>
-<details><summary>Tillåt 2 mot 1 – testfunktion</summary><p>Reglaget under dagens spelare är AV som standard och gäller nästa schema. PÅ är ett gemensamt godkännande från alla valda spelare: även Endast singel får spela ensam mot två. Vid 7 spelare på 2 banor används en dubbel och en 2 mot 1; vid 11 på 3 banor två dubblar och en 2 mot 1. Ingen vilar. Med alla på Normal får varje spelare på 7 respektive 11 rundor en ensamroll och två matcher i tvåmannalaget. Mer singel prioriterar ensamrollen; en spelare med Endast singel behåller ensamrollen. Flera Endast singel kan inte kombineras med en enda ensamroll utan vila, så schemat blockeras tills valen ändras.</p><p>AV använder vanlig singel och dubbel. Vid dessa antal och högst en Endast singel vilar en person per runda. Med alla Normal fördelas vila och singel jämnt; med en Endast singel spelar den personen singel varje runda och övriga delar på vila och motståndarrollen. Andra antal använder den vanliga rotationslogiken. 2 mot 1 visas som egen matchtyp i spelet och Live. Resultaten redovisas separat och räknas inte in i den vanliga singel-/dubbelpallen. Testa i en testgrupp; serverdatabasen delas med produktionen och äldre appar känner inte till denna spelform.</p></details>
+<details id="bmHelpTwoOne" open>
+<summary><strong>Viktigt: Tillåt 2 mot 1 – läs innan du skapar schema</strong></summary>
+<p><strong>Reglaget finns under dagens spelare, i rutan med röd ram.</strong> Det är AV första gången och ditt val sparas på enheten. Grönt betyder PÅ och rött betyder AV. Ändringen gäller nästa schema; ett pågående spel ändras inte.</p>
+<p><strong>PÅ är ett gemensamt godkännande från alla valda spelare.</strong> Även en spelare med Endast singel godkänner då att spela ensam mot två.</p>
+<ul>
+<li><strong>7 spelare på 2 banor:</strong> PÅ ger 1 dubbel + 1 match 2 mot 1, utan vila.</li>
+<li><strong>11 spelare på 3 banor:</strong> PÅ ger 2 dubbelmatcher + 1 match 2 mot 1, utan vila.</li>
+<li><strong>AV:</strong> vanlig singel och dubbel. Vid dessa antal och högst en Endast singel vilar en person per runda. Andra antal spelare och banor använder vanlig rotationslogik även om reglaget är PÅ.</li>
+</ul>
+<p><strong>Rollerna fördelas efter preferenserna.</strong> Med alla på Normal får varje spelare under en hel cykel om 7 respektive 11 rundor en ensamroll, två matcher i tvåmannalaget och 4 respektive 8 dubbelmatcher. Mer singel prioriterar ensamrollen; en spelare med Endast singel behåller ensamrollen varje runda. Flera Endast singel kan inte kombineras med en enda ensamroll utan vila: schemat stoppas tills preferenserna ändras eller reglaget slås av.</p>
+<p><strong>Med AV och alla på Normal fördelas vila och singel jämnt.</strong> Med en Endast singel spelar den personen vanlig singel varje runda, medan övriga delar på motståndarrollen och vilan. Med flera Endast singel kan fler behöva vila.</p>
+<p><strong>Rundtipset uppdateras när du ändrar reglaget.</strong> Alla partners eller motståndare garanteras inte. 2 mot 1 visas som egen matchtyp i spelet och Live. Resultaten redovisas separat och räknas inte in i den vanliga singel-/dubbelpallen.</p>
+<p><strong>Detta är en testfunktion.</strong> Använd en testgrupp: databasen delas med produktionen och äldre appversioner känner inte till denna spelform.</p>
+</details>
 <p class="small">Uppdaterad 21 oktober 2026 · Gäller funktionerna i testappen.</p>
 <p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
 <p><b>Före inloggning visas Admin och Hjälp.</b> Admin innehåller inloggning och lösenordsverktyg; Hjälp kan läsas utan konto. Efter verifierad Admin-inloggning visas appens övriga flikar. Vid utloggning döljs de skyddade flikarna igen och appen återgår till Admin. Giltiga Live-länkar fungerar fortfarande för deltagare utan Admin-konto.</p>
