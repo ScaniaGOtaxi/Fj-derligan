@@ -2121,18 +2121,12 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <div id="helpPanel" class="card helpPanel">
 <h2>❓ Hjälp och användarguide</h2>
 <details id="bmHelpTwoOne" open>
-<summary><strong>Viktigt: Tillåt 2 mot 1 – läs innan du skapar schema</strong></summary>
-<p><strong>Reglaget finns under dagens spelare, i rutan med röd ram.</strong> Det är AV första gången och ditt val sparas på enheten. Grönt betyder PÅ och rött betyder AV. Ändringen gäller nästa schema; ett pågående spel ändras inte.</p>
-<p><strong>PÅ är ett gemensamt godkännande från alla valda spelare.</strong> Även en spelare med Endast singel godkänner då att spela ensam mot två.</p>
-<ul>
-<li><strong>7 spelare på 2 banor:</strong> PÅ ger 1 dubbel + 1 match 2 mot 1, utan vila.</li>
-<li><strong>11 spelare på 3 banor:</strong> PÅ ger 2 dubbelmatcher + 1 match 2 mot 1, utan vila.</li>
-<li><strong>AV:</strong> vanlig singel och dubbel. Vid dessa antal och högst en Endast singel vilar en person per runda. Andra antal spelare och banor använder vanlig rotationslogik även om reglaget är PÅ.</li>
-</ul>
-<p><strong>Rollerna fördelas efter preferenserna.</strong> Med alla på Normal får varje spelare under en hel cykel om 7 respektive 11 rundor en ensamroll, två matcher i tvåmannalaget och 4 respektive 8 dubbelmatcher. Mer singel prioriterar ensamrollen; en spelare med Endast singel behåller ensamrollen varje runda. Flera Endast singel kan inte kombineras med en enda ensamroll utan vila: schemat stoppas tills preferenserna ändras eller reglaget slås av.</p>
-<p><strong>Med AV och alla på Normal fördelas vila och singel jämnt.</strong> Med en Endast singel spelar den personen vanlig singel varje runda, medan övriga delar på motståndarrollen och vilan. Med flera Endast singel kan fler behöva vila.</p>
-<p><strong>Rundtipset uppdateras när du ändrar reglaget.</strong> Alla partners eller motståndare garanteras inte. 2 mot 1 visas som egen matchtyp i spelet och Live. Resultaten redovisas separat och räknas inte in i den vanliga singel-/dubbelpallen.</p>
-<p><strong>Detta är en testfunktion.</strong> Använd en testgrupp: databasen delas med produktionen och äldre appversioner känner inte till denna spelform.</p>
+<summary><strong>Tillåt 2 mot 1</strong></summary>
+<p><strong>Gäller 7 spelare på 2 banor eller 11 spelare på 3 banor.</strong></p>
+<p><strong>PÅ:</strong> en bana spelar 2 mot 1, övriga dubbel. Ingen vilar. Alla godkänner spelformen, även den som valt Endast singel.</p>
+<p><strong>AV:</strong> vanlig singel och dubbel med vila.</p>
+<p>Alla Normal: ensamrollen roterar. Mer singel prioriteras; en Endast singel behåller ensamrollen. Flera Endast singel kräver ändrade val eller AV.</p>
+<p>Gäller nästa schema. 2 mot 1-resultat redovisas separat och ingår inte i vanliga pallen. Testa i en testgrupp.</p>
 </details>
 <p class="small">Uppdaterad 21 oktober 2026 · Gäller funktionerna i testappen.</p>
 <p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
