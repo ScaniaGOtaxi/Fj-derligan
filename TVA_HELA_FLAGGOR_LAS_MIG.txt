@@ -1,5 +1,0 @@
-Badminton App v2.0 - två fullstora flaggor sida vid sida.
-En flagga visas som tidigare. Två flaggor visas separat utan diagonal delning.
-Flaggorna lagras ännu lokalt per grupp. Live & QR-koden är oförändrad.
-
-FIX: Förhandsvisning visar två separata fullstora flaggor. Nationalitetsvalen är kompaktare. Live & QR oförändrat.

@@ -1,4 +1,4 @@
-/* Test-only rotation variant. Existing cloud activity 'double' stores the two teams;
+/* Optional 2-v-1 rotation variant. Existing cloud activity 'double' stores the two teams;
    a three-player court is identified by its saved team sizes, never as singles. */
 (function(root){
  'use strict';
