@@ -1,4 +1,4 @@
-const CACHE = 'badminton-netlify-prod-live-net-front-20261018';
+const CACHE = 'badminton-netlify-prod-bollspel-20261021';
 const FILES = ['./', './index.html', './statistics-delete.js', './round-tips.js', './group-rename.js', './sync-v2.js', './group-players.js', './flag-visibility.js', './player-visibility.js', './player-motion.js', './shuttle-motion.js', './results-v1.js', './statistics-ui.js', './daily-pdf.js', './daily-diploma.js', './diploma-template.png', './qr-local.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './bana.jpg', './nat.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
