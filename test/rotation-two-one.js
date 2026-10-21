@@ -61,9 +61,21 @@
  function init(){
   if(document.documentElement.classList.contains('viewer-mode'))return;
   const area=document.getElementById('playerListArea');if(!area)return;
-  const style=document.createElement('style');style.textContent='#bmAllowTwoOne{appearance:none!important;position:relative!important;display:inline-block!important;flex:none;width:50px!important;height:28px!important;border:1px solid #718096!important;border-radius:20px!important;background:#455568!important;cursor:pointer}#bmAllowTwoOne::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:white;transition:transform .15s}#bmAllowTwoOne:checked{background:#218647!important;border-color:#7ee787!important}#bmAllowTwoOne:checked::after{transform:translateX(22px)}#bmAllowTwoOne:focus-visible{outline:3px solid #80caff;outline-offset:3px}';document.head.append(style);
-  const box=document.createElement('div');box.id='bmTwoOneSettings';box.style.cssText='margin:10px 0;padding:12px;border:1px solid #54718b;border-radius:12px;background:#152535';
-  box.innerHTML='<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700"><span>Tillåt 2 mot 1</span><span style="display:flex;align-items:center;gap:8px"><input id="bmAllowTwoOne" type="checkbox" role="switch" style="width:48px;height:28px;accent-color:#218647"><span id="bmTwoOneValue">AV</span></span></label><p id="bmTwoOneSummary" role="status" style="font-size:14px;margin:8px 0 0"></p>';
+  const style=document.createElement('style');style.textContent=`
+#bmTwoOneSettings{border:2px solid #ff5b65!important;box-shadow:0 0 0 1px #ff5b6526}
+#bmTwoOneSettings .bmTwoOneSwitch{position:relative;display:inline-block;flex:0 0 120px;width:120px;height:64px;vertical-align:middle}
+#bmTwoOneSettings #bmAllowTwoOne{appearance:none!important;position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;min-height:0!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;opacity:0!important;z-index:2;cursor:pointer}
+#bmTwoOneSettings .bmTwoOneTrack{position:absolute;inset:0;box-sizing:border-box;border:3px solid #ff8290;border-radius:999px;background:#a32539;box-shadow:inset 0 0 0 2px #ffffff18;pointer-events:none;transition:background .15s,border-color .15s}
+#bmTwoOneSettings .bmTwoOneTrack::after{content:"";position:absolute;top:4px;left:4px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 2px 5px #0003;transition:transform .15s}
+#bmTwoOneSettings #bmTwoOneValue{position:absolute;top:0;bottom:0;right:10px;display:flex;align-items:center;justify-content:center;width:38px;font:800 18px/1 system-ui;color:#fff}
+#bmTwoOneSettings #bmAllowTwoOne:checked+.bmTwoOneTrack{background:#008649;border-color:#67f1ac}
+#bmTwoOneSettings #bmAllowTwoOne:checked+.bmTwoOneTrack::after{transform:translateX(56px)}
+#bmTwoOneSettings #bmAllowTwoOne:checked+.bmTwoOneTrack #bmTwoOneValue{right:auto;left:10px}
+#bmTwoOneSettings #bmAllowTwoOne:focus-visible+.bmTwoOneTrack{outline:3px solid #80caff;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){#bmTwoOneSettings .bmTwoOneTrack,#bmTwoOneSettings .bmTwoOneTrack::after{transition:none}}
+`;document.head.append(style);
+  const box=document.createElement('div');box.id='bmTwoOneSettings';box.style.cssText='margin:10px 0;padding:14px;border-radius:14px;background:#152535';
+  box.innerHTML='<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700;cursor:pointer"><span>Tillåt 2 mot 1</span><span class="bmTwoOneSwitch"><input id="bmAllowTwoOne" type="checkbox" role="switch"><span class="bmTwoOneTrack" aria-hidden="true"><span id="bmTwoOneValue">AV</span></span></span></label><p id="bmTwoOneSummary" role="status" style="font-size:14px;margin:10px 0 0"></p>';
   area.after(box);
   const toggle=box.querySelector('input'),text=box.querySelector('p'),value=box.querySelector('#bmTwoOneValue');toggle.checked=bmStorage.getItem('badmintonAllowTwoOne')==='true';
   function update(){const ps=selectedPlayers(),n=ps.length,c=Number(document.getElementById('courts').value),supported=supports(n,c);value.textContent=toggle.checked?'PÅ':'AV';toggle.setAttribute('aria-checked',String(toggle.checked));
