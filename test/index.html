@@ -761,6 +761,7 @@ window.badmintonPlayerImage=function(name,team,side,position){
 <script src="player-visibility.js"></script>
 <script src="player-motion.js"></script>
 <script src="shuttle-motion.js"></script>
+<script src="rotation-two-one.js"></script>
 <script src="results-v1.js"></script>
 <script src="daily-diploma.js"></script>
 <script src="daily-pdf.js"></script>
@@ -1075,9 +1076,9 @@ window.badmintonPlayerImage=function(name,team,side,position){
    for(let n=1;n<=count;n++){
     const playing=players.filter(p=>Number(p.court)===n);
     const team1=playing.filter(p=>Number(p.team)===1),team2=playing.filter(p=>Number(p.team)===2);
-    const doubles=team1.length>1||team2.length>1;
+    const doubles=team1.length>1||team2.length>1,triple=playing.length===3&&team1.length&&team2.length;
     const card=document.createElement('section');card.className='viewerCourt'+(liveRoundCompleted?' completedRound':'');
-    const title=document.createElement('h3');title.textContent='🏸 Bana '+n+' — '+(doubles?'Dubbel':'Singel');card.append(title);
+    const title=document.createElement('h3');title.textContent='🏸 Bana '+n+' — '+(triple?'2 mot 1':doubles?'Dubbel':'Singel');card.append(title);
     const stage=document.createElement('div');stage.className='viewerStage '+(doubles?'double':'single');
     const img=document.createElement('img');img.src='bana.jpg';img.alt='3D-badmintonbana';stage.append(img);
     if(doubles){nameLabel(stage,team1[0],'top left');nameLabel(stage,team1[1],'top right');nameLabel(stage,team2[0],'bottom left');nameLabel(stage,team2[1],'bottom right');}
@@ -1628,10 +1629,10 @@ window.addEventListener('badminton:rotation-created', async (event)=>{
   const positions=[];
   rounds.forEach((round,i)=>{
    const roundId=ids.get(i+1);
-   round.courts.forEach((court,j)=>court.players.forEach((name,k)=>positions.push({round_id:roundId,player_id:importedPlayerIds.get(name),court_number:j+1,team_number:court.type==='Dubbel'?(k<2?1:2):(k+1),activity:court.type==='Dubbel'?'double':'single'})));
+   round.courts.forEach((court,j)=>court.players.forEach((name,k)=>positions.push({round_id:roundId,player_id:importedPlayerIds.get(name),court_number:j+1,team_number:window.badmintonTwoOne.teamNumber(court,k),activity:court.type==='Singel'?'single':'double'})));
    round.rest.forEach(name=>positions.push({round_id:roundId,player_id:importedPlayerIds.get(name),court_number:null,team_number:null,activity:'rest'}));
   });
-  // I singel ska team_number vara 1 eller 2; övriga former stöds i denna version endast med 2 eller 4 spelare per bana.
+  // 2 mot 1 lagras med aktiviteten double och tre deltagare, med lagnummer 1 och 2.
   if(positions.length){
    if(groupMembershipAvailable===true)await request('/rest/v1/rpc/save_badminton_group_round_players',{method:'POST',body:JSON.stringify({p_session_id:createdSession,p_positions:positions})});
    else await request('/rest/v1/badminton_round_players',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(positions)});
@@ -1687,7 +1688,7 @@ function publishLocalLiveRound(number){
   (item.courts||[]).forEach((court,index)=>{
     (court.players||[]).forEach((name,pos)=>{
       if(!name)return;
-      players.push({name, court:index+1, team:pos<2?1:2, activity:'play',
+      players.push({name, court:index+1, team:window.badmintonTwoOne.teamNumber(court,pos), activity:court.type==='Singel'?'single':'double',
         country_code:window.badmintonCountryOf(name)});
     });
   });
@@ -1766,7 +1767,11 @@ document.getElementById('cloudResumeSession').addEventListener('click',async()=>
     if(pos.team_number!==1&&pos.team_number!==2)throw Error('Felaktigt lagnummer i sparad runda.');
     court.teams[pos.team_number-1].push(name);
    }
-   const courts=[...courtMap.entries()].sort((a,b)=>a[0]-b[0]).map(([,c])=>({type:c.type,players:[...c.teams[0].sort(),...c.teams[1].sort()]}));
+   const courts=[...courtMap.entries()].sort((a,b)=>a[0]-b[0]).map(([,c])=>{
+    const sizes=c.teams.map(t=>t.length),triple=c.type==='Dubbel'&&sizes[0]+sizes[1]===3&&sizes.every(n=>n===1||n===2);
+    if(!triple&&!(c.type==='Singel'?sizes.every(n=>n===1):sizes.every(n=>n===2)))throw Error('Ogiltig lagstorlek i sparad runda.');
+    return {type:triple?'2 mot 1':c.type,...(triple?{teamSplit:sizes[0]}:{}),players:[...c.teams[0].sort(),...c.teams[1].sort()]};
+   });
    return {courts,rest};
   });
   if(!restored.every((r,i)=>rounds[i].round_number===i+1))throw Error('Rundnumreringen är ofullständig.');
@@ -1860,10 +1865,13 @@ cloudStatsBtn.addEventListener('click',async()=>{
   if((statsGroup?.value||groupSelect.value)!==groupId||(period?.value||'all')!==selectedPeriod)throw Error('Du har bytt grupp. Klicka på statistik igen.');
   const perPlayer=new Map(members.map(m=>[m.id,{id:m.id,name:m.name,single:0,double:0,rest:0}]));
   for(const player of resultData?.players||[]){if(!perPlayer.has(player.id))perPlayer.set(player.id,{id:player.id,name:player.name,single:0,double:0,rest:0});}
+  const courtSizes=new Map();for(const p of positions)if(p.activity!=='rest')courtSizes.set(p.round_id+':'+p.court_number,(courtSizes.get(p.round_id+':'+p.court_number)||0)+1);
+  const tripleCourts=new Set([...courtSizes].filter(([,n])=>n===3).map(([key])=>key));
   let singles=0,doubles=0,rests=0;
   for(const p of positions){
    if(!perPlayer.has(p.player_id))perPlayer.set(p.player_id,{id:p.player_id,name:'Tidigare spelare',single:0,double:0,rest:0});
    const stat=perPlayer.get(p.player_id);
+   if(tripleCourts.has(p.round_id+':'+p.court_number)){stat.twoOne=(stat.twoOne||0)+1;continue;}
    if(p.activity==='single'){stat.single++;singles++;}
    else if(p.activity==='double'){stat.double++;doubles++;}
    else if(p.activity==='rest'){stat.rest++;rests++;}
@@ -1871,7 +1879,7 @@ cloudStatsBtn.addEventListener('click',async()=>{
   const todaySessions=window.badmintonStatsUI.filterSessions(sessions,'today');
   const todayRounds=new Set(completed.filter(r=>todaySessions.some(session=>session.id===r.session_id)).map(r=>r.id));
   const dailyPlayers=new Map();
-  for(const p of positions){if(!todayRounds.has(p.round_id)||!['single','double'].includes(p.activity))continue;if(!dailyPlayers.has(p.player_id))dailyPlayers.set(p.player_id,{id:p.player_id,name:perPlayer.get(p.player_id)?.name||'Tidigare spelare',single:0,double:0});dailyPlayers.get(p.player_id)[p.activity]++;}
+  for(const p of positions){if(!todayRounds.has(p.round_id)||!['single','double'].includes(p.activity))continue;if(!dailyPlayers.has(p.player_id))dailyPlayers.set(p.player_id,{id:p.player_id,name:perPlayer.get(p.player_id)?.name||'Tidigare spelare',single:0,double:0});const field=tripleCourts.has(p.round_id+':'+p.court_number)?'twoOne':p.activity;dailyPlayers.get(p.player_id)[field]=(dailyPlayers.get(p.player_id)[field]||0)+1;}
   window.badmintonStatsUI.render({dailyParticipation:[...dailyPlayers.values()],fetchedAt:new Date().toISOString(),groupName,periodLabel:period?.selectedOptions[0]?.text||'Allt',sessions,members,participation:[...perPlayer.values()],completed:completed.length,playedMatches:new Set(positions.filter(p=>p.activity!=='rest'&&p.court_number!=null).map(p=>p.round_id+':'+p.court_number)).size,result:resultData,error:resultError});
  }catch(e){cloudStats.replaceChildren();statsText(cloudStats,'p','❌ Kunde inte hämta gruppstatistik: '+e.message);}
  finally{cloudStatsBtn.disabled=!['admin','super_admin'].includes(cloudRole);}
@@ -2106,7 +2114,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 
 <div id="helpPanel" class="card helpPanel">
 <h2>❓ Hjälp och användarguide</h2>
-<p class="small">Uppdaterad 18 oktober 2026 · Gäller funktionerna i testappen.</p>
+<details><summary>Tillåt 2 mot 1 – testfunktion</summary><p>Reglaget under dagens spelare är AV som standard och gäller nästa schema. PÅ är ett gemensamt godkännande från alla valda spelare: även Endast singel får spela ensam mot två. Vid 7 spelare på 2 banor används en dubbel och en 2 mot 1; vid 11 på 3 banor två dubblar och en 2 mot 1. Ingen vilar. Med alla på Normal får varje spelare på 7 respektive 11 rundor en ensamroll och två matcher i tvåmannalaget. Mer singel prioriterar ensamrollen; en spelare med Endast singel behåller ensamrollen. Flera Endast singel kan inte kombineras med en enda ensamroll utan vila, så schemat blockeras tills valen ändras.</p><p>AV använder vanlig singel och dubbel. Vid dessa antal och högst en Endast singel vilar en person per runda. Med alla Normal fördelas vila och singel jämnt; med en Endast singel spelar den personen singel varje runda och övriga delar på vila och motståndarrollen. Andra antal använder den vanliga rotationslogiken. 2 mot 1 visas som egen matchtyp i spelet och Live. Resultaten redovisas separat och räknas inte in i den vanliga singel-/dubbelpallen. Testa i en testgrupp; serverdatabasen delas med produktionen och äldre appar känner inte till denna spelform.</p></details>
+<p class="small">Uppdaterad 21 oktober 2026 · Gäller funktionerna i testappen.</p>
 <p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
 <p><b>Före inloggning visas Admin och Hjälp.</b> Admin innehåller inloggning och lösenordsverktyg; Hjälp kan läsas utan konto. Efter verifierad Admin-inloggning visas appens övriga flikar. Vid utloggning döljs de skyddade flikarna igen och appen återgår till Admin. Giltiga Live-länkar fungerar fortfarande för deltagare utan Admin-konto.</p>
 <p><b>Flikarna efter inloggning:</b> Admin för inloggning och lösenord, Spelinställningar för grupp och spelare, Badminton Rotation – Spel för den skapade rotationen, Live &amp; QR för åskådarlänkar samt Statistik och Hjälp. Behörigheter visas bara för Super Admin.</p>
@@ -2499,7 +2508,7 @@ function saveStatistics(d){
   bmStorage.setItem(STATS_KEY,JSON.stringify(d));
 }
 function statPlayer(d,name){
-  if(!d.players[name])d.players[name]={matches:0,singles:0,doubles:0,rests:0};
+  if(!d.players[name])d.players[name]={matches:0,singles:0,doubles:0,twoOne:0,rests:0};
   return d.players[name];
 }
 function addRoundToStats(d,item){
@@ -2510,7 +2519,7 @@ function addRoundToStats(d,item){
    if(players.length)d.matches=(d.matches||0)+1;
    players.forEach(name=>{
      const p=statPlayer(d,name);
-     p.matches++; if(c.type==='Singel')p.singles++; else if(c.type==='Dubbel')p.doubles++;
+     p.matches++; if(c.type==='Singel')p.singles++; else if(c.type==='Dubbel')p.doubles++;else if(c.type==='2 mot 1')p.twoOne=(p.twoOne||0)+1;
    });
  });
  (item.rest||[]).filter(Boolean).forEach(name=>statPlayer(d,name).rests++);
@@ -2574,14 +2583,14 @@ function renderStatistics(){
 
   const mixBars=names.map(name=>{
     const p=d.players[name];
-    const si=p.singles||0, du=p.doubles||0, re=p.rests||0;
-    const total=Math.max(1,si+du+re);
+    const si=p.singles||0, du=p.doubles||0, tr=p.twoOne||0, re=p.rests||0;
+    const total=Math.max(1,si+du+tr+re);
     return `<div class="mixRow">
-      <div class="mixHead"><span>${esc(name)}</span><span>${si+du} matcher • ${re} vila</span></div>
-      <div class="mixTrack" title="Singel ${si} • Dubbel ${du} • Vila ${re}">
+      <div class="mixHead"><span>${esc(name)}</span><span>${si+du+tr} matcher • ${tr} st 2 mot 1 • ${re} vila</span></div>
+      <div class="mixTrack" title="Singel ${si} • Dubbel ${du} • 2 mot 1 ${tr} • Vila ${re}">
         <div class="mixSingle" style="width:${si/total*100}%"></div>
         <div class="mixDouble" style="width:${du/total*100}%"></div>
-        <div class="mixRest" style="width:${re/total*100}%"></div>
+        <div style="background:#a78bfa;width:${tr/total*100}%"></div><div class="mixRest" style="width:${re/total*100}%"></div>
       </div>
     </div>`;
   }).join('');
@@ -2596,16 +2605,16 @@ function renderStatistics(){
     <div class="statsLegend">
       <span><i class="legendDot legendSingle"></i>Singel</span>
       <span><i class="legendDot legendDouble"></i>Dubbel</span>
-      <span><i class="legendDot legendRest"></i>Vila</span>
+      <span><i class="legendDot" style="background:#a78bfa"></i>2 mot 1</span><span><i class="legendDot legendRest"></i>Vila</span>
     </div>
     ${mixBars}
    </div>
    <h3>📋 Exakta siffror</h3>
    <div class="statsTableWrap"><table class="statsTable">
-    <thead><tr><th>Spelare</th><th>Matcher</th><th>Singel</th><th>Dubbel</th><th>Vila</th></tr></thead>
+    <thead><tr><th>Spelare</th><th>Matcher</th><th>Singel</th><th>Dubbel</th><th>2 mot 1</th><th>Vila</th></tr></thead>
     <tbody>${names.map(name=>{
       const p=d.players[name];
-      return `<tr><td>${esc(name)}</td><td>${p.matches||0}</td><td>${p.singles||0}</td><td>${p.doubles||0}</td><td>${p.rests||0}</td></tr>`;
+      return `<tr><td>${esc(name)}</td><td>${p.matches||0}</td><td>${p.singles||0}</td><td>${p.doubles||0}</td><td>${p.twoOne||0}</td><td>${p.rests||0}</td></tr>`;
     }).join('')}</tbody>
    </table></div>`;
 }
@@ -2618,10 +2627,10 @@ function toggleStats(){
 }
 function statsCSVText(){
   const d=getStatisticsForView();
-  const rows=[['Spelare','Matcher','Singel','Dubbel','Vila']];
+  const rows=[['Spelare','Matcher','Singel','Dubbel','2 mot 1','Vila']];
   Object.keys(d.players).sort((a,b)=>a.localeCompare(b,'sv')).forEach(name=>{
     const p=d.players[name];
-    rows.push([name,p.matches||0,p.singles||0,p.doubles||0,p.rests||0]);
+    rows.push([name,p.matches||0,p.singles||0,p.doubles||0,p.twoOne||0,p.rests||0]);
   });
   rows.push([]);
   rows.push(['Spelade rundor',d.rounds]);
@@ -2659,7 +2668,7 @@ function exportStatisticsPDF(){
   }).join('');
 
   const mixBars=names.map(name=>{
-    const p=d.players[name],si=p.singles||0,du=p.doubles||0,re=p.rests||0,total=Math.max(1,si+du+re);
+    const p=d.players[name],si=p.singles||0,du=p.doubles||0,re=p.rests||0,total=Math.max(1,si+du+tr+re);
     return `<div class="mix">
       <div class="mixhead"><b>${esc(name)}</b><span>${si} singel · ${du} dubbel · ${re} vila</span></div>
       <div class="mixtrack">
@@ -2672,7 +2681,7 @@ function exportStatisticsPDF(){
 
   const rows=names.map(name=>{
     const p=d.players[name];
-    return `<tr><td>${esc(name)}</td><td>${p.matches||0}</td><td>${p.singles||0}</td><td>${p.doubles||0}</td><td>${p.rests||0}</td></tr>`;
+    return `<tr><td>${esc(name)}</td><td>${p.matches||0}</td><td>${p.singles||0}</td><td>${p.doubles||0}</td><td>${p.twoOne||0}</td><td>${p.rests||0}</td></tr>`;
   }).join('');
 
   const report=`<!doctype html><html lang="sv"><head><meta charset="utf-8">
@@ -2711,7 +2720,7 @@ function exportStatisticsPDF(){
    <h2>Matcher per spelare</h2>${matchBars||'<p>Ingen statistik ännu.</p>'}
    <h2>Spelfördelning</h2><div class="legend"><span>🟡 Singel</span><span>🔵 Dubbel</span><span>⚪ Vila</span></div>${mixBars}
    <h2>Exakta siffror</h2>
-   <table><thead><tr><th>Spelare</th><th>Matcher</th><th>Singel</th><th>Dubbel</th><th>Vila</th></tr></thead><tbody>${rows}</tbody></table>
+   <table><thead><tr><th>Spelare</th><th>Matcher</th><th>Singel</th><th>Dubbel</th><th>2 mot 1</th><th>Vila</th></tr></thead><tbody>${rows}</tbody></table>
    <footer>Badminton App ver. 2.0 · Skapad av Piotr Zdeb +=RYB@=+</footer>
   </main>
 
@@ -3162,7 +3171,7 @@ function statsShareText(){
   ];
   names.forEach(name=>{
     const p=d.players[name];
-    lines.push(name+': '+(p.matches||0)+' matcher • '+(p.singles||0)+' singel • '+(p.doubles||0)+' dubbel • '+(p.rests||0)+' vila');
+    lines.push(name+': '+(p.matches||0)+' matcher • '+(p.singles||0)+' singel • '+(p.doubles||0)+' dubbel • '+(p.twoOne||0)+' st 2 mot 1 • '+(p.rests||0)+' vila');
   });
   return lines.join('\n');
 }
@@ -3420,7 +3429,9 @@ function shuffle(a){
 }
 function pairKey(a,b){return [a,b].sort().join('|||')}
 function inc(map,key,n=1){map[key]=(map[key]||0)+n}
-function badmintonPlanSchedule(players,R,wantedCourts,random=Math.random){
+function badmintonPlanSchedule(players,R,wantedCourts,random=Math.random,allowTwoOne=window.badmintonTwoOneEnabled?.()||false){
+ const variant=window.badmintonTwoOne?.plan(players,R,wantedCourts,allowTwoOne,random);
+ if(variant)return variant;
  const mix=a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;};
  const partner={}, opponent={}, rests={}, singles={};
  players.forEach(p=>{rests[p.name]=0;singles[p.name]=0});
@@ -3537,11 +3548,15 @@ function buildSchedule(){
  }
  const R=+document.getElementById('rounds').value;
  const wantedCourts=+document.getElementById('courts').value;
- schedule=badmintonPlanSchedule(players,R,wantedCourts);
+ try{schedule=badmintonPlanSchedule(players,R,wantedCourts);}catch(e){window.bmCenteredAlert(e.message);return false;}
  return true;
 }
 
 function courtHTML(court,no){
+  if(court.type==='2 mot 1'){
+   const teams=window.badmintonTwoOne.teams(court);
+   return `<div class="court"><b>🏸 Bana ${no} — 2 mot 1</b>${teams[0].map(esc).join(' + ')}<div class="vs">mot</div>${teams[1].map(esc).join(' + ')}</div>`;
+  }
   if(court.type==='Dubbel'){
     return `<div class="court"><b>🏸 Bana ${no} — Dubbel</b>
       ${esc(court.players[0])} + ${esc(court.players[1])}<div class="vs">mot</div>
@@ -3564,6 +3579,7 @@ function roundHTML(item,r){
   </div>`;
 }
 async function generate(){
+  try{window.badmintonTwoOne.validate(selectedPlayers(),Number(document.getElementById('courts').value),window.badmintonTwoOneEnabled?.()||false);}catch(e){window.bmCenteredAlert(e.message);return;}
   if(!(await window.badmintonV13PrepareNewGame()))return;
   window.badmintonPendingCloud=null;
   completedRounds=new Set(); bmStorage.removeItem('badmintonCompleted');
@@ -3608,14 +3624,15 @@ function renderBigRound(){
   // Team 1 is at the far end (red); team 2 at the near end (blue).
   const names=c.players||[];
   const single=c.type==='Singel';
-  const places=single?[names[0],null,names[1],null]:[names[0],names[1],names[2],names[3]];
+  const teams=window.badmintonTwoOne.teams(c);
+  const places=[teams[0][0],teams[0][1]||null,teams[1][0],teams[1][1]||null];
   const labels=places.map((n,k)=>{
    if(!n)return `<div class="threeDLabel pos${k} isEmpty"></div>`;
    return `<div class="threeDLabel pos${k}">${window.badmintonFlagsHTML(n)}<span>${esc(n)}</span></div>`;
   }).join('');
   const athletes=places.map((n,k)=>{
     if(!n)return '';
-    const pos=single?'center':k%2===0?'left':'right';
+    const pos=teams[k<2?0:1].length===1?'center':k%2===0?'left':'right';
     const dist=k<2?'far':'near';
     return `<img class="genderAthlete ${dist} ${pos}" src="${window.badmintonPlayerImage(n,k<2?1:2,dist,pos)}" alt="">`;
   }).join('');
@@ -4644,7 +4661,7 @@ window.badmintonConfirmActiveGame=function(name){
  }
  function names(c,red){
    const n=c.players||[];
-   return (c.type==='Singel'?(red?[n[0]]:[n[1]]):(red?n.slice(0,2):n.slice(2,4))).filter(Boolean).join(' & ');
+   return window.badmintonTwoOne.teams(c)[red?0:1].filter(Boolean).join(' & ');
  }
  function escScore(t){return String(t??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
  function render(){
@@ -5066,6 +5083,7 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 <script src="statistics-delete.js"></script>
 </body>
 </html>
+
 
 
 

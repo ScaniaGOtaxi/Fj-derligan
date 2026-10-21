@@ -13,13 +13,21 @@
  const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px';actions.append(apply,info,chosen);
  info.addEventListener('click',()=>{detail.hidden=!detail.hidden;info.setAttribute('aria-expanded',String(!detail.hidden));});
  box.append(text,actions,detail);
- const place=()=>document.getElementById('playerListArea').after(box);
+ const place=()=>{(document.getElementById('bmTwoOneSettings')||document.getElementById('playerListArea')).after(box);const next=document.getElementById('bmPlayersNext');if(next)box.after(next);};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>queueMicrotask(place));else place();
  let recommended=null,lastSignature=null;
  function update(){
   const players=selectedPlayers(),n=players.length,c=Number(courts.value);
-  const signature=JSON.stringify([players,c]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=false;apply.disabled=true;apply.textContent='Välj rundor';detail.hidden=true;info.setAttribute('aria-expanded','false');
+  const signature=JSON.stringify([players,c,window.badmintonTwoOneEnabled?.()||false]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;apply.hidden=false;apply.disabled=true;apply.textContent='Välj rundor';detail.hidden=true;info.setAttribute('aria-expanded','false');
   if(n<3||n>12){text.textContent='Banor: '+c+' · Spelare: '+n+'\nFörslag: markera 3–12 deltagare för dagens spel.';detail.textContent='Tipset uppdateras när du ändrar deltagare eller antal banor.';return;}
+  if(window.badmintonTwoOneEnabled?.()&&window.badmintonTwoOne.supports(n,c)){
+   const only=players.filter(p=>p.mode==='onlySingles').length;
+   if(only>1){text.textContent='Valen krockar: flera Endast singel, men bara en ensamroll per runda.';detail.textContent='Ändra preferenserna eller slå av Tillåt 2 mot 1.';return;}
+   recommended=players.every(p=>p.mode==='normal')?n:n-1;
+   text.textContent='Banor: '+c+' · Spelare: '+n+'\nNormal: '+players.filter(p=>p.mode==='normal').length+' · Mer singel: '+players.filter(p=>p.mode==='moreSingles').length+' · Endast singel: '+only+'\n'+(c-1)+' dubbel + 2 mot 1 · ingen vila\nFörslag: '+recommended+' rundor';
+   detail.textContent=players.every(p=>p.mode==='normal')?'En hel rollcykel: var och en spelar ensam en gång, i tvåmannalaget två gånger och dubbel '+(n-3)+' gånger. Partners och motståndare varieras så långt det går; alla par garanteras inte.':'Tipset är en uppskattning. Endast singel behåller ensamrollen; annars prioriteras Mer singel för ensamrollen. De övriga delar på tvåmannalaget och dubbel. Alla spelar varje runda. 2 mot 1-resultat redovisas separat.';
+   apply.disabled=false;apply.textContent='Välj '+recommended+' rundor';return;
+  }
   const wanted=new Set(),onlySingles=players.filter(p=>p.mode==='onlySingles').length,moreSingles=players.filter(p=>p.mode==='moreSingles').length;
   const horizon=Math.max(24,n*(n-1));
   const key=(kind,a,b)=>kind+':'+pairKey(a,b);
@@ -70,6 +78,8 @@
  rounds.addEventListener('change',showChosen);showChosen();
  courts.addEventListener('change',update);
  window.addEventListener('badminton:player-selection-updated',update);
+ window.addEventListener('badminton:two-one-changed',update);
  document.getElementById('playerPool')?.addEventListener('change',update);
  update();
 })();
+
