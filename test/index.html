@@ -4704,7 +4704,7 @@ window.badmintonConfirmActiveGame=function(name){
        old[team]=Math.max(0,old[team]+delta);scores[key]=old;save();render();publishScores();
      });
      el.querySelectorAll('[data-team]').forEach(button=>button.disabled=!!window.badmintonGameReadOnly?.());
-     stage.closest('.bigCourt').appendChild(el);
+     stage.appendChild(el);
    });
  }
  let scoreRevision=0,scoreSaveTimer=null,scoreWriting=false,scoreWritingKey=null;
@@ -5104,25 +5104,18 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 #gameView .threeDStage>.bmScoreLayer .bmScoreActions{gap:6px}
 @media(max-width:600px){#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){width:86%!important}#gameView .threeDStage>.bmScoreLayer .bmScoreTeams{gap:6px!important}}
 </style>
-<style id="stacked-score-teams">
-#gameView.active{overflow:auto!important}
-#gameView .bigCourts{flex:0 0 auto!important;height:auto!important;grid-auto-rows:auto!important;align-items:start!important}
-#gameView .bigCourt{height:auto!important;justify-content:flex-start!important;overflow:visible!important}
-#gameView .bigCourt>.threeDStage{flex:none!important;height:auto!important;aspect-ratio:963/796!important}
-#gameView .bigCourt>.bmScoreLayer{position:relative!important;left:auto!important;top:auto!important;transform:none!important;z-index:2!important;flex:none!important;box-sizing:border-box;margin:12px auto 0!important;max-width:100%!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed){width:min(100%,460px)!important;height:auto!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;gap:8px!important;padding:0!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam{padding:7px 10px!important;border:2px solid #ff8498!important;border-radius:12px;background:#301820!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam:last-child{border-color:#73caff!important;background:#102a40!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreNames{padding:4px 8px!important;border:1px solid currentColor;border-radius:7px;background:#0b1720;color:#ff99ad!important;font-size:clamp(14px,1.5vw,20px)!important;line-height:1.25!important;min-height:0!important;white-space:normal!important;overflow-wrap:anywhere}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam:last-child .bmScoreNames{color:#89d4ff!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreValue{font-size:clamp(32px,4vw,50px)!important;line-height:1.1!important;margin:3px 0!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreActions{gap:10px!important}
-#gameView .bigCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{min-height:40px!important;min-width:54px!important;padding:0 8px!important;font-size:26px!important}
-#gameView .bigCourt>.bmScoreLayer .bmScoreCollapse{position:absolute!important;top:calc(50% - 14px)!important;right:-3px!important;width:28px!important;height:28px!important;min-height:0!important;padding:0!important;border-radius:7px!important;background:#243443!important;border:1px solid #a9b8c5!important;color:#fff!important;font-size:22px!important;z-index:3!important}
-#gameView .bigCourt>.bmScoreLayer.isCollapsed{display:flex!important;align-items:center!important;gap:12px!important;width:max-content!important;padding:6px 10px!important}
-#gameView .bigCourt>.bmScoreLayer.isCollapsed .bmScoreCollapse{position:static!important;order:1}
-#gameView .bigCourt>.bmScoreLayer.isCollapsed .bmScoreMini{font-size:20px!important;white-space:nowrap}
+
+<style id="vertical-score-on-court">
+/* Only the score panel changes. Court and fullscreen geometry stay unchanged. */
+#gameView .threeDStage>.bmScoreLayer{z-index:20000!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){width:min(78%,360px)!important;padding:7px 10px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;gap:6px!important;padding-top:0!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam{display:grid!important;grid-template-columns:minmax(36px,1fr) auto!important;align-items:center;gap:3px 8px;padding:4px 6px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreNames{grid-column:1/-1;min-height:0!important;margin:0!important;padding:2px 22px 2px 4px!important;font-size:clamp(12px,1.1vw,17px)!important;line-height:1.15!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreValue{font-size:clamp(26px,2.5vw,38px)!important;line-height:1!important;margin:0!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions{gap:6px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{min-height:36px!important;min-width:44px!important;height:36px!important;padding:0 8px!important;font-size:24px!important}
+#gameView .threeDStage>.bmScoreLayer .bmScoreCollapse{z-index:3!important}
 </style>
 </body>
 </html>
