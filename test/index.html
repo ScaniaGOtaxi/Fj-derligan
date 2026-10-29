@@ -5117,6 +5117,32 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDLabel img,html.bmTextOnlyPlayer
 #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{min-height:36px!important;min-width:44px!important;height:36px!important;padding:0 8px!important;font-size:24px!important}
 #gameView .threeDStage>.bmScoreLayer .bmScoreCollapse{z-index:3!important}
 </style>
+<style id="larger-score-and-separated-names">
+/* Main game view only: more room around the vertical score panel. */
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos0:not(.isEmpty),
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos1:not(.isEmpty){top:10%!important;bottom:auto!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos2:not(.isEmpty),
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos3:not(.isEmpty){top:90%!important;bottom:auto!important}
+#gameView .threeDStage{container-type:inline-size}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){width:min(78%,540px)!important;padding:10px 12px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{gap:8px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam{padding:6px 8px!important;gap:5px 10px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreNames{font-size:clamp(12px,2.2cqw,22px)!important;padding:3px 24px 3px 4px!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreValue{font-size:clamp(32px,7cqw,76px)!important;font-weight:900!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{height:44px!important;min-height:44px!important;min-width:52px!important;font-size:30px!important}
+@container(max-width:420px){
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){width:82%!important;padding:7px 8px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{gap:6px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam{padding:2px 6px!important;gap:3px 6px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreNames{padding:2px 22px 2px 4px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{height:36px!important;min-height:36px!important;min-width:44px!important;font-size:24px!important}
+}
+@container(max-width:420px){
+ html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos0:not(.isEmpty),html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos1:not(.isEmpty){top:10%!important;font-size:clamp(16px,5.2cqw,21px)!important}
+ html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos2:not(.isEmpty),html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos3:not(.isEmpty){top:90%!important;font-size:clamp(16px,5.2cqw,21px)!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){top:50%!important;transform:translate(-50%,-50%)!important;max-height:66%!important;overflow-y:auto!important;padding:4px 8px!important}
+}
+</style>
 </body>
 </html>
 
