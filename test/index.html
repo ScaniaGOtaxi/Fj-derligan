@@ -5143,6 +5143,17 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos3:not(.is
  #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){top:50%!important;transform:translate(-50%,-50%)!important;max-height:66%!important;overflow-y:auto!important;padding:4px 8px!important}
 }
 </style>
+<style id="large-court-score-panel">
+@container(min-width:800px){
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){width:min(62%,1000px)!important;top:17%!important;height:66%!important;max-height:66%!important;padding:12px 16px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{height:100%!important;box-sizing:border-box;grid-template-rows:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam{grid-template-rows:auto minmax(0,1fr)!important;padding:10px 14px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreNames{font-size:clamp(22px,2.8cqw,40px)!important;padding:7px 30px 7px 8px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreValue{font-size:clamp(64px,12cqw,180px)!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions{gap:12px!important}
+ #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{min-width:68px!important;min-height:64px!important;height:64px!important;font-size:42px!important}
+}
+</style>
 </body>
 </html>
 
