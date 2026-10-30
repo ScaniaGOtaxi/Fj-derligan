@@ -1,0 +1,9 @@
+Badminton App – produktion 30 oktober 2026
+
+Packa upp ZIP-filen. Ladda upp hela mappen som innehåller index.html via Netlify > Deploys på bollspel.netlify.app.
+Ingen byggprocess krävs. Denna fil publicerar inte appen automatiskt.
+
+Innehåller gemensam rotationsalgoritm för PÅ/AV, nya partners före nya motståndare, 2 mot 1 när tillåtet, automatiskt rundförslag och kompakt poängpanel i liggande mobilformat. Hjälpen är uppdaterad.
+
+Samma Supabase-databas och konton används. Ingen ny SQL krävs om befintliga gruppfunktioner redan är installerade. E-postinställningar och Edge Function hanteras separat i Supabase. Inga servernycklar ingår.
+Äldre appversioner kan visa 2 mot 1 felaktigt. Ladda om appen efter uppladdningen.

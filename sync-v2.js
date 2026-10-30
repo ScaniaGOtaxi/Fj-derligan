@@ -65,7 +65,7 @@
     const overlay=document.createElement('div');overlay.className='bmConfirmOverlay';
     const dialog=document.createElement('div');dialog.className='bmConfirmDialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Spelarval – förklaringar');
     const heading=document.createElement('h3');heading.textContent='Spelarval – förklaringar';dialog.append(heading);
-    const choices=[['normal','⚪ Normal','Spelaren kan spela både dubbel och singel.'],['moreSingles','🎯 Mer singel','Appen försöker ge spelaren singel oftare, men spelaren kan även spela dubbel.'],['onlySingles','🔒 Endast singel','Spelaren placeras aldrig i dubbel. Om singel inte kan ordnas får spelaren vila.']];
+    const choices=[['normal','⚪ Normal','Spelaren kan spela både dubbel och singel.'],['moreSingles','🎯 Mer singel','Appen försöker ge spelaren singel oftare, men spelaren kan även spela dubbel.'],['onlySingles','🔒 Endast singel','Spelaren placeras aldrig i vanlig dubbel. Om Tillåt 2 mot 1 är PÅ godkänner alla att Endast singel kan spela ensam mot två, när valda banor och preferenser tillåter det. Annars gäller vanlig singel; om det inte kan ordnas får spelaren vila.']];
     choices.forEach(([value,title,text])=>{const section=document.createElement('section');section.style.cssText='padding:12px;margin:10px 0;border:1px solid '+(value===selected?'#65efab':'#54718b')+';border-radius:10px;font-size:16px;line-height:1.5';const label=document.createElement('strong');label.textContent=title+(value===selected?' – valt':'');const body=document.createElement('p');body.textContent=text;body.style.margin='6px 0 0';section.append(label,body);dialog.append(section);});
     const close=document.createElement('button');close.type='button';close.textContent='Stäng';close.style.cssText='min-height:44px;padding:10px 22px;background:#218647;color:white;font-size:16px';dialog.append(close);overlay.append(dialog);document.body.append(overlay);
     function finish(){document.removeEventListener('keydown',onKey);overlay.remove();if(previous?.isConnected)previous.focus();}
@@ -81,3 +81,5 @@
     return 'spelare_'+gender+'_'+color+'_'+view+(gender==='man'&&position==='right'?'_variant2':'')+'.png';
   };
 })();
+
+

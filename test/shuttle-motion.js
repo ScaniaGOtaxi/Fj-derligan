@@ -1,7 +1,0 @@
-(() => {
- 'use strict';
- const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42"><path d="M7 27 2 3 8 1l8 22L14 0h5l-1 23L25 1l5 3-6 23Z" fill="#fff" stroke="#7893a5" stroke-width="1.2"/><path d="M7 27h17v5H7Z" fill="#ddd" stroke="#7893a5"/><path d="M8 32c0 11 15 11 15 0" fill="#fff2cb" stroke="#7893a5" stroke-width="1.2"/></svg>';
- function attach(root){root.querySelectorAll('.threeDStage,.viewerStage').forEach(stage=>{if(stage.querySelector('.bmShuttleFlight'))return;const flight=document.createElement('div');flight.className='bmShuttleFlight';flight.setAttribute('aria-hidden','true');const shuttle=document.createElement('img');shuttle.className='bmShuttle';shuttle.alt='';shuttle.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);flight.append(shuttle);stage.append(flight);});}
- function init(){['bigCourts','viewerCourts'].forEach(id=>{const root=document.getElementById(id);if(!root)return;let queued=false;const observer=new MutationObserver(records=>{if(!records.some(record=>[...record.addedNodes].some(node=>node.nodeType===1&&(node.matches?.('.threeDStage,.viewerStage')||node.querySelector?.('.threeDStage,.viewerStage')))))return;if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;attach(root);});});observer.observe(root,{childList:true,subtree:true});attach(root);});}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-})();
