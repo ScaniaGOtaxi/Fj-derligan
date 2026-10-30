@@ -16,7 +16,12 @@ Reglaget är gemensamt godkännande för 2 mot 1, även för Endast singel. Enda
 Om alla ryms men preferenserna inte kan uppfyllas stoppas skapandet innan ett tidigare spel avslutas. Om antalet spelare överstiger banornas kapacitet visas att vanlig rotation med vila används.
 Med alla Normal fördelas rollerna jämnt över en full cykel. För 9/3 är en cykel 3 rundor: en ensamroll och två matcher i tvåmannalaget per spelare.
 AV använder vanlig rotation; tidigare balanserad vila för 7/2 och 11/3 behålls.
-Partner-/motståndartäckning garanteras inte av ett rollcykelförslag.
+## Prioritering av variation
+Algoritmen söker först nya partnerpar och därefter nya motståndarpar. När upprepningar behövs föredras de minst använda paren och upprepningar från föregående runda undviks vid lika övrig poäng. Preferenser och jämna rollcykler respekteras.
+Rundförslaget jämför tre provrotationer och visar deras täckning. Det avser inte längre bara en rollcykel. Med 9 spelare på 3 banor och alla Normal ger den verifierade provrotationen 12 rundor: alla 36 partnerpar exakt en gång och alla 36 motståndarpar täcks. Motståndarmöten kan upprepas.
+Skapandet använder samma provrotation genom en sparad slumpseed. Ett kortare manuellt val använder dess början och får en synlig förklaring om lägre täckning. Ett längre val fortsätter samma rotation.
+Förslaget är en heuristisk sökning, inte ett bevis på minsta möjliga rundantal för varje parameterkombination. Om alla efterfrågade par inte täcks visas detta under Info.
+Äldre lokala rundval utan versionsmarkering ersätts en gång av det nya förslaget. Nya manuella val sparas med en markering som skiljer dem från automatiska val.
 
 ## Rundval
 Förslaget väljs automatiskt när deltagare, banor, preferenser eller Tillåt 2 mot 1 ändras.
@@ -33,6 +38,7 @@ Använd testgrupp; databasen delas med produktionen.
 ## Tester
 node validation/rotation-two-one.cjs
 node validation/rotation-no-rest.cjs
+node validation/partner-variety.cjs
 
 Browserkontroll, efter att en lokal server startats från repo-roten:
 python3 -m http.server 8080

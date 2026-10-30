@@ -69,11 +69,39 @@
  function noRestPlan(players,R,c,random){
   const layout=shape(players.length,c,players.filter(p=>p.mode==='onlySingles').length);if(!layout)return null;
   const mix=a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
-  const normal=players.every(p=>!p.mode||p.mode==='normal'),period=cycle(layout),counts=new Map(players.map(p=>[p.name,{solo:0,duo:0,single:0}])),partner={},opponent={},key=(a,b)=>JSON.stringify([a,b].sort()),add=(map,a,b)=>{const k=key(a,b);map[k]=(map[k]||0)+1;};
+  const normal=players.every(p=>!p.mode||p.mode==='normal'),period=cycle(layout),counts=new Map(players.map(p=>[p.name,{solo:0,duo:0,single:0,double:0}])),partner={},opponent={},ids=new Map(players.map((p,i)=>[p.name,i])),key=(a,b)=>Math.min(ids.get(a),ids.get(b))*players.length+Math.max(ids.get(a),ids.get(b)),add=(map,a,b)=>{const k=key(a,b);map[k]=(map[k]||0)+1;};
   let ring=mix(players);const planned=[];
+  let budgets=null,lastPartners=new Set(),lastOpponents=new Set();
+  const roleSlots=matches=>matches.flatMap(m=>m.type==='Dubbel'?Array(4).fill('double'):m.type==='Singel'?['single','single']:m.teamSplit===2?['duo','duo','solo']:['solo','duo','duo']);
+  const better=(a,b)=>!b||a.some((v,i)=>v!==b[i]&&a.slice(0,i).every((x,j)=>x===b[j])&&v<b[i]);
+  function optimize(matches){
+   const slots=roleSlots(matches),buckets={solo:[],duo:[],single:[],double:[]};matches.flatMap(m=>m.players).forEach((n,i)=>buckets[slots[i]].push(n));
+   const evaluate=ms=>{let pr=0,pc=0,or=0,oc=0,lr=0,lo=0,fair=0;
+    for(const m of ms){const [a,b]=teams(m);for(const team of [a,b])if(team.length===2){const k=key(...team),past=partner[k]||0;pr+=past>0?1:0;pc+=past;lr+=lastPartners.has(k)?1:0;}for(const x of a)for(const y of b){const k=key(x,y),past=opponent[k]||0;or+=past>0?1:0;oc+=past;lo+=lastOpponents.has(k)?1:0;}}
+    ms.flatMap(m=>m.players).forEach((n,i)=>{fair+=2*counts.get(n)[slots[i]]+1;});return [pr,pc,lr,or,oc,lo,fair];
+   };
+   let best=null,bestCost=null;
+   for(let attempt=0;attempt<96;attempt++){
+    let names;
+    if(normal){
+     const assigned=Array(players.length).fill(-1),edges=slots.map(role=>mix(players.map((p,i)=>i).filter(i=>budgets.get(players[i].name)[role]>0)));
+     const assign=(slot,seen)=>{for(const person of edges[slot]){if(seen.has(person))continue;seen.add(person);if(assigned[person]<0||assign(assigned[person],seen)){assigned[person]=slot;return true;}}return false;};
+     if(!mix(slots.map((_,i)=>i)).every(slot=>assign(slot,new Set())))continue;
+     names=Array(slots.length);assigned.forEach((slot,i)=>{if(slot>=0)names[slot]=players[i].name;});
+    }else{const shuffled=Object.fromEntries(Object.entries(buckets).map(([r,n])=>[r,mix(n)]));names=slots.map(role=>shuffled[role].pop());}
+    let at=0;const candidate=matches.map(m=>({...m,players:names.slice(at,at+=m.players.length)})),cost=evaluate(candidate);
+    if(better(cost,bestCost)){best=candidate;bestCost=cost;}
+   }
+   if(!best)throw Error('Rollerna kunde inte fördelas. Försök skapa schemat igen.');
+   if(normal)best.flatMap(m=>m.players).forEach((name,i)=>budgets.get(name)[slots[i]]--);
+   best.flatMap(m=>m.players).forEach((name,i)=>counts.get(name)[slots[i]]++);
+   return best;
+  }
+
   const least=(pool,role)=>mix(pool).sort((a,b)=>counts.get(a.name)[role]-counts.get(b.name)[role])[0];
   for(let r=0;r<R;r++){
    if(normal&&r&&r%period===0)ring=mix(players);
+   if(normal&&r%period===0)budgets=new Map(players.map(p=>[p.name,{solo:layout.t*period/players.length,duo:2*layout.t*period/players.length,single:2*layout.s*period/players.length,double:4*layout.d*period/players.length}]));
    const triples=[],singles=[];let remaining;
    if(normal){let pos=0;const take=()=>ring[(r%period+pos++)%players.length];
     for(let i=0;i<layout.t;i++)triples.push([take(),take(),take()]);
@@ -87,20 +115,48 @@
     for(const solo of solos){const a=least(available,'duo');remove(a);const b=mix(available).sort((x,y)=>counts.get(x.name).duo-counts.get(y.name).duo||(partner[key(a.name,x.name)]||0)-(partner[key(a.name,y.name)]||0))[0];remove(b);triples.push([solo,a,b]);}
     remaining=available;
    }
-   const matches=triples.map(([a,b,c])=>{counts.get(a.name).solo++;counts.get(b.name).duo++;counts.get(c.name).duo++;return {type:'2 mot 1',teamSplit:1,players:[a.name,b.name,c.name]};});
-   for(const pair of singles){pair.forEach(p=>counts.get(p.name).single++);matches.push({type:'Singel',players:pair.map(p=>p.name)});}
+   let matches=triples.map(([a,b,c])=>({type:'2 mot 1',teamSplit:1,players:[a.name,b.name,c.name]}));
+   for(const pair of singles){matches.push({type:'Singel',players:pair.map(p=>p.name)});}
    while(remaining.length){let best,score=Infinity;const pool=mix(remaining);
     for(let a=0;a<pool.length;a++)for(let b=a+1;b<pool.length;b++)for(let c=b+1;c<pool.length;c++)for(let d=c+1;d<pool.length;d++)for(const order of [[a,b,c,d],[a,c,b,d],[a,d,b,c]]){
      const n=order.map(i=>pool[i].name);let cost=10*((partner[key(n[0],n[1])]||0)+(partner[key(n[2],n[3])]||0));for(const x of n.slice(0,2))for(const y of n.slice(2))cost+=3*(opponent[key(x,y)]||0);if(cost<score){score=cost;best=n;}}
     if(!best)throw Error('Spelarna kunde inte fördelas på banorna.');matches.push({type:'Dubbel',players:best});remaining=remaining.filter(p=>!best.includes(p.name));
    }
-   for(const match of matches){const [red,blue]=teams(match);if(red.length===2)add(partner,...red);if(blue.length===2)add(partner,...blue);for(const a of red)for(const b of blue)add(opponent,a,b);}
+   matches=optimize(matches);lastPartners=new Set();lastOpponents=new Set();
+   for(const match of matches){const [red,blue]=teams(match);for(const team of [red,blue])if(team.length===2){add(partner,...team);lastPartners.add(key(...team));}for(const a of red)for(const b of blue){add(opponent,a,b);lastOpponents.add(key(a,b));}}
    const offset=r%matches.length;planned.push({courts:matches.slice(offset).concat(matches.slice(0,offset)),rest:[]});
   }
   return planned;
  }
  function plan(players,R,c,on,random=Math.random){if(!on)return legacyPlan(players,R,c,false,random);validate(players,c,on);return noRestPlan(players,R,c,random);}
- const api={supports,teams,teamNumber,plan,validate,shape,describe,cycle};
+ const signature=(players,c)=>JSON.stringify([players.map(p=>({name:p.name,mode:p.mode||'normal'})),c]);
+ const seeded=initial=>{let seed=initial>>>0;return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};};
+ function coverage(rounds,wantedPartners,wantedOpponents){
+  const partners=new Set(),opponents=new Set(),key=(a,b)=>JSON.stringify([a,b].sort());let partnerGames=0,opponentGames=0;
+  for(const round of rounds)for(const match of round.courts){const [a,b]=teams(match);for(const team of [a,b])if(team.length===2){partners.add(key(...team));partnerGames++;}for(const x of a)for(const y of b){opponents.add(key(x,y));opponentGames++;}}
+  return {partners:[...partners].filter(k=>!wantedPartners||wantedPartners.has(k)).length,opponents:[...opponents].filter(k=>!wantedOpponents||wantedOpponents.has(k)).length,partnerRepeats:partnerGames-partners.size,opponentRepeats:opponentGames-opponents.size};
+ }
+ function recommend(players,c){
+  validate(players,c,true);const layout=shape(players.length,c,players.filter(p=>p.mode==='onlySingles').length);if(!layout)return null;
+  const normal=players.every(p=>!p.mode||p.mode==='normal'),period=normal?cycle(layout):1,horizon=Math.ceil(Math.max(24,players.length*(players.length-1))/period)*period,key=(a,b)=>JSON.stringify([a,b].sort());let best=null;
+  for(let trial=1;trial<=3;trial++){
+   const seed=trial*7919+players.length*101+c*17,plan=noRestPlan(players,horizon,c,seeded(seed)),eligible=new Set();
+   for(const round of plan)for(const match of round.courts)for(const team of teams(match))if(team.length===2)team.forEach(name=>eligible.add(name));
+   const wantedPartners=new Set(),wantedOpponents=new Set(),strict=players.filter(p=>p.mode==='onlySingles').length;
+   for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++){const a=players[i],b=players[j],k=key(a.name,b.name);if(eligible.has(a.name)&&eligible.has(b.name))wantedPartners.add(k);if(!(strict<=layout.t&&a.mode==='onlySingles'&&b.mode==='onlySingles'))wantedOpponents.add(k);}
+   const seenP=new Set(),seenO=new Set();let last=1;
+   for(let r=0;r<plan.length;r++){
+    let progress=false;for(const match of plan[r].courts){const [a,b]=teams(match);for(const team of [a,b])if(team.length===2){const k=key(...team);if(wantedPartners.has(k)&&!seenP.has(k)){seenP.add(k);progress=true;}}for(const x of a)for(const y of b){const k=key(x,y);if(wantedOpponents.has(k)&&!seenO.has(k)){seenO.add(k);progress=true;}}}
+    if(progress)last=r+1;if(seenP.size===wantedPartners.size&&seenO.size===wantedOpponents.size)break;
+   }
+   const rounds=last,sample=plan.slice(0,rounds),stats=coverage(sample,wantedPartners,wantedOpponents),complete=stats.partners===wantedPartners.size&&stats.opponents===wantedOpponents.size;
+   const candidate={rounds,seed,plan:sample,complete,...stats,partnerTotal:wantedPartners.size,opponentTotal:wantedOpponents.size,layout};
+   if(!best||Number(complete)>Number(best.complete)||(complete===best.complete&&(candidate.partners>best.partners||candidate.partners===best.partners&&(candidate.opponents>best.opponents||candidate.opponents===best.opponents&&candidate.rounds<best.rounds))))best=candidate;
+  }
+  return best;
+ }
+
+ const api={supports,teams,teamNumber,plan,validate,shape,describe,cycle,signature,seeded,coverage,recommend};
  if(typeof module!=='undefined')module.exports=api;
  if(root)root.badmintonTwoOne=api;
  if(typeof document==='undefined')return;
@@ -135,4 +191,5 @@
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })(typeof window!=='undefined'?window:null);
+
 
