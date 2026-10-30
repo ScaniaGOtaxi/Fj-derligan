@@ -5154,6 +5154,38 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDStage .threeDLabel.pos3:not(.is
  #gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{min-width:68px!important;min-height:64px!important;height:64px!important;font-size:42px!important}
 }
 </style>
+<style id="score-short-court-layout">
+/* A separate column keeps minimize clear of both score rows at every size. */
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed){display:grid!important;grid-template-columns:minmax(0,1fr) 32px!important;column-gap:6px!important;align-items:start!important;box-sizing:border-box!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{grid-column:1!important;grid-row:1!important;padding-top:0!important;min-width:0!important}
+#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreCollapse{position:static!important;grid-column:2!important;grid-row:1!important;justify-self:end!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;margin:0!important}
+/* Keep a usable court/control height; the existing courts area can scroll. */
+#gameView .threeDStage.bmCompactScoreCourt{min-height:160px!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed){width:90%!important;max-width:600px!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;height:auto!important;max-height:none!important;min-height:0!important;padding:4px!important;overflow:visible!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreTeams{height:auto!important;grid-template-rows:auto auto!important;gap:4px!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreTeam{grid-template-columns:minmax(26px,1fr) auto!important;grid-template-rows:auto!important;min-width:0!important;min-height:0!important;padding:1px!important;gap:3px!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreNames{display:none!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreValue{grid-column:1!important;grid-row:1!important;font-size:28px!important;line-height:1!important;margin:0!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreActions{grid-column:2!important;grid-row:1!important;display:flex!important;flex-wrap:nowrap!important;gap:4px!important}
+#gameView .threeDStage.bmCompactScoreCourt>.bmScoreLayer:not(.isCollapsed) .bmScoreActions button{box-sizing:border-box!important;width:38px!important;min-width:38px!important;height:32px!important;min-height:32px!important;padding:0!important;font-size:22px!important;line-height:1!important}
+html.bmTextOnlyPlayers #gameView#gameView .threeDStage.bmCompactScoreCourt .threeDLabel:not(.isEmpty){font-size:14px!important;line-height:1.15!important;padding:2px 4px!important;min-height:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+@container(min-width:800px){#gameView .threeDStage>.bmScoreLayer:not(.isCollapsed) .bmScoreValue{font-size:clamp(64px,calc(var(--bmCourtHeight,700px) * .17),180px)!important}}
+</style>
+<script id="score-height-observer">
+(()=>{'use strict';
+ function init(){
+  const root=document.getElementById('bigCourts');if(!root)return;
+  const watched=new Set();
+  const classify=stage=>{const height=stage.getBoundingClientRect().height;stage.style.setProperty('--bmCourtHeight',height+'px');stage.classList.toggle('bmCompactScoreCourt',height<=280);};
+  const resize=new ResizeObserver(entries=>{for(const entry of entries)classify(entry.target);});
+  function scan(){for(const stage of watched)if(!root.contains(stage)){resize.unobserve(stage);watched.delete(stage);}
+   root.querySelectorAll('.threeDStage').forEach(stage=>{if(!watched.has(stage)){watched.add(stage);classify(stage);resize.observe(stage);}});
+  }
+  new MutationObserver(scan).observe(root,{childList:true,subtree:true});scan();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
 </body>
 </html>
 

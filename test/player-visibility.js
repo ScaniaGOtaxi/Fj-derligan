@@ -8,7 +8,7 @@
    const style=getComputedStyle(label);const width=label.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
    const flags=[...label.querySelectorAll('img,.flagTextFallback')].filter(e=>getComputedStyle(e).display!=='none').length;
    context.font='800 100px system-ui';const nameUnits=context.measureText(name.textContent).width/100;
-   const maxHeight=Math.max(44,Math.min(120,stage.clientHeight*.12));
+   const maxHeight=stage.classList.contains('bmCompactScoreCourt')?30:Math.max(44,Math.min(120,stage.clientHeight*.12));
    const size=Math.max(12,Math.min(96,(width-flags*4)/(nameUnits+flags*1.35), (maxHeight-12)/1.15));
    label.style.setProperty('font-size',Math.floor(size)+'px','important');label.style.setProperty('flex-wrap','nowrap','important');
   });
