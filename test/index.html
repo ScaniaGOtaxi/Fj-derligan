@@ -2122,13 +2122,12 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <h2>❓ Hjälp och användarguide</h2>
 <details id="bmHelpTwoOne" open>
 <summary><strong>Tillåt 2 mot 1</strong></summary>
-<p><strong>Gäller 7 spelare på 2 banor eller 11 spelare på 3 banor.</strong></p>
-<p><strong>PÅ:</strong> en bana spelar 2 mot 1, övriga dubbel. Ingen vilar. Alla godkänner spelformen, även den som valt Endast singel.</p>
-<p><strong>AV:</strong> vanlig singel och dubbel med vila.</p>
-<p>Alla Normal: ensamrollen roterar. Mer singel prioriteras; en Endast singel behåller ensamrollen. Flera Endast singel kräver ändrade val eller AV.</p>
-<p>Gäller nästa schema. 2 mot 1-resultat redovisas separat och ingår inte i vanliga pallen. Testa i en testgrupp.</p>
+<p><strong>PÅ:</strong> alla spelar när antal banor och preferenser tillåter det. Exempel: 7 på 2 banor ger dubbel + 2 mot 1; 9 på 3 banor ger tre matcher 2 mot 1; 11 på 3 banor ger två dubblar + 2 mot 1.</p>
+<p>Alla godkänner spelformen, även Endast singel som då kan spela ensam mot två. Normal fördelar rollerna jämnt; Mer singel prioriteras. Om preferenserna krockar visas ett meddelande.</p>
+<p><strong>AV:</strong> vanlig singel och dubbel med vila när det behövs. 2 mot 1-resultat redovisas separat och ingår inte i vanliga pallen.</p>
+<p><strong>Rundförslaget väljs automatiskt</strong> när spelare, banor, preferenser eller reglaget ändras. Du kan sedan välja annat antal manuellt. Ett pågående schema ändras inte.</p>
 </details>
-<p class="small">Uppdaterad 21 oktober 2026 · Gäller funktionerna i testappen.</p>
+<p class="small">Uppdaterad 30 oktober 2026 · Gäller funktionerna i testappen.</p>
 <p>Här beskrivs funktionerna i den aktuella testversionen. Molnsparning och Live kräver internet. Testsidan har egna lokala inställningar och egen inloggning, men använder samma databas som den ordinarie appen. Använd en testgrupp när du provar.</p>
 <p><b>Före inloggning visas Admin och Hjälp.</b> Admin innehåller inloggning och lösenordsverktyg; Hjälp kan läsas utan konto. Efter verifierad Admin-inloggning visas appens övriga flikar. Vid utloggning döljs de skyddade flikarna igen och appen återgår till Admin. Giltiga Live-länkar fungerar fortfarande för deltagare utan Admin-konto.</p>
 <p><b>Flikarna efter inloggning:</b> Admin för inloggning och lösenord, Spelinställningar för grupp och spelare, Badminton Rotation – Spel för den skapade rotationen, Live &amp; QR för åskådarlänkar samt Statistik och Hjälp. Behörigheter visas bara för Super Admin.</p>
@@ -2137,7 +2136,7 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <li>Öppna <b>⌂ Admin</b> och logga in med ditt administratörskonto.</li>
 <li>Gå till <b>Spelinställningar</b>, tryck <b>Hämta grupper</b> och välj grupp.</li>
 <li>Tryck <b>Hämta gruppens spelare till rotationsschemat</b>. Vid första importen är ingen spelare markerad. Ny hämtning av samma grupp bevarar urvalet. Kryssa i dagens deltagare eller välj <b>Markera alla</b>.</li>
-<li>Välj 1–3 banor och markera 3–12 deltagare. Kontrollera spelarnas preferenser. Under spelarlistan visas ett förslag på rundantal; tryck <b>Välj … rundor</b> om du vill använda det.</li>
+<li>Välj 1–3 banor och markera 3–12 deltagare. Kontrollera spelarnas preferenser. Under spelarlistan visas ett rundförslag som väljs automatiskt. Ändra rundantalet manuellt om du vill.</li>
 <li>Tryck <b>Skapa spelschema</b>. Om gruppen redan har ett aktivt spel får du välja att behålla det eller avsluta det och skapa ett nytt.</li>
 <li>I spelvyn: starta timern vid behov och tryck <b>Klar</b> när rundan är spelad. Använd <b>Nästa runda</b> för att fortsätta. När alla rundor och poäng är sparade avslutas spelet automatiskt och en popup erbjuder <b>Visa statistik</b> eller <b>Stäng</b>.</li>
 </ol>
@@ -2153,8 +2152,8 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <p>Omladdning försöker återställa både lokal rotation och dess molnkoppling. Om kopplingen inte kan återställas, använd <b>Återuppta senaste spel</b>. Byte av grupp kopplar bort styrningen av det tidigare spelet; återuppta rätt spel innan du fortsätter.</p>
 <h3>👥 4. Spelarlistan</h3>
 <p>Spelarlistan visar namn och deltagarkryss. Tryck ⚙ vid spelaren för att öppna kön, flaggor, spelpreferens och övriga inställningar. Tryck igen för att stänga. Bara en spelares inställningar visas åt gången; deltagarvalet påverkas inte.</p>
-<p><b>Rundtips</b> ligger direkt under alla spelare. Rutan visar antal banor, markerade spelare, fördelningen Normal / Mer singel / Endast singel samt föreslaget antal rundor. <b>Valt i schemat</b> visar det rundantal som faktiskt används. Förslaget ändrar inte ditt val automatiskt: tryck <b>Välj … rundor</b> för att använda det.</p>
-<p><b>ⓘ Info</b> i rundtipsrutan visar hur förslaget beräknas: tre provrotationer med samma logik och preferenser som schemat. Målet är olika dubbelpartners bland spelare som får spela dubbel, och olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Tipset är en uppskattning och garanterar varken minsta möjliga rundantal eller helt jämn fördelning. Om färre än 3 eller fler än 12 spelare markeras finns rutan kvar, men rundvalsknappen är avstängd.</p>
+<p><b>Rundtips</b> ligger direkt under alla spelare. Rutan visar antal banor, markerade spelare, fördelningen Normal / Mer singel / Endast singel samt föreslaget antal rundor. <b>Valt för nästa schema</b> visar det valda rundantalet. Förslaget väljs automatiskt när parametrarna ändras. Manuella val behålls så länge parametrarna är samma. Tryck <b>Välj … rundor</b> för att återgå till förslaget.</p>
+<p><b>ⓘ Info</b> i rundtipsrutan visar hur förslaget beräknas. Vanlig rotation använder tre provrotationer med samma logik och preferenser som schemat. När 2 mot 1 används föreslås i stället en rollcykel med alla Normal, eller ett uppskattat antal vid singelpreferenser. Målet är olika dubbelpartners bland spelare som får spela dubbel, och olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Tipset är en uppskattning och garanterar varken minsta möjliga rundantal eller helt jämn fördelning. Om färre än 3 eller fler än 12 spelare markeras finns rutan kvar, men rundvalsknappen är avstängd.</p>
 <p>Stegvis vägledning: efter Hämta grupper går sidan till Välj grupp, efter gruppval till Hämta gruppens spelare och efter lyckad import till spelarvalet. Markera alla går vidare till banor, rundor och Skapa rotationsschema. Enskilda kryss flyttar inte sidan; tryck Klar med spelarval – fortsätt när du är färdig.</p>
 <p><b>Hämta gruppens spelare till rotationsschemat</b> hämtar namn, två flaggval, kön och spelpreferens. Markera deltagare med kryssrutorna. <b>Markera alla</b> och <b>Avmarkera alla</b> ändrar hela urvalet. Att markera en spelare bestämmer deltagandet i nästa schema; det gör inte om ett redan skapat schema.</p>
 <p><b>Lägg till befintliga spelare</b> öppnar en sökbar lista över samtliga spelarprofiler. Även vanlig Admin får välja spelare från andra grupper, men endast lägga till dem i grupper hen får hantera. Markera spelarna och tryck <b>Lägg till i gruppen</b>. Spelarna behåller sitt ID, sina tidigare grupper och sin historik. Redan tillagda spelare visas som <b>Finns redan i gruppen</b>.</p>
@@ -2170,12 +2169,12 @@ document.getElementById('cloudAddPlayer').addEventListener('click',async()=>{
 <ul>
 <li><b>Normal:</b> spelaren kan spela både dubbel och singel.</li>
 <li><b>Mer singel:</b> appen försöker ge spelaren singel oftare, men dubbel kan fortfarande förekomma.</li>
-<li><b>Endast singel:</b> spelaren placeras aldrig i dubbel och kan få vila när singel inte kan ordnas.</li>
+<li><b>Endast singel:</b> vanlig singel, eller ensam mot två om Tillåt 2 mot 1 är PÅ. Spelaren placeras aldrig i ett tvåmannalag. Om valen inte går ihop visas ett meddelande, eller vila i vanlig rotation.</li>
 </ul>
 <p>Den gröna <b>ⓘ-knappen</b> är centrerad under valet. Den öppnar en popup med alla tre beskrivningar och markerar det valda alternativet. Popupen öppnas också när du ändrar preferens. Stäng den med <b>Stäng</b>, Escape eller genom att trycka utanför rutan.</p>
 <h3>🏸 7. Rotationsschema och banor</h3>
-<p>Välj <b>1–3 banor</b>. Rundlistans grundval är <b>6, 7, 8, 10 eller 12</b>; rundtipsknappen kan lägga till ett annat föreslaget rundantal, exempelvis 3. Schemat försöker fördela medspelare, motståndare, singel och vila. Antalet spelare och preferenser påverkar hur många banor som kan fyllas; fördelningen är inte garanterat helt jämn.</p>
-<p><b>Singel</b> visar två spelare, <b>Dubbel</b> fyra. Rött och blått skiljer lagen åt. Namn, flaggor och figurer följer rundans placeringar. Vilande spelare visas separat.</p>
+<p>Välj <b>1–3 banor</b>. Rundförslaget väljs automatiskt och läggs till i listan vid behov. Du kan därefter välja ett annat antal manuellt. Schemat försöker fördela medspelare, motståndare, singel och vila. Antalet spelare och preferenser påverkar hur många banor som kan fyllas; fördelningen är inte garanterat helt jämn.</p>
+<p><b>Singel</b> visar två spelare, <b>2 mot 1</b> tre och <b>Dubbel</b> fyra. Rött och blått skiljer lagen åt. Namn, flaggor och figurer följer rundans placeringar. Vilande spelare visas separat.</p>
 <p><b>Nästa runda</b> och <b>Föregående runda</b> bläddrar i samma schema. <b>Start/Inställningar</b> går tillbaka till inställningarna. Om <b>Visa hela schemat</b> visas kan du använda den för en översikt över rundorna.</p>
 <h3>⏱️ 8. Timer, inställningar och helskärm</h3>
 <p><b>Start</b> startar nedräkningen och blir <b>Paus</b>. <b>Nollställ</b> återställer vald matchtid. Vid rundbyte återställs timern. När tiden tar slut markeras rundan som klar och ljudsignalen spelas om den är aktiverad.</p>
@@ -5188,6 +5187,7 @@ html.bmTextOnlyPlayers #gameView#gameView .threeDStage.bmCompactScoreCourt .thre
 </script>
 </body>
 </html>
+
 
 
 

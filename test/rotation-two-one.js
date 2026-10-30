@@ -2,11 +2,12 @@
    a three-player court is identified by its saved team sizes, never as singles. */
 (function(root){
  'use strict';
- const supports=(n,c)=>(n===7&&c===2)||(n===11&&c===3);
+ const legacySupports=(n,c)=>(n===7&&c===2)||(n===11&&c===3);
+ const supports=(n,c)=>!!shape(n,c);
  const teams=c=>{const n=c.players||[],split=c.type==='Singel'?1:c.type==='2 mot 1'?(c.teamSplit||1):2;return [n.slice(0,split),n.slice(split)];};
  const teamNumber=(c,i)=>i<teams(c)[0].length?1:2;
- function plan(players,R,courts,enabled,random=Math.random){
-  if(!supports(players.length,courts))return null;
+ function legacyPlan(players,R,courts,enabled,random=Math.random){
+  if(!legacySupports(players.length,courts))return null;
   const only=players.filter(p=>p.mode==='onlySingles');
   if(only.length>1){if(enabled)throw Error('2 mot 1 utan vila har bara en ensamroll per runda. Välj högst en spelare med Endast singel, ändra preferenserna eller slå av Tillåt 2 mot 1.');return null;}
   const mix=a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
@@ -53,8 +54,53 @@
   }
   return output;
  }
- const validate=(players,c,on)=>{if(on&&supports(players.length,c)&&players.filter(p=>p.mode==='onlySingles').length>1)throw Error('2 mot 1 utan vila har bara en ensamroll per runda. Ändra preferenserna eller slå av Tillåt 2 mot 1.');};
- const api={supports,teams,teamNumber,plan,validate};
+ // Fill available courts without rests using 2, 3 or 4 players per match.
+ function shape(n,c,only=0){
+  if(n<3||n>12||c<1||c>3)return null;
+  const choices=[];
+  for(let d=0;d<=c;d++)for(let t=0;t<=c-d;t++)for(let s=0;s<=c-d-t;s++)if(4*d+3*t+2*s===n&&t+2*s>=only)choices.push({d,t,s,used:d+t+s});
+  return choices.sort((a,b)=>b.used-a.used||a.s-b.s||b.d-a.d)[0]||null;
+ }
+ const describe=p=>p?[p.d?p.d+' dubbel':null,p.t?p.t+' st 2 mot 1':null,p.s?p.s+' singel':null].filter(Boolean).join(' + '):'';
+ const cycle=p=>{const pattern=[...Array(p.t).fill(['solo','duo','duo']).flat(),...Array(p.s*2).fill('single'),...Array(p.d*4).fill('double')];for(let k=1;k<=pattern.length;k++)if(pattern.length%k===0&&pattern.every((x,i)=>x===pattern[i%k]))return k;return pattern.length;};
+ function validate(players,c,on){
+  if(on&&shape(players.length,c)&&!shape(players.length,c,players.filter(p=>p.mode==='onlySingles').length))throw Error('Valen krockar: det finns inte tillräckligt med ensam- och singelroller för alla med Endast singel utan vila. Ändra preferenserna, välj fler banor eller slå av Tillåt 2 mot 1.');
+ }
+ function noRestPlan(players,R,c,random){
+  const layout=shape(players.length,c,players.filter(p=>p.mode==='onlySingles').length);if(!layout)return null;
+  const mix=a=>{const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
+  const normal=players.every(p=>!p.mode||p.mode==='normal'),period=cycle(layout),counts=new Map(players.map(p=>[p.name,{solo:0,duo:0,single:0}])),partner={},opponent={},key=(a,b)=>JSON.stringify([a,b].sort()),add=(map,a,b)=>{const k=key(a,b);map[k]=(map[k]||0)+1;};
+  let ring=mix(players);const planned=[];
+  const least=(pool,role)=>mix(pool).sort((a,b)=>counts.get(a.name)[role]-counts.get(b.name)[role])[0];
+  for(let r=0;r<R;r++){
+   if(normal&&r&&r%period===0)ring=mix(players);
+   const triples=[],singles=[];let remaining;
+   if(normal){let pos=0;const take=()=>ring[(r%period+pos++)%players.length];
+    for(let i=0;i<layout.t;i++)triples.push([take(),take(),take()]);
+    for(let i=0;i<layout.s;i++)singles.push([take(),take()]);
+    remaining=players.filter(p=>![...triples.flat(),...singles.flat()].includes(p));
+   }else{
+    let available=mix(players);const remove=p=>{available=available.filter(q=>q!==p);};const solos=[];
+    for(let i=0;i<layout.t;i++){const strict=available.filter(p=>p.mode==='onlySingles'),preferred=available.filter(p=>p.mode==='moreSingles');const p=least(strict.length?strict:preferred.length?preferred:available,'solo');solos.push(p);remove(p);}
+    const singlePool=[];for(let i=0;i<layout.s*2;i++){const strict=available.filter(p=>p.mode==='onlySingles'),preferred=available.filter(p=>p.mode==='moreSingles');const p=least(strict.length?strict:preferred.length?preferred:available,'single');singlePool.push(p);remove(p);}
+    while(singlePool.length){const a=singlePool.shift(),b=mix(singlePool).sort((x,y)=>(opponent[key(a.name,x.name)]||0)-(opponent[key(a.name,y.name)]||0))[0];singlePool.splice(singlePool.indexOf(b),1);singles.push([a,b]);}
+    for(const solo of solos){const a=least(available,'duo');remove(a);const b=mix(available).sort((x,y)=>counts.get(x.name).duo-counts.get(y.name).duo||(partner[key(a.name,x.name)]||0)-(partner[key(a.name,y.name)]||0))[0];remove(b);triples.push([solo,a,b]);}
+    remaining=available;
+   }
+   const matches=triples.map(([a,b,c])=>{counts.get(a.name).solo++;counts.get(b.name).duo++;counts.get(c.name).duo++;return {type:'2 mot 1',teamSplit:1,players:[a.name,b.name,c.name]};});
+   for(const pair of singles){pair.forEach(p=>counts.get(p.name).single++);matches.push({type:'Singel',players:pair.map(p=>p.name)});}
+   while(remaining.length){let best,score=Infinity;const pool=mix(remaining);
+    for(let a=0;a<pool.length;a++)for(let b=a+1;b<pool.length;b++)for(let c=b+1;c<pool.length;c++)for(let d=c+1;d<pool.length;d++)for(const order of [[a,b,c,d],[a,c,b,d],[a,d,b,c]]){
+     const n=order.map(i=>pool[i].name);let cost=10*((partner[key(n[0],n[1])]||0)+(partner[key(n[2],n[3])]||0));for(const x of n.slice(0,2))for(const y of n.slice(2))cost+=3*(opponent[key(x,y)]||0);if(cost<score){score=cost;best=n;}}
+    if(!best)throw Error('Spelarna kunde inte fördelas på banorna.');matches.push({type:'Dubbel',players:best});remaining=remaining.filter(p=>!best.includes(p.name));
+   }
+   for(const match of matches){const [red,blue]=teams(match);if(red.length===2)add(partner,...red);if(blue.length===2)add(partner,...blue);for(const a of red)for(const b of blue)add(opponent,a,b);}
+   const offset=r%matches.length;planned.push({courts:matches.slice(offset).concat(matches.slice(0,offset)),rest:[]});
+  }
+  return planned;
+ }
+ function plan(players,R,c,on,random=Math.random){if(!on)return legacyPlan(players,R,c,false,random);validate(players,c,on);return noRestPlan(players,R,c,random);}
+ const api={supports,teams,teamNumber,plan,validate,shape,describe,cycle};
  if(typeof module!=='undefined')module.exports=api;
  if(root)root.badmintonTwoOne=api;
  if(typeof document==='undefined')return;
@@ -79,7 +125,8 @@
   area.after(box);
   const toggle=box.querySelector('input'),text=box.querySelector('p'),value=box.querySelector('#bmTwoOneValue');toggle.checked=bmStorage.getItem('badmintonAllowTwoOne')==='true';
   function update(){const ps=selectedPlayers(),n=ps.length,c=Number(document.getElementById('courts').value),supported=supports(n,c);value.textContent=toggle.checked?'PÅ':'AV';toggle.setAttribute('aria-checked',String(toggle.checked));
-   text.textContent=supported?(toggle.checked?(ps.filter(p=>p.mode==='onlySingles').length>1?'Valen krockar: bara en ensamroll finns. Ändra preferenserna eller slå av reglaget.':(c-1)+' dubbel + 2 mot 1 · ingen vila. Alla valda spelare godkänner 2 mot 1, även Endast singel.'):(c-1)+' dubbel + 1 singel · 1 vilar (vid högst en Endast singel).'):'Gäller 7 spelare på 2 banor eller 11 spelare på 3 banor. Övriga val använder vanlig rotation.';
+   const layout=shape(n,c,ps.filter(p=>p.mode==='onlySingles').length);
+   text.textContent=toggle.checked?(layout?describe(layout)+' · ingen vila. Alla godkänner eventuell 2 mot 1, även Endast singel.':shape(n,c)?'Valen krockar: för många Endast singel för att alla ska spela samtidigt. Ändra preferenserna eller slå av reglaget.':'Alla ryms inte samtidigt på valda banor. Vanlig rotation med vila används.'):'Vanlig singel och dubbel, med vila när det behövs.';
    text.textContent+=' Gäller nästa schema; pågående spel ändras inte.';
   }
   toggle.addEventListener('change',()=>{bmStorage.setItem('badmintonAllowTwoOne',String(toggle.checked));update();window.dispatchEvent(new Event('badminton:two-one-changed'));});
@@ -88,3 +135,4 @@
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })(typeof window!=='undefined'?window:null);
+

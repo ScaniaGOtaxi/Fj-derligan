@@ -1,34 +1,44 @@
-# Test: Tillåt 2 mot 1
-21 oktober 2026
+# Tillåt 2 mot 1 och automatiskt rundval
+Uppdaterad 30 oktober 2026. Endast testappen.
 
-Endast testappen har ändrats. Ingen publicering till Netlify/produktion.
+## Rotation
+PÅ försöker placera alla valda spelare utan vila på upp till tre banor, med 2, 3 eller 4 spelare per match. Algoritmen väljer så många använda banor som möjligt, därefter så få vanliga singlar som möjligt. Exempel:
+- 5 spelare / 2 banor: 2 mot 1 + singel.
+- 6 / 2: två matcher 2 mot 1.
+- 7 / 2: dubbel + 2 mot 1.
+- 8 / 3: två matcher 2 mot 1 + singel.
+- 9 / 3: tre matcher 2 mot 1.
+- 10 / 3: dubbel + två matcher 2 mot 1.
+- 11 / 3: två dubblar + 2 mot 1.
+- 12 / 3: tre dubblar.
 
-## Användning
-1. Logga in, välj en testgrupp och hämta dagens spelare.
-2. Välj 7 spelare på 2 banor, eller 11 spelare på 3 banor.
-3. Under spelarlistan finns reglaget Tillåt 2 mot 1, AV vid första användningen.
-4. PÅ är gemensamt godkännande för alla valda spelare. Det blir en 2 mot 1 och resterande banor dubbel. Ingen vilar.
-5. AV ger en singel och resterande banor dubbel samt en vilande spelare när högst en spelare har Endast singel.
-6. Välj rundor (rundtipset uppdateras), skapa ett nytt schema. Befintliga scheman ändras inte av reglaget.
+Reglaget är gemensamt godkännande för 2 mot 1, även för Endast singel. Endast singel tilldelas ensamrollen eller vanlig singel, aldrig en plats i ett tvåmannalag. Mer singel prioriteras för dessa roller.
+Om alla ryms men preferenserna inte kan uppfyllas stoppas skapandet innan ett tidigare spel avslutas. Om antalet spelare överstiger banornas kapacitet visas att vanlig rotation med vila används.
+Med alla Normal fördelas rollerna jämnt över en full cykel. För 9/3 är en cykel 3 rundor: en ensamroll och två matcher i tvåmannalaget per spelare.
+AV använder vanlig rotation; tidigare balanserad vila för 7/2 och 11/3 behålls.
+Partner-/motståndartäckning garanteras inte av ett rollcykelförslag.
 
-## Preferenser
-Alla Normal: på en hel cykel om 7/11 rundor får varje spelare en ensamroll, två matcher i tvåmannalaget och 4/8 dubbelmatcher. AV ger en vila och två singelmatcher per spelare under en hel cykel.
-En Endast singel: spelar ensam varje runda när PÅ; vanlig singel när AV.
-Mer singel: prioriteras för ensamrollen när ingen Endast singel finns.
-Flera Endast singel när PÅ: schemat stoppas med förklaring före kontroll/avslut av befintligt spel. AV använder då den tidigare vanliga logiken, som kan kräva mer vila.
-Övriga antal spelare/banor använder vanlig rotationslogik även om reglaget är PÅ.
-Rollfördelningen garanteras för Normal under hela cykler; alla partners och motståndare garanteras inte.
+## Rundval
+Förslaget väljs automatiskt när deltagare, banor, preferenser eller Tillåt 2 mot 1 ändras.
+Efteråt kan rundantalet ändras manuellt. Samma parameterhändelse utan verklig ändring återställer inte ett manuellt val.
+Manuellt val sparas lokalt med parametersignaturen och återställs vid omladdning om parametrarna är samma.
+Knappen Välj N rundor kan återställa förslaget efter ett manuellt val.
+Valet gäller nästa schema. Pågående eller tidigare sparade scheman ändras inte.
 
-## Lagring, Live och statistik
-2 mot 1 lagras i befintliga spelarplaceringar med aktivitet double och lagstorlekar 1+2. Lagnummer bevaras. Ingen ny SQL behövs med de befintliga grupp-/Live-/statistikfunktionerna från detta repo.
-Återupptagning identifierar tre spelare på banan och bevarar lagen. Live visar matchtypen och tre namn/figurer.
-Poäng sparas per lag som tidigare. 2 mot 1 redovisas separat i resultat och deltagande och ingår inte i ordinarie singel-/dubbelpall. Dagens rapport har separat resultatlista samt alla matchresultat. Detaljsidor i PDF innehåller listan; diplompallen gäller vanlig singel/dubbel.
-Serverdatabasen delas med produktionen. Använd en testgrupp. Äldre appversioner kan tolka dessa nya matcher fel, så öppna 2 mot 1-spel i testappen under utvärderingen.
-Inga verkliga sessioner skapades, resultat ändrades eller mejl skickades vid de automatiska testerna.
+## Server och resultat
+Ingen ny SQL behövs med befintliga grupp-/Live-/statistikfunktioner. 2 mot 1 sparas som tre spelarplaceringar med lagnummer 1 och 2, med aktiviteten double. Lagstorleken identifierar spelformen.
+Live och rapporter använder redan dessa lagstorlekar. Resultat för 2 mot 1 redovisas separat och ingår inte i den ordinarie singel-/dubbelpallen.
+Använd testgrupp; databasen delas med produktionen.
 
-## Validering
-Kör node validation/rotation-two-one.cjs från repo.
-Testar flera slumputfall, olika antal rundor, båda lägena, normala rollcykler, singelpreferenser, konflikter, unika spelare per runda, lagnummer, övriga antal samt separata resultat/pall.
-Webbläsarkontroller med simulerad Supabase: 7/2 och 11/3, AV/PÅ, molnsparning/återupptagning, omladdning, konfliktstopp före spelavslut, Live i mobil/dator, deltagarstatistik, dagsrapport och diplom.
-Den verkliga Supabase-serverns installation har inte ändrats eller verifierats genom skrivning.
+## Tester
+node validation/rotation-two-one.cjs
+node validation/rotation-no-rest.cjs
+
+Browserkontroll, efter att en lokal server startats från repo-roten:
+python3 -m http.server 8080
+node validation/round-defaults.cjs
+
+Playwright och Chromium behöver vara installerade. TEST_BASE_URL kan ange annan lokal testadress, PLAYWRIGHT_MODULE annan installerad modul och CHROMIUM_PATH annan webbläsarfil.
+Testerna kontrollerar alla 3–12 spelarantal / 1–3 banor med olika antal Endast singel, fulla rollcykler, OFF-regression, automatval, manuella val, ändrade parametrar, omladdning, pågående schemas oföränderlighet samt 9/3-molnsparning och Live med simulerad server.
+Inga riktiga spel, konton eller resultat ändras av testerna.
 
