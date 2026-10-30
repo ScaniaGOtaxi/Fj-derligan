@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),api=require('../test/rotation-two-one.js');const rng=seed=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/2**32};
 for(let n=3;n<=12;n++)for(let c=1;c<=3;c++)for(let only=0;only<=n;only++)for(let seed=1;seed<=5;seed++){
  const ps=Array.from({length:n},(_,i)=>({name:'P'+i,mode:i<only?'onlySingles':'normal'}));const possible=api.shape(n,c),shape=api.shape(n,c,only);
- if(possible&&!shape){assert.throws(()=>api.plan(ps,9,c,true,rng(seed)),/Valen krockar/);continue;}
+ if(possible&&!shape){assert(api.plan(ps,9,c,true,rng(seed)).every(r=>r.rest.length>0));continue;}
  if(!possible){const plan=api.plan(ps,9,c,true,rng(seed));assert(plan.every(r=>r.rest.length>0));continue;}
  const R=only?12:api.cycle(shape)*2,plan=api.plan(ps,R,c,true,rng(seed)),roles=Object.fromEntries(ps.map(p=>[p.name,{solo:0,duo:0,single:0,double:0}]));
  for(const round of plan){assert.equal(round.rest.length,0);assert(round.courts.length<=c);assert.equal(round.courts.length,shape.used);const names=round.courts.flatMap(x=>x.players);assert.equal(names.length,n);assert.equal(new Set(names).size,n);

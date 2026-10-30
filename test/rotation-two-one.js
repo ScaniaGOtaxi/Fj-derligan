@@ -16,7 +16,7 @@
  const supports=valid;
  const describe=p=>p?[p.d?p.d+' dubbel':null,p.t?p.t+' st 2 mot 1':null,p.s?p.s+' singel':null].filter(Boolean).join(' + '):'';
  const cycle=p=>{const pattern=[...Array(p.t).fill(['solo','duo','duo']).flat(),...Array(p.s*2).fill('single'),...Array(p.d*4).fill('double'),...Array(p.rest||0).fill('rest')];for(let k=1;k<=pattern.length;k++)if(pattern.length%k===0&&pattern.every((x,i)=>x===pattern[i%k]))return k;return pattern.length;};
- function validate(players,c,on){if(on&&shape(players.length,c)&&!shape(players.length,c,players.filter(p=>p.mode==='onlySingles').length))throw Error('Valen krockar: det finns inte tillräckligt med ensam- och singelroller för alla med Endast singel utan vila. Ändra preferenserna, välj fler banor eller slå av Tillåt 2 mot 1.');}
+ function validate(players,c,on){if(!valid(players.length,c))throw Error('Välj 3–12 spelare och 1–3 banor.');}
  const signature=(players,c,on=true)=>JSON.stringify([players.map(p=>({name:p.name,mode:p.mode||'normal'})),c,!!on]);
  const seeded=initial=>{let seed=initial>>>0;return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};};
  function plan(players,R,c,on,random=Math.random){

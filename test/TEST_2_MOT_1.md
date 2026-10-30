@@ -3,7 +3,7 @@ Uppdaterad 30 oktober 2026. Endast testappen.
 
 ## Rotation
 Samma schemamotor används med både PÅ och AV. Efter preferenser och rättvis spel-/vilofördelning prioriteras nya partners, därefter nya motståndare. Reglaget avgör bara om matchtypen 2 mot 1 tillåts.
-PÅ försöker placera alla valda spelare utan vila på upp till tre banor, med 2, 3 eller 4 spelare per match. Algoritmen väljer så många använda banor som möjligt, därefter så få vanliga singlar som möjligt. Exempel:
+PÅ försöker placera alla valda spelare utan vila på upp till tre banor, med 2, 3 eller 4 spelare per match. Algoritmen väljer så många använda banor som möjligt, därefter så få vanliga singlar som möjligt. Exempel med alla Normal:
 - 5 spelare / 2 banor: 2 mot 1 + singel.
 - 6 / 2: två matcher 2 mot 1.
 - 7 / 2: dubbel + 2 mot 1.
@@ -14,7 +14,7 @@ PÅ försöker placera alla valda spelare utan vila på upp till tre banor, med 
 - 12 / 3: tre dubblar.
 
 Reglaget är gemensamt godkännande för 2 mot 1, även för Endast singel. Endast singel tilldelas ensamrollen eller vanlig singel, aldrig en plats i ett tvåmannalag. Mer singel prioriteras för dessa roller.
-Om alla ryms men preferenserna inte kan uppfyllas stoppas skapandet innan ett tidigare spel avslutas. Om antalet spelare överstiger banornas kapacitet visas att vanlig rotation med vila används.
+Om banantal eller singelpreferenser kräver vila används en giltig fördelning med vila. Antalet vilande visas i inställningarna. Samma princip gäller PÅ och AV; PÅ kan förbättra fördelningen genom att även tillåta 2 mot 1.
 Med alla Normal fördelas rollerna jämnt över en full cykel. För 9/3 är en cykel 3 rundor: en ensamroll och två matcher i tvåmannalaget per spelare.
 AV använder samma grundlogik med singel, dubbel och vila. Tidigare balanserad vila för 7/2 och 11/3 behålls. Mer singel prioriteras inom de matchtyper som banval och deltagarantal ger utrymme för, med hänsyn till rättvis vila. Mer singel undantar inte spelaren från vila.
 ## Prioritering av variation
