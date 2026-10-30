@@ -28,58 +28,14 @@
   const players=selectedPlayers(),n=players.length,c=Number(courts.value);
   const signature=JSON.stringify([players,c,window.badmintonTwoOneEnabled?.()||false]);if(signature===lastSignature)return;lastSignature=signature;recommended=null;window.badmintonRoundPreview=null;apply.hidden=false;apply.disabled=true;apply.textContent='Välj rundor';detail.hidden=true;info.setAttribute('aria-expanded','false');
   if(n<3||n>12){text.textContent='Banor: '+c+' · Spelare: '+n+'\nFörslag: markera 3–12 deltagare för dagens spel.';detail.textContent='Tipset uppdateras när du ändrar deltagare eller antal banor.';return;}
-  if(window.badmintonTwoOneEnabled?.()){
-   try{window.badmintonTwoOne.validate(players,c,true);}catch(e){text.textContent=e.message;detail.textContent='Ändra preferenserna eller slå av Tillåt 2 mot 1.';return;}
-  }
-  if(window.badmintonTwoOneEnabled?.()&&window.badmintonTwoOne.shape(n,c,players.filter(p=>p.mode==='onlySingles').length)){
-   const result=window.badmintonTwoOne.recommend(players,c);
-   recommended=result.rounds;
-   window.badmintonRoundPreview={signature:window.badmintonTwoOne.signature(players,c),seed:result.seed};
-   text.textContent='Banor: '+c+' · Spelare: '+n+'\nNormal: '+players.filter(p=>p.mode==='normal').length+' · Mer singel: '+players.filter(p=>p.mode==='moreSingles').length+' · Endast singel: '+players.filter(p=>p.mode==='onlySingles').length+'\n'+window.badmintonTwoOne.describe(result.layout)+' · ingen vila\nFörslag: '+recommended+' rundor\nFörslagets partnerpar: '+result.partners+'/'+result.partnerTotal+' · Motståndarpar: '+result.opponents+'/'+result.opponentTotal;
-   detail.textContent='Prioritet: undvik samma partner, därefter samma motståndare. Vanliga singelpreferenser och jämna rollcykler respekteras. '+(result.complete?'Provrotationen täcker alla efterfrågade partner- och motståndarpar.':'Alla efterfrågade par täcktes inte i provrotationen; preferenser och roller kan begränsa variationen.')+' Förslaget jämför tre provrotationer och garanterar inte minsta möjliga rundantal. När du använder förslaget skapas samma provrotation. Ett kortare manuellt rundval täcker inte nödvändigtvis alla par.';
-   apply.disabled=false;apply.textContent='Välj '+recommended+' rundor';chooseDefault();return;
-  }
-  const wanted=new Set(),onlySingles=players.filter(p=>p.mode==='onlySingles').length,moreSingles=players.filter(p=>p.mode==='moreSingles').length;
-  const horizon=Math.max(24,n*(n-1));
-  const key=(kind,a,b)=>kind+':'+pairKey(a,b);
-  let best=null;
-  for(let trial=1;trial<=3;trial++){
-   let seed=trial*7919+n*101+c*17;
-   const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-   const plan=badmintonPlanSchedule(players,horizon,c,random);
-   const hasDouble=plan.some(r=>r.courts.some(c=>c.type==='Dubbel'));
-   wanted.clear();
-   for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
-    const a=players[i],b=players[j];
-    if(hasDouble&&a.mode!=='onlySingles'&&b.mode!=='onlySingles')wanted.add(key('dubbel',a.name,b.name));
-    if(!hasDouble||a.mode!=='normal'||b.mode!=='normal')wanted.add(key('singel',a.name,b.name));
-   }
-   const seen=new Set(),played=new Set();let covered=0,lastImprovement=0;
-   for(let i=0;i<plan.length;i++){
-    const before=covered,playedBefore=played.size;
-    for(const court of plan[i].courts){
-     court.players.forEach(name=>played.add(name));
-     const names=court.players;
-     if(court.type==='Dubbel'){seen.add(key('dubbel',names[0],names[1]));seen.add(key('dubbel',names[2],names[3]));}
-     else if(names.length===2)seen.add(key('singel',names[0],names[1]));
-    }
-    covered=[...wanted].filter(k=>seen.has(k)).length;
-    if(covered>before||played.size>playedBefore)lastImprovement=i+1;
-    if(covered===wanted.size&&played.size===n)break;
-   }
-   const candidate={rounds:Math.max(1,lastImprovement),covered,total:wanted.size,plan,hasDouble};
-   if(!best||candidate.covered>best.covered||(candidate.covered===best.covered&&candidate.rounds<best.rounds))best=candidate;
-  }
-  recommended=best.rounds;
-  const sample=best.plan.slice(0,recommended);
-  const doubles=sample.reduce((sum,r)=>sum+r.courts.filter(c=>c.type==='Dubbel').length,0);
-  const singles=sample.reduce((sum,r)=>sum+r.courts.filter(c=>c.type==='Singel').length,0);
-  const rests=sample.reduce((sum,r)=>sum+r.rest.length,0);
-  text.textContent='Banor: '+c+' · Spelare: '+n+'\nNormal: '+(n-onlySingles-moreSingles)+' · Mer singel: '+moreSingles+' · Endast singel: '+onlySingles+'\nFörslag: '+recommended+' rundor';
-  detail.textContent='Valda preferenser: '+(n-onlySingles-moreSingles)+' Normal, '+moreSingles+' Mer singel, '+onlySingles+' Endast singel. Provrotationen innehåller '+doubles+' dubbelmatcher, '+singles+' singelmatcher och '+rests+' vilotillfällen. '+
-   (best.covered===best.total?'Provrotationen täcker alla '+best.total+' efterfrågade par/möten.':'Provrotationen täcker '+best.covered+' av '+best.total+' efterfrågade par/möten; fler rundor gav ingen ytterligare täckning i provet.')+
-   ' Målet är alla dubbelpartners bland spelare som får spela dubbel, samt olika singelmotståndare för spelare med singelpreferens. Vid rent singelspel är målet alla motståndare. Endast singel placeras aldrig i dubbel; Mer singel prioriteras för singel. Tipset bygger på tre provrotationer med samma logik som schemat. Det är en uppskattning, inte ett garanterat minimiantal; det skapade schemat kan skilja sig.';
-  apply.hidden=false;apply.disabled=false;apply.textContent='Välj '+recommended+' rundor';chooseDefault();
+  const enabled=window.badmintonTwoOneEnabled?.()||false;
+  try{window.badmintonTwoOne.validate(players,c,enabled);}catch(e){text.textContent=e.message;detail.textContent='Ändra preferenserna eller slå av Tillåt 2 mot 1.';return;}
+  const result=window.badmintonTwoOne.recommend(players,c,enabled);if(!result)return;
+  recommended=result.rounds;
+  window.badmintonRoundPreview={signature:window.badmintonTwoOne.signature(players,c,enabled),seed:result.seed};
+  text.textContent='Banor: '+c+' · Spelare: '+n+'\nNormal: '+players.filter(p=>p.mode==='normal').length+' · Mer singel: '+players.filter(p=>p.mode==='moreSingles').length+' · Endast singel: '+players.filter(p=>p.mode==='onlySingles').length+'\n'+window.badmintonTwoOne.describe(result.layout)+(result.layout.rest?' · '+result.layout.rest+' vilar per runda':' · ingen vila')+'\nFörslag: '+recommended+' rundor\nFörslagets partnerpar: '+result.partners+'/'+result.partnerTotal+' · Motståndarpar: '+result.opponents+'/'+result.opponentTotal;
+  detail.textContent='Samma grundlogik används med Tillåt 2 mot 1 PÅ och AV: nya partners först, därefter nya motståndare. Preferenser och jämn spel-/vilofördelning respekteras. Reglaget avgör bara om matcher med 2 mot 1 får användas. '+(result.complete?'Provrotationen täcker alla efterfrågade partner- och motståndarpar.':'Alla efterfrågade par täcktes inte i provrotationen; preferenser och roller kan begränsa variationen.')+' Tre provrotationer jämförs. Förslaget är inte ett bevis på minsta möjliga rundantal. Skapandet använder samma provrotation. Ett kortare manuellt val kan ge mindre täckning.';
+  apply.disabled=false;apply.textContent='Välj '+recommended+' rundor';chooseDefault();
  }
  apply.addEventListener('click',()=>{update();if(recommended)choose(recommended,true);});
  rounds.addEventListener('change',()=>{showChosen();if(lastSignature)bmStorage.setItem('badmintonRoundTipChoice',JSON.stringify({version:2,manual:!automaticChoice,signature:lastSignature,rounds:Number(rounds.value)}));});showChosen();
@@ -89,6 +45,7 @@
  document.getElementById('playerPool')?.addEventListener('change',update);
  if(document.readyState!=='loading')update();
 })();
+
 
 
 
